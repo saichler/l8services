@@ -1,6 +1,7 @@
 package tests
 
 import (
+	inspect2 "github.com/saichler/reflect/go/reflect/inspect"
 	"github.com/saichler/servicepoints/go/points/service_points"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/share/logger"
@@ -24,6 +25,7 @@ func init() {
 		LocalAlias:  "servicepointstest",
 		Topics:      map[string]bool{}}
 	security := shallow_security.CreateShallowSecurityProvider()
-	sps := service_points.NewServicePoints(registry, config)
-	globals = resources.NewResources(registry, security, sps, log, nil, nil, config)
+	inspect := inspect2.NewIntrospect(registry)
+	sps := service_points.NewServicePoints(inspect, config)
+	globals = resources.NewResources(registry, security, sps, log, nil, nil, config, inspect)
 }

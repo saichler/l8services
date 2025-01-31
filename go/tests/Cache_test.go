@@ -4,7 +4,6 @@ import (
 	"github.com/saichler/reflect/go/reflect/inspect"
 	"github.com/saichler/reflect/go/tests/utils"
 	"github.com/saichler/servicepoints/go/points/cache"
-	"github.com/saichler/servicepoints/go/points/notifications"
 	"github.com/saichler/shared/go/tests"
 	"testing"
 	"time"
@@ -12,8 +11,7 @@ import (
 
 func TestCacheListener(t *testing.T) {
 	ni := inspect.NewIntrospect(globals.Registry())
-	cl := &notifications.CacheListener{}
-	c := cache.NewModelCache("", "", cl, ni)
+	c := cache.NewModelCache("", nil, ni)
 	item1 := utils.CreateTestModelInstance(1)
 	ni.Inspect(item1)
 	err := c.Put(item1.MyString, item1)
@@ -23,7 +21,7 @@ func TestCacheListener(t *testing.T) {
 	}
 	item2 := utils.CreateTestModelInstance(1)
 	item2.MyEnum = tests.TestEnum_ValueTwo
-	err = c.Patch(item2.MyString, item2)
+	err = c.Update(item2.MyString, item2)
 	if err != nil {
 		log.Fail(t, err.Error())
 		return

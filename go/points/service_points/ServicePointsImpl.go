@@ -2,6 +2,7 @@ package service_points
 
 import (
 	"errors"
+	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
 	"google.golang.org/protobuf/proto"
@@ -10,14 +11,14 @@ import (
 
 type ServicePointsImpl struct {
 	structName2ServicePoint *String2ServicePointMap
-	registry                interfaces.IRegistry
+	introspector            interfaces.IIntrospector
 	config                  *types.VNicConfig
 }
 
-func NewServicePoints(registry interfaces.IRegistry, config *types.VNicConfig) interfaces.IServicePoints {
+func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicConfig) interfaces.IServicePoints {
 	sp := &ServicePointsImpl{}
 	sp.structName2ServicePoint = NewString2ServicePointMap()
-	sp.registry = registry
+	sp.introspector = introspector
 	sp.config = config
 	return sp
 }
@@ -30,7 +31,7 @@ func (servicePoints *ServicePointsImpl) RegisterServicePoint(pb proto.Message, h
 	if handler == nil {
 		return errors.New("cannot register nil handler for type " + typ.Name())
 	}
-	_, err := servicePoints.registry.RegisterType(typ)
+	_, err := servicePoints.introspector.Registry().RegisterType(typ)
 	if err != nil {
 		return err
 	}
@@ -61,6 +62,35 @@ func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Ac
 		return h.Get(pb, vnic)
 	default:
 		return nil, errors.New("invalid action, ignoring")
+	}
+}
+
+func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
+	notification := pb.(*types.NotificationSet)
+	h, ok := servicePoints.structName2ServicePoint.Get(notification.TypeName)
+	if !ok {
+		return nil, errors.New("Cannot find handler for type " + notification.TypeName)
+	}
+	if msg != nil && msg.FailMsg != "" {
+		return h.Failed(pb, vnic, msg)
+	}
+	item, err := cache.ItemOf(notification, servicePoints.introspector)
+	if err != nil {
+		return nil, err
+	}
+	npb := item.(proto.Message)
+
+	switch notification.Type {
+	case types.NotificationType_Add:
+		return h.Post(npb, vnic)
+	case types.NotificationType_Replace:
+		return h.Put(pb, vnic)
+	case types.NotificationType_Update:
+		return h.Patch(pb, vnic)
+	case types.NotificationType_Delete:
+		return h.Delete(pb, vnic)
+	default:
+		return nil, errors.New("invalid notification type, ignoring")
 	}
 }
 

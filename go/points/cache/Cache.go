@@ -3,10 +3,10 @@ package cache
 import (
 	"errors"
 	"github.com/saichler/reflect/go/reflect/clone"
-	"github.com/saichler/reflect/go/reflect/common"
 	"github.com/saichler/reflect/go/reflect/updater"
-	"github.com/saichler/serializer/go/serialize/object"
+	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
+	"reflect"
 	"sync"
 )
 
@@ -16,19 +16,17 @@ type Cache struct {
 	cond         *sync.Cond
 	listener     ICacheListener
 	cloner       *clone.Cloner
-	introspector common.IIntrospect
+	introspector interfaces.IIntrospector
 	source       string
 	typeName     string
 	sequence     uint32
 }
 
 type ICacheListener interface {
-	ModelItemAdded(interface{})
-	ModelItemDeleted(interface{})
-	PropertyChangeNotification(notify *types.NotificationSet)
+	PropertyChangeNotification(*types.NotificationSet)
 }
 
-func NewModelCache(typeName, source string, listener ICacheListener, introspector common.IIntrospect) *Cache {
+func NewModelCache(source string, listener ICacheListener, introspector interfaces.IIntrospector) *Cache {
 	this := &Cache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}
@@ -36,7 +34,6 @@ func NewModelCache(typeName, source string, listener ICacheListener, introspecto
 	this.listener = listener
 	this.cloner = clone.NewCloner()
 	this.introspector = introspector
-	this.typeName = typeName
 	this.source = source
 	return this
 }
@@ -55,6 +52,9 @@ func (this *Cache) Get(k string) interface{} {
 func (this *Cache) Put(k string, v interface{}) error {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
+	if this.typeName == "" {
+		this.typeName = reflect.ValueOf(v).Elem().Type().Name()
+	}
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
 	if !ok {
@@ -64,7 +64,11 @@ func (this *Cache) Put(k string, v interface{}) error {
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
 		if this.listener != nil {
-			go this.listener.ModelItemAdded(itemClone)
+			n, e := this.createAddNotification(itemClone)
+			if e != nil {
+				return e
+			}
+			go this.listener.PropertyChangeNotification(n)
 		}
 		return nil
 	}
@@ -87,15 +91,17 @@ func (this *Cache) Put(k string, v interface{}) error {
 		change.Apply(item)
 	}
 
-	go func() {
-		if this.listener != nil {
-			this.listener.PropertyChangeNotification(this.ToNotificationsSet(changes))
+	if this.listener != nil {
+		n, e := this.createReplaceNotification(itemClone)
+		if e != nil {
+			return e
 		}
-	}()
+		go this.listener.PropertyChangeNotification(n)
+	}
 	return nil
 }
 
-func (this *Cache) Patch(k string, v interface{}) error {
+func (this *Cache) Update(k string, v interface{}) error {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 
@@ -124,25 +130,32 @@ func (this *Cache) Patch(k string, v interface{}) error {
 	for _, change := range changes {
 		change.Apply(item)
 	}
-	go func() {
-		if this.listener != nil {
-			this.listener.PropertyChangeNotification(this.ToNotificationsSet(changes))
+	if this.listener != nil {
+		n, e := this.createUpdateNotification(changes)
+		if e != nil {
+			return e
 		}
-	}()
+		go this.listener.PropertyChangeNotification(n)
+	}
 	return nil
 }
 
-func (this *Cache) Delete(k string) {
+func (this *Cache) Delete(k string) error {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	item, ok := this.cache[k]
 	if !ok {
-		return
+		return errors.New("Key " + k + " not found")
 	}
 	delete(this.cache, k)
 	if this.listener != nil {
-		go this.listener.ModelItemDeleted(item)
+		n, e := this.createDeleteNotification(item)
+		if e != nil {
+			return e
+		}
+		go this.listener.PropertyChangeNotification(n)
 	}
+	return nil
 }
 
 func (this *Cache) Collect(f func(interface{}) interface{}) map[string]interface{} {
@@ -153,34 +166,4 @@ func (this *Cache) Collect(f func(interface{}) interface{}) map[string]interface
 		result[k] = f(v)
 	}
 	return result
-}
-
-func (this *Cache) ToNotificationsSet(changes []*updater.Change) *types.NotificationSet {
-	set := &types.NotificationSet{}
-	set.Type = this.typeName
-	set.Source = this.source
-	set.Notifys = make([]*types.Notification, len(changes))
-	this.mtx.Lock()
-	set.Sequence = this.sequence
-	this.sequence++
-	this.mtx.Unlock()
-	for i, change := range changes {
-		n := &types.Notification{}
-		n.PropertyId = change.PropertyId()
-		obj := object.New([]byte{}, 0, "", this.introspector.Registry())
-		err := obj.Add(change.OldValue())
-		if err != nil {
-			return nil
-		}
-		n.OldValue = obj.Data()
-
-		obj = object.New([]byte{}, 0, "", this.introspector.Registry())
-		err = obj.Add(change.NewValue())
-		if err != nil {
-			return nil
-		}
-		n.NewValue = obj.Data()
-		set.Notifys[i] = n
-	}
-	return set
 }
