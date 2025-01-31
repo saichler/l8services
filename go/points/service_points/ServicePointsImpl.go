@@ -20,6 +20,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	sp.structName2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
+	introspector.Registry().Register(&types.NotificationSet{})
 	return sp
 }
 
