@@ -85,11 +85,11 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 	case types.NotificationType_Add:
 		return h.Post(npb, vnic)
 	case types.NotificationType_Replace:
-		return h.Put(pb, vnic)
+		return h.Put(npb, vnic)
 	case types.NotificationType_Update:
-		return h.Patch(pb, vnic)
+		return h.Patch(npb, vnic)
 	case types.NotificationType_Delete:
-		return h.Delete(pb, vnic)
+		return h.Delete(npb, vnic)
 	default:
 		return nil, errors.New("invalid notification type, ignoring")
 	}
