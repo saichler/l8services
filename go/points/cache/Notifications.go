@@ -15,10 +15,8 @@ func (this *Cache) createNotificationSet(t types.NotificationType, l int) *types
 	notificationSet.Source = this.source
 	notificationSet.Type = t
 	notificationSet.NotificationList = make([]*types.Notification, l)
-	this.mtx.Lock()
 	notificationSet.Sequence = this.sequence
 	this.sequence++
-	this.mtx.Unlock()
 	return notificationSet
 }
 
