@@ -22,7 +22,7 @@ func (this *Cache) createNotificationSet(t types.NotificationType, l int) *types
 
 func (this *Cache) createAddNotification(any interface{}) (*types.NotificationSet, error) {
 	notificationSet := this.createNotificationSet(types.NotificationType_Add, 1)
-	obj := object.New([]byte{}, 0, "", this.introspector.Registry())
+	obj := object.NewEncode([]byte{}, 0)
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (this *Cache) createAddNotification(any interface{}) (*types.NotificationSe
 
 func (this *Cache) createReplaceNotification(any interface{}) (*types.NotificationSet, error) {
 	notificationSet := this.createNotificationSet(types.NotificationType_Replace, 1)
-	obj := object.New([]byte{}, 0, "", this.introspector.Registry())
+	obj := object.NewEncode([]byte{}, 0)
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (this *Cache) createReplaceNotification(any interface{}) (*types.Notificati
 
 func (this *Cache) createDeleteNotification(any interface{}) (*types.NotificationSet, error) {
 	notificationSet := this.createNotificationSet(types.NotificationType_Delete, 1)
-	obj := object.New([]byte{}, 0, "", this.introspector.Registry())
+	obj := object.NewEncode([]byte{}, 0)
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
@@ -64,14 +64,14 @@ func (this *Cache) createUpdateNotification(changes []*updater.Change) (*types.N
 	for i, change := range changes {
 		n := &types.Notification{}
 		n.PropertyId = change.PropertyId()
-		obj := object.New([]byte{}, 0, "", this.introspector.Registry())
+		obj := object.NewEncode([]byte{}, 0)
 		err := obj.Add(change.OldValue())
 		if err != nil {
 			return nil, err
 		}
 		n.OldValue = obj.Data()
 
-		obj = object.New([]byte{}, 0, "", this.introspector.Registry())
+		obj = object.NewEncode([]byte{}, 0)
 		err = obj.Add(change.NewValue())
 		if err != nil {
 			return nil, err
@@ -87,11 +87,11 @@ func ItemOf(n *types.NotificationSet, i interfaces.IIntrospector) (interface{}, 
 	case types.NotificationType_Replace:
 		fallthrough
 	case types.NotificationType_Add:
-		obj := object.New(n.NotificationList[0].NewValue, 0, "", i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, "", i.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Delete:
-		obj := object.New(n.NotificationList[0].OldValue, 0, "", i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, "", i.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Update:
@@ -108,7 +108,7 @@ func ItemOf(n *types.NotificationSet, i interfaces.IIntrospector) (interface{}, 
 			if e != nil {
 				panic(e)
 			}
-			obj := object.New(notif.NewValue, 0, "", i.Registry())
+			obj := object.NewDecode(notif.NewValue, 0, "", i.Registry())
 			v, e := obj.Get()
 			if e != nil {
 				return nil, e
