@@ -10,17 +10,17 @@ import (
 func TestServicePoints(t *testing.T) {
 	testsp := infra.NewTestServicePointHandler("testsp")
 	pb := &tests.TestProto{}
-	err := globals.ServicePoints().RegisterServicePoint(nil, testsp)
+	err := globals.ServicePoints().RegisterServicePoint(0, nil, testsp)
 	if err == nil {
 		log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(pb, nil)
+	err = globals.ServicePoints().RegisterServicePoint(0, pb, nil)
 	if err == nil {
 		log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(pb, testsp)
+	err = globals.ServicePoints().RegisterServicePoint(0, pb, testsp)
 	if err != nil {
 		log.Fail(t, err)
 		return

@@ -10,21 +10,21 @@ import (
 )
 
 type ServicePointsImpl struct {
-	structName2ServicePoint *String2ServicePointMap
-	introspector            interfaces.IIntrospector
-	config                  *types.VNicConfig
+	type2ServicePoint *String2ServicePointMap
+	introspector      interfaces.IIntrospector
+	config            *types.VNicConfig
 }
 
 func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicConfig) interfaces.IServicePoints {
 	sp := &ServicePointsImpl{}
-	sp.structName2ServicePoint = NewString2ServicePointMap()
+	sp.type2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
 	introspector.Registry().Register(&types.NotificationSet{})
 	return sp
 }
 
-func (servicePoints *ServicePointsImpl) RegisterServicePoint(pb proto.Message, handler interfaces.IServicePointHandler) error {
+func (servicePoints *ServicePointsImpl) RegisterServicePoint(area int32, pb proto.Message, handler interfaces.IServicePointHandler) error {
 	if pb == nil {
 		return errors.New("cannot register handler with nil proto")
 	}
@@ -36,14 +36,14 @@ func (servicePoints *ServicePointsImpl) RegisterServicePoint(pb proto.Message, h
 	if err != nil {
 		return err
 	}
-	servicePoints.structName2ServicePoint.Put(typ.Name(), handler)
-	servicePoints.config.Topics[typ.Name()] = true
+	servicePoints.type2ServicePoint.Put(typ.Name(), handler)
+	interfaces.AddTopic(servicePoints.config, area, typ.Name())
 	return nil
 }
 
 func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
 	tName := reflect.ValueOf(pb).Elem().Type().Name()
-	h, ok := servicePoints.structName2ServicePoint.Get(tName)
+	h, ok := servicePoints.type2ServicePoint.Get(tName)
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + tName)
 	}
@@ -68,7 +68,7 @@ func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Ac
 
 func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
 	notification := pb.(*types.NotificationSet)
-	h, ok := servicePoints.structName2ServicePoint.Get(notification.TypeName)
+	h, ok := servicePoints.type2ServicePoint.Get(notification.TypeName)
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + notification.TypeName)
 	}
@@ -96,9 +96,9 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 }
 
 func (servicePoints *ServicePointsImpl) ServicePointHandler(topic string) (interfaces.IServicePointHandler, bool) {
-	return servicePoints.structName2ServicePoint.Get(topic)
+	return servicePoints.type2ServicePoint.Get(topic)
 }
 
-func (servicePoints *ServicePointsImpl) Topics() map[string]bool {
-	return servicePoints.structName2ServicePoint.Topics()
+func (servicePoints *ServicePointsImpl) Areas() *types.Areas {
+	return servicePoints.config.ServiceAreas
 }

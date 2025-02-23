@@ -22,8 +22,7 @@ func init() {
 	config := &types.VNicConfig{MaxDataSize: resources.DEFAULT_MAX_DATA_SIZE,
 		RxQueueSize: resources.DEFAULT_QUEUE_SIZE,
 		TxQueueSize: resources.DEFAULT_QUEUE_SIZE,
-		LocalAlias:  "servicepointstest",
-		Topics:      map[string]bool{}}
+		LocalAlias:  "servicepointstest"}
 	security := shallow_security.CreateShallowSecurityProvider()
 	inspect := inspect2.NewIntrospect(registry)
 	sps := service_points.NewServicePoints(inspect, config)
