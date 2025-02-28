@@ -47,20 +47,24 @@ func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Ac
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + tName)
 	}
+	var resourcs interfaces.IResources
+	if vnic != nil {
+		resourcs = vnic.Resources()
+	}
 	if msg != nil && msg.FailMsg != "" {
-		return h.Failed(pb, vnic, msg)
+		return h.Failed(pb, resourcs, msg)
 	}
 	switch action {
 	case types.Action_POST:
-		return h.Post(pb, vnic)
+		return h.Post(pb, resourcs)
 	case types.Action_PUT:
-		return h.Put(pb, vnic)
+		return h.Put(pb, resourcs)
 	case types.Action_PATCH:
-		return h.Patch(pb, vnic)
+		return h.Patch(pb, resourcs)
 	case types.Action_DELETE:
-		return h.Delete(pb, vnic)
+		return h.Delete(pb, resourcs)
 	case types.Action_GET:
-		return h.Get(pb, vnic)
+		return h.Get(pb, resourcs)
 	default:
 		return nil, errors.New("invalid action, ignoring")
 	}
@@ -72,8 +76,13 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + notification.TypeName)
 	}
+	var resourcs interfaces.IResources
+	if vnic != nil {
+		resourcs = vnic.Resources()
+	}
+	
 	if msg != nil && msg.FailMsg != "" {
-		return h.Failed(pb, vnic, msg)
+		return h.Failed(pb, resourcs, msg)
 	}
 	item, err := cache.ItemOf(notification, servicePoints.introspector)
 	if err != nil {
@@ -83,13 +92,13 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 
 	switch notification.Type {
 	case types.NotificationType_Add:
-		return h.Post(npb, vnic)
+		return h.Post(npb, resourcs)
 	case types.NotificationType_Replace:
-		return h.Put(npb, vnic)
+		return h.Put(npb, resourcs)
 	case types.NotificationType_Update:
-		return h.Patch(npb, vnic)
+		return h.Patch(npb, resourcs)
 	case types.NotificationType_Delete:
-		return h.Delete(npb, vnic)
+		return h.Delete(npb, resourcs)
 	default:
 		return nil, errors.New("invalid notification type, ignoring")
 	}
@@ -99,6 +108,6 @@ func (servicePoints *ServicePointsImpl) ServicePointHandler(topic string) (inter
 	return servicePoints.type2ServicePoint.Get(topic)
 }
 
-func (servicePoints *ServicePointsImpl) Areas() *types.Areas {
+func (servicePoints *ServicePointsImpl) ServiceAreas() *types.Areas {
 	return servicePoints.config.ServiceAreas
 }

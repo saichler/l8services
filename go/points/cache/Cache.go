@@ -86,18 +86,20 @@ func (this *Cache) Put(k string, v interface{}) error {
 	if changes == nil {
 		return nil
 	}
-	//Apply the changes to the existing item
-	for _, change := range changes {
-		change.Apply(item)
-	}
 
 	if this.listener != nil {
-		n, e := this.createReplaceNotification(itemClone)
+		n, e := this.createReplaceNotification(item, itemClone)
 		if e != nil {
 			return e
 		}
 		go this.listener.PropertyChangeNotification(n)
 	}
+
+	//Apply the changes to the existing item
+	for _, change := range changes {
+		change.Apply(item)
+	}
+
 	return nil
 }
 
