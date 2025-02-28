@@ -91,20 +91,23 @@ func CreateUpdateNotification(changes []*updater.Change, typeName, source string
 	for i, change := range changes {
 		n := &types.Notification{}
 		n.PropertyId = change.PropertyId()
-		obj := object.NewEncode([]byte{}, 0)
-		err := obj.Add(change.OldValue())
-		if err != nil {
-			return nil, err
+		if change.OldValue() != nil {
+			obj := object.NewEncode([]byte{}, 0)
+			err := obj.Add(change.OldValue())
+			if err != nil {
+				return nil, err
+			}
+			n.OldValue = obj.Data()
 		}
-		n.OldValue = obj.Data()
-
-		obj = object.NewEncode([]byte{}, 0)
-		err = obj.Add(change.NewValue())
-		if err != nil {
-			return nil, err
+		if change.NewValue() != nil {
+			obj := object.NewEncode([]byte{}, 0)
+			err := obj.Add(change.NewValue())
+			if err != nil {
+				return nil, err
+			}
+			n.NewValue = obj.Data()
+			notificationSet.NotificationList[i] = n
 		}
-		n.NewValue = obj.Data()
-		notificationSet.NotificationList[i] = n
 	}
 	return notificationSet, nil
 }

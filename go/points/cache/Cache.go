@@ -115,15 +115,15 @@ func (this *Cache) Update(k string, v interface{}) error {
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
-	putUpdater := updater.NewUpdater(this.introspector, false)
+	patchUpdater := updater.NewUpdater(this.introspector, false)
 	//update the item clone with the new element where nil is valid
-	err := putUpdater.Update(itemClone, v)
+	err := patchUpdater.Update(itemClone, v)
 	if err != nil {
 		return err
 	}
 
 	//if there are changes, then nothing to do
-	changes := putUpdater.Changes()
+	changes := patchUpdater.Changes()
 	if changes == nil {
 		return nil
 	}
