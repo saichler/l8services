@@ -24,7 +24,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	return sp
 }
 
-func (servicePoints *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message, handler interfaces.IServicePointHandler) error {
+func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message, handler interfaces.IServicePointHandler) error {
 	if pb == nil {
 		return errors.New("cannot register handler with nil proto")
 	}
@@ -32,18 +32,18 @@ func (servicePoints *ServicePointsImpl) RegisterServicePoint(vlan int32, pb prot
 	if handler == nil {
 		return errors.New("cannot register nil handler for type " + typ.Name())
 	}
-	_, err := servicePoints.introspector.Registry().RegisterType(typ)
+	_, err := this.introspector.Registry().RegisterType(typ)
 	if err != nil {
 		return err
 	}
-	servicePoints.type2ServicePoint.Put(typ.Name(), handler)
-	interfaces.AddTopic(servicePoints.config, vlan, typ.Name())
+	this.type2ServicePoint.Put(typ.Name(), handler)
+	interfaces.AddTopic(this.config, vlan, typ.Name())
 	return nil
 }
 
-func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
+func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
 	tName := reflect.ValueOf(pb).Elem().Type().Name()
-	h, ok := servicePoints.type2ServicePoint.Get(tName)
+	h, ok := this.type2ServicePoint.Get(tName)
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + tName)
 	}
@@ -54,6 +54,14 @@ func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Ac
 	if msg != nil && msg.FailMsg != "" {
 		return h.Failed(pb, resourcs, msg)
 	}
+
+	if h.Transactional() && resourcs != nil && msg != nil {
+		resp, err, finish := this.performTransaction(msg, vnic)
+		if finish {
+			return resp, err
+		}
+	}
+
 	switch action {
 	case types.Action_POST:
 		return h.Post(pb, resourcs)
@@ -70,9 +78,9 @@ func (servicePoints *ServicePointsImpl) Handle(pb proto.Message, action types.Ac
 	}
 }
 
-func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
+func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
 	notification := pb.(*types.NotificationSet)
-	h, ok := servicePoints.type2ServicePoint.Get(notification.TypeName)
+	h, ok := this.type2ServicePoint.Get(notification.TypeName)
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + notification.TypeName)
 	}
@@ -84,7 +92,7 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 	if msg != nil && msg.FailMsg != "" {
 		return h.Failed(pb, resourcs, msg)
 	}
-	item, err := cache.ItemOf(notification, servicePoints.introspector)
+	item, err := cache.ItemOf(notification, this.introspector)
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +112,6 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 	}
 }
 
-func (servicePoints *ServicePointsImpl) ServicePointHandler(topic string) (interfaces.IServicePointHandler, bool) {
-	return servicePoints.type2ServicePoint.Get(topic)
+func (this *ServicePointsImpl) ServicePointHandler(topic string) (interfaces.IServicePointHandler, bool) {
+	return this.type2ServicePoint.Get(topic)
 }
