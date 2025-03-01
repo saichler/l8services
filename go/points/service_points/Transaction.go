@@ -12,15 +12,15 @@ func (this *ServicePointsImpl) performTransaction(msg *types.Message, vnic inter
 	leader := hc.Leader(msg.Type, msg.Vlan)
 	uuid := vnic.Resources().Config().LocalUuid
 
-	msg.Tr = &types.Transaction{}
-	msg.Tr.Id = interfaces.NewUuid()
-
 	if leader != uuid && msg.Tr == nil {
 		//This is a new transaction, forward to the leader
 		r, err := vnic.Forward(msg, leader)
 		resp, _ := r.(proto.Message)
 		return resp, err, true
 	} else if leader == uuid && msg.Tr == nil {
+		msg.Tr = &types.Transaction{}
+		msg.Tr.Id = interfaces.NewUuid()
+		
 		followers := hc.Uuids(msg.Topic, msg.Vlan)
 		delete(followers, leader)
 		for follower, _ := range followers {
