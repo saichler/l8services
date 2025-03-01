@@ -107,7 +107,3 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 func (servicePoints *ServicePointsImpl) ServicePointHandler(topic string) (interfaces.IServicePointHandler, bool) {
 	return servicePoints.type2ServicePoint.Get(topic)
 }
-
-func (servicePoints *ServicePointsImpl) Vlans() *types.Vlans {
-	return servicePoints.config.Vlans
-}
