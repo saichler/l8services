@@ -24,7 +24,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	return sp
 }
 
-func (servicePoints *ServicePointsImpl) RegisterServicePoint(area int32, pb proto.Message, handler interfaces.IServicePointHandler) error {
+func (servicePoints *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message, handler interfaces.IServicePointHandler) error {
 	if pb == nil {
 		return errors.New("cannot register handler with nil proto")
 	}
@@ -37,7 +37,7 @@ func (servicePoints *ServicePointsImpl) RegisterServicePoint(area int32, pb prot
 		return err
 	}
 	servicePoints.type2ServicePoint.Put(typ.Name(), handler)
-	interfaces.AddTopic(servicePoints.config, area, typ.Name())
+	interfaces.AddTopic(servicePoints.config, vlan, typ.Name())
 	return nil
 }
 
@@ -80,7 +80,7 @@ func (servicePoints *ServicePointsImpl) Notify(pb proto.Message, action types.Ac
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
-	
+
 	if msg != nil && msg.FailMsg != "" {
 		return h.Failed(pb, resourcs, msg)
 	}
@@ -108,6 +108,6 @@ func (servicePoints *ServicePointsImpl) ServicePointHandler(topic string) (inter
 	return servicePoints.type2ServicePoint.Get(topic)
 }
 
-func (servicePoints *ServicePointsImpl) ServiceAreas() *types.Areas {
-	return servicePoints.config.ServiceAreas
+func (servicePoints *ServicePointsImpl) Vlans() *types.Vlans {
+	return servicePoints.config.Vlans
 }
