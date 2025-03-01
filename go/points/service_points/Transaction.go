@@ -9,7 +9,7 @@ import (
 
 func (this *ServicePointsImpl) performTransaction(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error, bool) {
 	hc := health.Health(vnic.Resources())
-	leader := hc.Leader(msg.Topic, msg.Vlan)
+	leader := hc.Leader(msg.Type, msg.Vlan)
 	uuid := vnic.Resources().Config().LocalUuid
 
 	msg.Tr = &types.Transaction{}
