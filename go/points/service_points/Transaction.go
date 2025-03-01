@@ -20,8 +20,8 @@ func (this *ServicePointsImpl) performTransaction(msg *types.Message, vnic inter
 	} else if leader == uuid && msg.Tr == nil {
 		msg.Tr = &types.Transaction{}
 		msg.Tr.Id = interfaces.NewUuid()
-		
-		followers := hc.Uuids(msg.Topic, msg.Vlan)
+
+		followers := hc.Uuids(msg.Type, msg.Vlan)
 		delete(followers, leader)
 		for follower, _ := range followers {
 			_, err := vnic.Forward(msg, follower)
