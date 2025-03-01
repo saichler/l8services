@@ -160,12 +160,15 @@ func (this *Cache) Delete(k string) error {
 	return nil
 }
 
-func (this *Cache) Collect(f func(interface{}) interface{}) map[string]interface{} {
+func (this *Cache) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
 	result := map[string]interface{}{}
 	this.mtx.RLock()
 	defer this.mtx.RUnlock()
 	for k, v := range this.cache {
-		result[k] = f(v)
+		ok, elem := f(v)
+		if ok {
+			result[k] = elem
+		}
 	}
 	return result
 }
