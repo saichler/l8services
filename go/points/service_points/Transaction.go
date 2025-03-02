@@ -28,7 +28,7 @@ func (this *ServicePointsImpl) runTransaction(h interfaces.IServicePointHandler,
 
 		msg.Tr.State = types.TransactionState_Commit
 
-		if isLeader {
+		if !isLeader {
 			r, err := vnic.Forward(msg, leader)
 			resp, _ := r.(proto.Message)
 			return resp, err
