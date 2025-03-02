@@ -7,12 +7,16 @@ import (
 	"github.com/saichler/shared/go/types"
 	"google.golang.org/protobuf/proto"
 	"reflect"
+	"sync"
 )
 
 type ServicePointsImpl struct {
 	type2ServicePoint *String2ServicePointMap
 	introspector      interfaces.IIntrospector
 	config            *types.VNicConfig
+	transactions      map[string]*types.Message
+	trCond            *sync.Cond
+	trState           map[string]bool
 }
 
 func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicConfig) interfaces.IServicePoints {
@@ -20,6 +24,8 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	sp.type2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
+	sp.transactions = make(map[string]*types.Message)
+	sp.trCond = sync.NewCond(&sync.Mutex{})
 	introspector.Registry().Register(&types.NotificationSet{})
 	return sp
 }
@@ -51,17 +57,22 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
+
 	if msg != nil && msg.FailMsg != "" {
 		return h.Failed(pb, resourcs, msg)
 	}
 
 	if h.Transactional() && resourcs != nil && msg != nil {
-		resp, err, finish := this.performTransaction(msg, vnic)
-		if finish {
-			return resp, err
-		}
+		return this.runTransaction(h, pb, msg, vnic)
 	}
 
+	resp, err := this.doAction(h, action, pb, resourcs)
+
+	return resp, err
+}
+
+func (this *ServicePointsImpl) doAction(h interfaces.IServicePointHandler, action types.Action,
+	pb proto.Message, resourcs interfaces.IResources) (proto.Message, error) {
 	switch action {
 	case types.Action_POST:
 		return h.Post(pb, resourcs)
