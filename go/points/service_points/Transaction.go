@@ -126,6 +126,7 @@ func (this *ServicePointsImpl) requestLock(msg *types.Message, vnic interfaces.I
 	delete(targets, vnic.Resources().Config().LocalUuid)
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
+	this.trState = make(map[string]bool)
 	for target, _ := range targets {
 		go this.request(vnic, msg, target)
 	}
@@ -148,6 +149,7 @@ func (this *ServicePointsImpl) requestCommit(msg *types.Message, vnic interfaces
 	delete(targets, vnic.Resources().Config().LocalUuid)
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
+	this.trState = make(map[string]bool)
 	for target, _ := range targets {
 		go this.request(vnic, msg, target)
 	}
@@ -170,6 +172,7 @@ func (this *ServicePointsImpl) requestFinish(msg *types.Message, vnic interfaces
 	delete(targets, vnic.Resources().Config().LocalUuid)
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
+	this.trState = make(map[string]bool)
 	for target, _ := range targets {
 		go this.request(vnic, msg, target)
 	}
