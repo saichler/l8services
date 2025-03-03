@@ -14,7 +14,7 @@ type ServicePointsImpl struct {
 	type2ServicePoint *String2ServicePointMap
 	introspector      interfaces.IIntrospector
 	config            *types.VNicConfig
-	transactions      map[string]*types.Message
+	transactions      map[string]proto.Message
 	trCond            *sync.Cond
 	trState           map[string]bool
 }
@@ -24,7 +24,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	sp.type2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
-	sp.transactions = make(map[string]*types.Message)
+	sp.transactions = make(map[string]proto.Message)
 	sp.trCond = sync.NewCond(&sync.Mutex{})
 	introspector.Registry().Register(&types.NotificationSet{})
 	return sp

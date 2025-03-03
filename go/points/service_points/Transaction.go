@@ -3,6 +3,7 @@ package service_points
 import (
 	"errors"
 	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
 	"google.golang.org/protobuf/proto"
@@ -17,7 +18,7 @@ func (this *ServicePointsImpl) runTransaction(h interfaces.IServicePointHandler,
 
 	if msg.Tr == nil {
 		//Step 1 create the transaction
-		ok := this.createTransaction(msg)
+		ok := this.createTransaction(msg, vnic.Resources())
 		if !ok {
 			return msg.Tr, errors.New("transaction: Cannot start while another is running")
 		}
@@ -43,7 +44,7 @@ func (this *ServicePointsImpl) runTransaction(h interfaces.IServicePointHandler,
 	case types.TransactionState_Commit:
 		return this.commit(isLeader, msg, vnic, h, pb)
 	case types.TransactionState_Lock:
-		return this.lock(msg)
+		return this.lock(msg, vnic.Resources())
 	case types.TransactionState_Rollback:
 		return this.rollback(msg)
 	case types.TransactionState_Finish:
@@ -69,12 +70,12 @@ func (this *ServicePointsImpl) rollback(msg *types.Message) (proto.Message, erro
 	return msg.Tr, nil
 }
 
-func (this *ServicePointsImpl) lock(msg *types.Message) (proto.Message, error) {
+func (this *ServicePointsImpl) lock(msg *types.Message, resourcs interfaces.IResources) (proto.Message, error) {
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 	if this.transactions[msg.Type] == nil {
 		msg.Tr.State = types.TransactionState_Locked
-		this.transactions[msg.Type] = msg
+		this.setTransactionObject(msg, resourcs)
 		return msg.Tr, nil
 	} else {
 		msg.Tr.State = types.TransactionState_Rollback
@@ -101,6 +102,7 @@ func (this *ServicePointsImpl) commit(isLeader bool, msg *types.Message,
 		}
 	}
 
+	pb = this.transactions[msg.Type]
 	resp, err := this.doAction(h, msg.Action, pb, vnic.Resources())
 
 	if msg != nil && msg.Tr != nil {
@@ -128,7 +130,7 @@ func (this *ServicePointsImpl) commit(isLeader bool, msg *types.Message,
 	return msg.Tr, nil
 }
 
-func (this *ServicePointsImpl) createTransaction(msg *types.Message) bool {
+func (this *ServicePointsImpl) createTransaction(msg *types.Message, resourcs interfaces.IResources) bool {
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 
@@ -140,9 +142,17 @@ func (this *ServicePointsImpl) createTransaction(msg *types.Message) bool {
 		msg.Tr.State = types.TransactionState_Rollback
 		return false
 	}
-	this.trState = make(map[string]bool)
+	this.setTransactionObject(msg, resourcs)
 	this.transactions[msg.Type] = msg
 	return true
+}
+
+func (this *ServicePointsImpl) setTransactionObject(msg *types.Message, resourcs interfaces.IResources) {
+	obj, err := protocol.ProtoOf(msg, resourcs)
+	if err != nil {
+		panic("transaction: Failed to set object")
+	}
+	this.transactions[msg.Type] = obj
 }
 
 func (this *ServicePointsImpl) requestLock(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) bool {
