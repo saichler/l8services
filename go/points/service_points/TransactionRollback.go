@@ -24,7 +24,7 @@ func (this *Transactions) localRollback(msg *types.Message) *types.Tr {
 		return msg.Tr
 	}
 
-	if tr.lastState != types.TrState_Commited {
+	if tr.state != types.TrState_Commited {
 		msg.Tr.State = types.TrState_Errored
 		msg.Tr.Error = "Rollback: Transaction state is not in commited state"
 		return msg.Tr

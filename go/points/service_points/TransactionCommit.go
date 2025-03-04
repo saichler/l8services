@@ -1,6 +1,7 @@
 package service_points
 
 import (
+	"fmt"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
 	"time"
@@ -25,9 +26,11 @@ func (this *Transactions) localCommit(msg *types.Message, vnic interfaces.IVirtu
 		return msg.Tr
 	}
 
-	if tr.lastState != types.TrState_Locked {
+	if tr.state != types.TrState_Locked {
 		msg.Tr.State = types.TrState_Errored
 		msg.Tr.Error = "Commit: Transaction is not in locked state"
+		alias := vnic.Resources().Config().LocalAlias
+		fmt.Println(alias)
 		return msg.Tr
 	}
 
@@ -53,13 +56,15 @@ func (this *Transactions) localCommit(msg *types.Message, vnic interfaces.IVirtu
 
 	if err != nil {
 		this.localRollback(msg)
-		this.localClean(msg)
+		_, nextTr := this.localClean(msg)
+		notifyNextTR(nextTr)
 		msg.Tr.State = types.TrState_Errored
 		msg.Tr.Error = "Commit: " + err.Error()
 		return msg.Tr
 	}
 
-	this.localClean(msg)
+	_, nextTr := this.localClean(msg)
+	notifyNextTR(nextTr)
 
 	msg.Tr.State = types.TrState_Commited
 	return msg.Tr

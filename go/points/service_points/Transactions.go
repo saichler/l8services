@@ -11,7 +11,13 @@ type Transactions struct {
 	currentTransactions map[string]*Transaction
 	pendingTransactions map[string][]*Transaction
 	cond                *sync.Cond
-	pendingPeerRequests map[string]bool
+	pendingPeerRequests map[string]*PeerRequests
+}
+
+type PeerRequests struct {
+	trId         string
+	pending      map[string]bool
+	pendingCount int
 }
 
 type Transaction struct {
@@ -20,7 +26,8 @@ type Transaction struct {
 	pb        proto.Message
 	handler   interfaces.IServicePointHandler
 	startTime int64
-	lastState types.TrState
+	state     types.TrState
+	cond      *sync.Cond
 }
 
 func newTransactions() *Transactions {
@@ -34,18 +41,23 @@ func newTransactions() *Transactions {
 func (this *Transactions) startTransactions(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) proto.Message {
 	ok, tr := this.createTransaction(msg, vnic.Resources())
 	if !ok {
-		return msg
+		return msg.Tr
 	}
+
+	tr.cond.L.Lock()
+	for tr.state == types.TrState_Pending {
+		tr.cond.Wait()
+	}
+	tr.cond.L.Unlock()
 
 	ok = this.topicLock(msg, vnic)
 	if !ok {
 		msg.Tr.State = types.TrState_Errored
 		msg.Tr.Error = "Lock: Failed to acquire topic lock"
+		_, nextTr := this.localClean(msg)
+		notifyNextTR(nextTr)
 		return msg.Tr
 	}
-
-	msg.Tr.State = types.TrState_Locked
-	tr.lastState = msg.Tr.State
 
 	isLeader, leaderUuid := IsLeader(vnic.Resources(), vnic.Resources().Config().LocalUuid, msg.Type, msg.Vlan)
 
@@ -69,8 +81,12 @@ func (this *Transactions) runTransaction(msg *types.Message, vnic interfaces.IVi
 	case types.TrState_Rollback:
 		return this.localRollback(msg)
 	case types.TrState_Clean:
-		return this.localClean(msg)
+		pb, tr := this.localClean(msg)
+		notifyNextTR(tr)
+		return pb
+	case types.TrState_Errored:
+		return msg.Tr
 	default:
-		panic("Unexpected transaction state")
+		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
 	}
 }

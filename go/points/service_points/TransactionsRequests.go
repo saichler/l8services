@@ -8,14 +8,15 @@ import (
 
 func (this *Transactions) requestFromPeer(vnic interfaces.IVirtualNetworkInterface, msg *types.Message, target string) {
 	this.cond.L.Lock()
-	this.pendingPeerRequests[target] = true
+	this.pendingPeerRequests[msg.Tr.Id].pending[target] = true
+	this.pendingPeerRequests[msg.Tr.Id].pendingCount++
 	this.cond.L.Unlock()
 
 	resp, err := vnic.Forward(msg, target)
 	if err != nil {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
-		this.pendingPeerRequests[target] = false
+		this.pendingPeerRequests[msg.Tr.Id].pending[target] = false
 		this.cond.Broadcast()
 		return
 	}
@@ -26,14 +27,14 @@ func (this *Transactions) requestFromPeer(vnic interfaces.IVirtualNetworkInterfa
 	defer this.cond.L.Unlock()
 
 	if tr.State == types.TrState_Errored {
-		this.pendingPeerRequests[target] = false
-		this.cond.Broadcast()
-		return
+		this.pendingPeerRequests[msg.Tr.Id].pending[target] = false
 	}
 
-	delete(this.pendingPeerRequests, target)
-	if len(this.pendingPeerRequests) == 0 {
-		this.cond.Broadcast()
+	if this.pendingPeerRequests[msg.Tr.Id] != nil {
+		this.pendingPeerRequests[msg.Tr.Id].pendingCount--
+		if this.pendingPeerRequests[msg.Tr.Id].pendingCount == 0 {
+			this.cond.Broadcast()
+		}
 	}
 }
 
@@ -46,8 +47,10 @@ func (this *Transactions) requestFromAllPeers(msg *types.Message, vnic interface
 	defer this.cond.L.Unlock()
 
 	if this.pendingPeerRequests == nil {
-		this.pendingPeerRequests = make(map[string]bool)
+		this.pendingPeerRequests = make(map[string]*PeerRequests)
 	}
+
+	this.pendingPeerRequests[msg.Tr.Id] = &PeerRequests{trId: msg.Tr.Id, pending: make(map[string]bool), pendingCount: 0}
 
 	for target, _ := range targets {
 		go this.requestFromPeer(vnic, msg, target)
@@ -56,12 +59,19 @@ func (this *Transactions) requestFromAllPeers(msg *types.Message, vnic interface
 	//@TODO - implement timeout
 	this.cond.Wait()
 
-	if len(this.pendingPeerRequests) != 0 {
-		msg.Tr.State = types.TrState_Errored
-		for target, _ := range targets {
-			go vnic.Forward(msg, target)
+	peerRequests := this.pendingPeerRequests[msg.Tr.Id]
+
+	ok := true
+	for _, ok = range peerRequests.pending {
+		if !ok {
+			break
 		}
-		this.pendingPeerRequests = make(map[string]bool)
+	}
+
+	delete(this.pendingPeerRequests, msg.Tr.Id)
+
+	if !ok {
+		msg.Tr.State = types.TrState_Errored
 		return false
 	}
 

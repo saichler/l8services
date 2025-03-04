@@ -4,7 +4,9 @@ import (
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/types"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -34,6 +36,29 @@ func TestTransaction(t *testing.T) {
 
 	if !doTransaction(eg1, 3, t) {
 		return
+	}
+
+}
+
+var trs = make([]*types.Tr, 0)
+var trsMtx = &sync.Mutex{}
+
+func TestParallel(t *testing.T) {
+	defer reset("TestTransaction")
+	for _, ts := range tsps {
+		ts.Tr = true
+	}
+	defer func() {
+		for _, ts := range tsps {
+			ts.Tr = false
+		}
+	}()
+	go do50Transactions(eg2)
+	go do50Transactions(eg4)
+	time.Sleep(time.Second * 5)
+	log.Info("Total:", len(trs))
+	for _, tr := range trs {
+		log.Info("Tr:", tr.State.String(), " ", tr.Id, " ", tr.Error)
 	}
 }
 
@@ -66,11 +91,23 @@ func doTransaction(vnic interfaces.IVirtualNetworkInterface, expected int, t *te
 	return true
 }
 
-func sendTransaction(nic interfaces.IVirtualNetworkInterface, t *testing.T) {
+func do50Transactions(nic interfaces.IVirtualNetworkInterface) bool {
+	for i := 0; i < 50; i++ {
+		sendTransaction(nic)
+	}
+	return true
+}
+
+func sendTransaction(nic interfaces.IVirtualNetworkInterface) {
 	pb := &tests.TestProto{MyString: "test"}
-	_, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
+	resp, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
 	if err != nil {
-		log.Fail(t, err.Error())
+		log.Error(err.Error())
 		return
 	}
+
+	tr := resp.(*types.Tr)
+	trsMtx.Lock()
+	defer trsMtx.Unlock()
+	trs = append(trs, tr)
 }
