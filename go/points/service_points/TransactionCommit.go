@@ -37,7 +37,7 @@ func (this *Transactions) localCommit(msg *types.Message, vnic interfaces.IVirtu
 		return msg.Tr
 	}
 
-	isLeader, _ := IsLeader(vnic.Resources(), vnic.Resources().Config().LocalUuid, msg.Topic, msg.Vlan)
+	isLeader, _ := IsLeader(vnic.Resources(), vnic.Resources().Config().LocalUuid, msg.Type, msg.Vlan)
 	if isLeader {
 		//send commit request to all peers
 		ok = this.topicCommit(msg, vnic)

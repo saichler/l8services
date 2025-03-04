@@ -59,7 +59,11 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 	}
 
 	if h.Transactional() && resourcs != nil && msg != nil {
-		return this.transactions.startTransactions(msg, vnic), nil
+		if msg.Tr == nil {
+			return this.transactions.startTransactions(msg, vnic), nil
+		} else {
+			return this.transactions.runTransaction(msg, vnic), nil
+		}
 	}
 
 	resp, err := this.doAction(h, action, pb, resourcs)
