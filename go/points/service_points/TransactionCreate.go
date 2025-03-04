@@ -10,7 +10,7 @@ import (
 func createTransaction(msg *types.Message, resourcs interfaces.IResources) (*Transaction, bool) {
 
 	tr := &Transaction{}
-	if msg.Tr != nil {
+	if msg.Tr == nil {
 		tr.id = interfaces.NewUuid()
 		msg.Tr = &types.Tr{}
 		msg.Tr.Id = tr.id

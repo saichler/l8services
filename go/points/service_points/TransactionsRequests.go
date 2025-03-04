@@ -56,7 +56,7 @@ func (this *Transactions) requestFromAllPeers(msg *types.Message, vnic interface
 	//@TODO - implement timeout
 	this.cond.Wait()
 
-	if len(this.pendingTransactions) != 0 {
+	if len(this.pendingPeerRequests) != 0 {
 		msg.Tr.State = types.TrState_Errored
 		for target, _ := range targets {
 			go vnic.Forward(msg, target)

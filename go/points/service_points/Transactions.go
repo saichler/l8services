@@ -40,6 +40,8 @@ func (this *Transactions) startTransactions(msg *types.Message, vnic interfaces.
 	ok = this.topicLock(msg, vnic)
 	if !ok {
 		msg.Tr.State = types.TrState_Errored
+		msg.Tr.Error = "Lock: Failed to acquire topic lock"
+		return msg.Tr
 	}
 
 	msg.Tr.State = types.TrState_Locked
@@ -54,6 +56,7 @@ func (this *Transactions) startTransactions(msg *types.Message, vnic interfaces.
 	}
 
 	msg.Tr.State = types.TrState_Commit
+
 	return this.runTransaction(msg, vnic)
 }
 
