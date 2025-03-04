@@ -42,14 +42,6 @@ func (this *Transactions) localCommit(msg *types.Message, vnic interfaces.IVirtu
 		//send commit request to all peers
 		ok = this.topicCommit(msg, vnic)
 		if !ok {
-			ok = this.topicRollback(msg, vnic)
-			if !ok {
-				msg.Tr.State = types.TrState_Errored
-				msg.Tr.Error = "Commit: Transaction failed to rollback"
-				this.topicClean(msg, vnic)
-				return msg.Tr
-			}
-			this.topicClean(msg, vnic)
 			msg.Tr.State = types.TrState_Errored
 			msg.Tr.Error = "Commit: Transaction failed to commit"
 			return msg.Tr
@@ -61,15 +53,12 @@ func (this *Transactions) localCommit(msg *types.Message, vnic interfaces.IVirtu
 
 	if err != nil {
 		this.localRollback(msg)
-		this.topicRollback(msg, vnic)
-		this.topicClean(msg, vnic)
 		this.localClean(msg)
 		msg.Tr.State = types.TrState_Errored
 		msg.Tr.Error = "Commit: " + err.Error()
 		return msg.Tr
 	}
 
-	this.topicClean(msg, vnic)
 	this.localClean(msg)
 
 	msg.Tr.State = types.TrState_Commited
