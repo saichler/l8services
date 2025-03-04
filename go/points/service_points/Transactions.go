@@ -49,13 +49,13 @@ func (this *Transactions) startTransactions(msg *types.Message, vnic interfaces.
 
 	isLeader, leaderUuid := IsLeader(vnic.Resources(), vnic.Resources().Config().LocalUuid, msg.Type, msg.Vlan)
 
+	msg.Tr.State = types.TrState_Commit
+
 	if !isLeader {
 		r, _ := vnic.Forward(msg, leaderUuid)
 		resp, _ := r.(proto.Message)
 		return resp
 	}
-
-	msg.Tr.State = types.TrState_Commit
 
 	return this.runTransaction(msg, vnic)
 }
