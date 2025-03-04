@@ -7,16 +7,13 @@ import (
 	"github.com/saichler/shared/go/types"
 	"google.golang.org/protobuf/proto"
 	"reflect"
-	"sync"
 )
 
 type ServicePointsImpl struct {
 	type2ServicePoint *String2ServicePointMap
 	introspector      interfaces.IIntrospector
 	config            *types.VNicConfig
-	transactions      map[string]proto.Message
-	trCond            *sync.Cond
-	trState           map[string]bool
+	transactions      *Transactions
 }
 
 func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicConfig) interfaces.IServicePoints {
@@ -24,8 +21,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	sp.type2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
-	sp.transactions = make(map[string]proto.Message)
-	sp.trCond = sync.NewCond(&sync.Mutex{})
+	sp.transactions = newTransactions()
 	introspector.Registry().Register(&types.NotificationSet{})
 	return sp
 }
@@ -63,7 +59,7 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 	}
 
 	if h.Transactional() && resourcs != nil && msg != nil {
-		return this.runTransaction(h, pb, msg, vnic)
+		return this.transactions.startTransactions(msg, vnic), nil
 	}
 
 	resp, err := this.doAction(h, action, pb, resourcs)
