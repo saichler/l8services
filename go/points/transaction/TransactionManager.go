@@ -81,6 +81,8 @@ func (this *TransactionManager) Run(msg *types.Message, vnic interfaces.IVirtual
 		this.commit(msg, vnic)
 	case types.TransactionState_Commited:
 		this.commited(msg)
+	case types.TransactionState_Rollback:
+		this.rollback(msg, vnic)
 	case types.TransactionState_Errored:
 	default:
 		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
@@ -184,6 +186,11 @@ func (this *TransactionManager) lock(msg *types.Message) {
 func (this *TransactionManager) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
 	tt.commit(msg, vnic, true)
+}
+
+func (this *TransactionManager) rollback(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
+	tt := this.topicTransaction(msg)
+	tt.rollback(msg, vnic, true)
 }
 
 func (this *TransactionManager) commited(msg *types.Message) {

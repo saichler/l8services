@@ -1,10 +1,7 @@
 package tests
 
 import (
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/types"
-	"sync"
 	"testing"
 	"time"
 )
@@ -26,22 +23,56 @@ func TestTransaction(t *testing.T) {
 		}
 	}()
 
-	if !doTransaction(eg3, 1, t) {
+	if !doTransaction(types.Action_POST, eg3, 1, t, true) {
 		return
 	}
 
-	if !doTransaction(eg3, 2, t) {
+	if !doTransaction(types.Action_POST, eg3, 2, t, true) {
 		return
 	}
 
-	if !doTransaction(eg1, 3, t) {
+	if !doTransaction(types.Action_POST, eg1, 3, t, true) {
 		return
 	}
 
 }
 
-var trs = make([]*types.Transaction, 0)
-var trsMtx = &sync.Mutex{}
+func TestTransactionPut(t *testing.T) {
+	defer reset("TestTransaction")
+	for _, ts := range tsps {
+		ts.Tr = true
+	}
+	defer func() {
+		for _, ts := range tsps {
+			ts.Tr = false
+		}
+	}()
+
+	if !doTransaction(types.Action_PUT, eg3, 1, t, true) {
+		return
+	}
+	if tsps["eg2"].PutNumber != 1 {
+		log.Fail(t, "Expected 1 put")
+	}
+}
+
+func TestTransactionPutRollback(t *testing.T) {
+	defer reset("TestTransaction")
+	for _, ts := range tsps {
+		ts.Tr = true
+		if ts.Name == "eg2" {
+			ts.ErrorMode = true
+		}
+	}
+
+	if !doTransaction(types.Action_PUT, eg3, 1, t, false) {
+		return
+	}
+	//2 put, one for the commit and 1 for the rollback
+	if tsps["eg4"].PutNumber != 2 {
+		log.Fail(t, "Expected 2 put")
+	}
+}
 
 func TestParallel(t *testing.T) {
 	defer reset("TestTransaction")
@@ -69,52 +100,39 @@ func TestParallel(t *testing.T) {
 	}
 }
 
-func doTransaction(vnic interfaces.IVirtualNetworkInterface, expected int, t *testing.T) bool {
-	pb := &tests.TestProto{MyString: "test"}
-	resp, err := vnic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
-	if err != nil {
-		log.Fail(t, err.Error())
-		return false
+func TestTransactionRollback(t *testing.T) {
+	defer reset("TestTransactionRollback")
+	for key, ts := range tsps {
+		ts.Tr = true
+		if key == "eg2" {
+			ts.ErrorMode = true
+		}
 	}
+	defer func() {
+		for _, ts := range tsps {
+			ts.Tr = false
+		}
+	}()
 
-	tr := resp.(*types.Transaction)
-	if tr.State != types.TransactionState_Commited {
-		log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State.String(), " ", tr.Error)
-		return false
-	}
-
-	if tsps["eg1"].PostNumber != expected {
-		log.Fail(t, "eg1 Expected post to be ", expected, " but it is ", tsps["eg1"].PostNumber)
-	}
-	if tsps["eg2"].PostNumber != expected {
-		log.Fail(t, "eg2 Expected post to be ", expected, " but it is ", tsps["eg2"].PostNumber)
-	}
-	if tsps["eg3"].PostNumber != expected {
-		log.Fail(t, "eg3 Expected post to be ", expected, " but it is ", tsps["eg3"].PostNumber)
-	}
-	if tsps["eg4"].PostNumber != expected {
-		log.Fail(t, "eg4 Expected post to be ", expected, " but it is ", tsps["eg4"].PostNumber)
-	}
-	return true
-}
-
-func do50Transactions(nic interfaces.IVirtualNetworkInterface) bool {
-	for i := 0; i < 50; i++ {
-		sendTransaction(nic)
-	}
-	return true
-}
-
-func sendTransaction(nic interfaces.IVirtualNetworkInterface) {
-	pb := &tests.TestProto{MyString: "test"}
-	resp, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
-	if err != nil {
-		log.Error(err.Error())
+	if !doTransaction(types.Action_POST, eg3, 1, t, false) {
 		return
 	}
 
-	tr := resp.(*types.Transaction)
-	trsMtx.Lock()
-	defer trsMtx.Unlock()
-	trs = append(trs, tr)
+	if !doTransaction(types.Action_POST, eg3, 2, t, false) {
+		return
+	}
+
+	if !doTransaction(types.Action_POST, eg1, 3, t, false) {
+		return
+	}
+
+	found := false
+	for _, ts := range tsps {
+		if ts.DeleteNumber > 0 {
+			found = true
+		}
+	}
+	if !found {
+		log.Fail(t, "Expected a rollback")
+	}
 }

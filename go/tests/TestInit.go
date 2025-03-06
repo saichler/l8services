@@ -63,6 +63,8 @@ func reset(name string) {
 		t.PatchNumber = 0
 		t.GetNumber = 0
 		t.FailedNumber = 0
+		t.ErrorMode = false
+		t.Tr = false
 	}
 }
 

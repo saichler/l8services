@@ -4,15 +4,17 @@ import (
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
+	"google.golang.org/protobuf/proto"
 	"strings"
 	"sync"
 	"time"
 )
 
 type TopicTransactions struct {
-	mtx        *sync.Mutex
-	pendingMap map[string]*types.Message
-	locked     *types.Message
+	mtx             *sync.Mutex
+	pendingMap      map[string]*types.Message
+	locked          *types.Message
+	preCommitObject proto.Message
 }
 
 func newTopicTransactions() *TopicTransactions {
@@ -101,15 +103,108 @@ func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtu
 			msg.Tr.Error = "Commit: Protocol Error: " + err.Error()
 			return false
 		}
+		ok := this.setPreCommitObject(msg, vnic)
+		if !ok {
+			msg.Tr.State = types.TransactionState_Errored
+			msg.Tr.Error = "Commit: Could not set pre-commit object"
+			return false
+		}
 		_, err = servicePoints.Handle(pb, this.locked.Action, vnic, this.locked, true)
 		if err != nil {
 			msg.Tr.State = types.TransactionState_Errored
 			msg.Tr.Error = "Commit: Handle Error: " + err.Error()
 			return false
 		}
+		this.locked.Tr.State = types.TransactionState_Commited
 	}
 
 	msg.Tr.State = types.TransactionState_Commited
+	return true
+}
+
+func (this *TopicTransactions) setPreCommitObject(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) bool {
+
+	pb, err := protocol.ProtoOf(this.locked, vnic.Resources())
+	if err != nil {
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Pre Commit Object Fetch: Protocol Error: " + err.Error()
+		return false
+	}
+
+	if msg.Action == types.Action_PUT ||
+		msg.Action == types.Action_DELETE ||
+		msg.Action == types.Action_PATCH {
+		servicePoints := vnic.Resources().ServicePoints()
+		//Get the object before performing the action so we could rollback
+		//if necessary.
+		resp, e := servicePoints.Handle(pb, types.Action_GET, vnic, this.locked, true)
+		if e != nil {
+			msg.Tr.State = types.TransactionState_Errored
+			msg.Tr.Error = "Pre Commit Object Fetch: Service Point: " + e.Error()
+			return false
+		}
+		this.preCommitObject = resp
+	} else {
+		this.preCommitObject = pb
+	}
+	return true
+}
+
+func (this *TopicTransactions) setRollbackAction(msg *types.Message) {
+	switch msg.Action {
+	case types.Action_POST:
+		this.locked.Action = types.Action_DELETE
+	case types.Action_DELETE:
+		this.locked.Action = types.Action_POST
+	case types.Action_PUT:
+		this.locked.Action = types.Action_PUT
+	case types.Action_PATCH:
+		this.locked.Action = types.Action_PUT
+	}
+}
+
+func (this *TopicTransactions) rollback(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
+	if lock {
+		this.mtx.Lock()
+		defer this.mtx.Unlock()
+	}
+
+	if msg.Tr.State != types.TransactionState_Rollback {
+		panic("commit: Unexpected transaction state " + msg.Tr.State.String())
+	}
+
+	if this.locked == nil {
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Rollback: No committed transaction"
+		return false
+	}
+
+	if this.locked.Tr.Id != msg.Tr.Id {
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Rollback: commit was for another transaction"
+		return false
+	}
+
+	if this.locked.Tr.State != types.TransactionState_Commited {
+		msg.Tr.Error = "Rollback: Transaction is not in committed state " + msg.Tr.State.String()
+		msg.Tr.State = types.TransactionState_Errored
+		return false
+	}
+
+	servicePoints := vnic.Resources().ServicePoints()
+	if msg.Action == types.Action_Notify {
+		//_, err := servicePoints.Notify()
+	} else {
+		this.setRollbackAction(msg)
+		_, err := servicePoints.Handle(this.preCommitObject, this.locked.Action, vnic, this.locked, true)
+		if err != nil {
+			msg.Tr.State = types.TransactionState_Errored
+			msg.Tr.Error = "Rollback: Handle Error: " + err.Error()
+			return false
+		}
+	}
+
+	msg.Tr.State = types.TransactionState_Rollbacked
 	return true
 }
 
