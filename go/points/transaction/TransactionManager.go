@@ -39,8 +39,12 @@ func (this *TransactionManager) Start(msg *types.Message, vnic interfaces.IVirtu
 	tt := this.topicTransaction(msg)
 	tt.addTransaction(msg)
 
-	ok := requestFromAllPeers(msg, vnic)
+	ok, _ := requestFromAllPeers(msg, vnic)
 	if !ok {
+		//Cleanup as we failed
+		msg.Tr.State = types.TransactionState_Commited
+		requestFromAllPeers(msg, vnic)
+		//Mark as error
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Failed to create transaction"
 		return msg.Tr, nil
@@ -113,8 +117,13 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 
 	//Try to lock on all the followers
 	msg.Tr.State = types.TransactionState_Lock
-	ok := requestFromAllPeers(msg, vnic)
+	ok, _ := requestFromAllPeers(msg, vnic)
 	if !ok {
+		//Cleanup
+		msg.Tr.State = types.TransactionState_Commited
+		requestFromAllPeers(msg, vnic)
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Failed to lock followers"
 		return
 	}
 
@@ -123,15 +132,27 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 	ok = tt.lock(msg, false)
 	//We were not able to lock on the leader
 	if !ok {
+		//Cleanup
+		msg.Tr.State = types.TransactionState_Commited
+		requestFromAllPeers(msg, vnic)
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Failed to lock leader"
 		return
 	}
 
 	//At this point we are ready to commit
 	//Try to commit on the followers
 	msg.Tr.State = types.TransactionState_Commit
-	ok = requestFromAllPeers(msg, vnic)
+	ok, peers := requestFromAllPeers(msg, vnic)
 	if !ok {
-
+		//Request a rollback only from those peers that commited
+		msg.Tr.State = types.TransactionState_Rollback
+		requestFromPeers(msg, vnic, peers)
+		//Cleanup
+		msg.Tr.State = types.TransactionState_Commited
+		requestFromAllPeers(msg, vnic)
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Followers failed to commit"
 		return
 	}
 
@@ -139,7 +160,15 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 	msg.Tr.State = types.TransactionState_Commit
 	ok = tt.commit(msg, vnic, false)
 	if !ok {
-
+		//Request a rollback from the followers
+		msg.Tr.State = types.TransactionState_Rollback
+		requestFromAllPeers(msg, vnic)
+		//Cleanup
+		msg.Tr.State = types.TransactionState_Commited
+		requestFromAllPeers(msg, vnic)
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Leader failed to commit"
+		return
 	}
 
 	//Cleanup and release the lock

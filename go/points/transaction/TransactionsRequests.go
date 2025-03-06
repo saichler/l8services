@@ -51,10 +51,21 @@ func (this *Requests) requestFromPeer(vnic interfaces.IVirtualNetworkInterface, 
 	}
 }
 
-func requestFromAllPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) bool {
+func requestFromAllPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (bool, map[string]bool) {
+	return requestFromPeers(msg, vnic, nil)
+}
+
+func requestFromPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, peers map[string]bool) (bool, map[string]bool) {
 	hc := health.Health(vnic.Resources())
 	targets := hc.Uuids(msg.Type, msg.Vlan, true)
 	delete(targets, vnic.Resources().Config().LocalUuid)
+	if peers != nil {
+		for peer, ok := range peers {
+			if !ok {
+				delete(targets, peer)
+			}
+		}
+	}
 
 	this := newRequest()
 
@@ -77,10 +88,10 @@ func requestFromAllPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInte
 
 	if !ok {
 		msg.Tr.State = types.TransactionState_Errored
-		return false
+		return false, this.pending
 	}
 
-	return true
+	return true, this.pending
 }
 
 func IsLeader(resourcs interfaces.IResources, localUuid, topic string, vlan int32) (bool, string) {
