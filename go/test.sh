@@ -6,11 +6,10 @@ set -e
 rm -rf go.sum
 rm -rf go.mod
 rm -rf vendor
-#cp go.mod.main go.mod
+cp go.mod.main go.mod
 
 # fetch dependencies
-go mod init
-GOPROXY=direct go mod tidy
+GOPROXY=direct GOPRIVATE=github.com go mod tidy
 go mod vendor
 
 # Run unit tests with coverage
