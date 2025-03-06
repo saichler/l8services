@@ -2,6 +2,9 @@ package transaction
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/layer8/go/overlay/protocol"
+	"github.com/saichler/reflect/go/reflect/clone"
+	"github.com/saichler/serializer/go/serialize/serializers"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
 	"google.golang.org/protobuf/proto"
@@ -47,13 +50,19 @@ func (this *TransactionManager) Start(msg *types.Message, vnic interfaces.IVirtu
 	healthCenter := health.Health(vnic.Resources())
 	leader := healthCenter.Leader(msg.Type, msg.Vlan)
 	isLeader := leader == vnic.Resources().Config().LocalUuid
+
+	//from this point onwards, we are going to use a clone
+	//As we only need the message attributes, without the data
+	msgClone := clone.NewCloner().Clone(msg).(*types.Message)
+	msgClone.Data, _ = protocol.DataFor(&types.Transaction{}, &serializers.ProtoBuffBinary{}, vnic.Resources().Security())
+
 	if !isLeader {
-		resp, err := vnic.Forward(msg, leader)
+		resp, err := vnic.Forward(msgClone, leader)
 		return resp.(proto.Message), err
 	}
 
-	this.start(msg, vnic)
-	return msg.Tr, nil
+	this.start(msgClone, vnic)
+	return msgClone.Tr, nil
 }
 
 func (this *TransactionManager) Run(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error) {
@@ -99,6 +108,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 	if !isLeader {
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Start transaction invoked on a follower"
+		return
 	}
 
 	//Try to lock on all the followers

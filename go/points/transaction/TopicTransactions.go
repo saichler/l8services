@@ -53,6 +53,7 @@ func (this *TopicTransactions) commited(msg *types.Message, lock bool) {
 	if this.locked.Tr.Id == msg.Tr.Id {
 		this.locked = nil
 	}
+	delete(this.pendingMap, msg.Tr.Id)
 }
 
 func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {

@@ -55,9 +55,16 @@ func TestParallel(t *testing.T) {
 	}()
 	go do50Transactions(eg2)
 	go do50Transactions(eg4)
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second)
 	log.Info("Total:", len(trs))
+	if len(trs) != 100 {
+		log.Fail(t, "number of commited transactions:", len(trs))
+		return
+	}
 	for _, tr := range trs {
+		if tr.State != types.TransactionState_Commited {
+			log.Fail(t, "transaction state:", tr.State)
+		}
 		log.Info("Tr:", tr.State.String(), " ", tr.Id, " ", tr.Error)
 	}
 }

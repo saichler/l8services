@@ -6,6 +6,7 @@ set -e
 rm -rf go.sum
 rm -rf go.mod
 rm -rf vendor
+#cp go.mod.main go.mod
 
 # fetch dependencies
 go mod init
