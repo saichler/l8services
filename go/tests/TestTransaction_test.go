@@ -40,7 +40,7 @@ func TestTransaction(t *testing.T) {
 
 }
 
-var trs = make([]*types.Tr, 0)
+var trs = make([]*types.Transaction, 0)
 var trsMtx = &sync.Mutex{}
 
 func TestParallel(t *testing.T) {
@@ -70,9 +70,9 @@ func doTransaction(vnic interfaces.IVirtualNetworkInterface, expected int, t *te
 		return false
 	}
 
-	tr := resp.(*types.Tr)
-	if tr.State != types.TrState_Commited {
-		log.Fail(t, "transaction state is not commited,", tr.State.String())
+	tr := resp.(*types.Transaction)
+	if tr.State != types.TransactionState_Commited {
+		log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State.String(), " ", tr.Error)
 		return false
 	}
 
@@ -106,7 +106,7 @@ func sendTransaction(nic interfaces.IVirtualNetworkInterface) {
 		return
 	}
 
-	tr := resp.(*types.Tr)
+	tr := resp.(*types.Transaction)
 	trsMtx.Lock()
 	defer trsMtx.Unlock()
 	trs = append(trs, tr)

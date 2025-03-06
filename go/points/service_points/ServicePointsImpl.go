@@ -3,6 +3,7 @@ package service_points
 import (
 	"errors"
 	"github.com/saichler/servicepoints/go/points/cache"
+	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/types"
 	"google.golang.org/protobuf/proto"
@@ -13,7 +14,7 @@ type ServicePointsImpl struct {
 	type2ServicePoint *String2ServicePointMap
 	introspector      interfaces.IIntrospector
 	config            *types.VNicConfig
-	transactions      *Transactions
+	trManager         *transaction.TransactionManager
 }
 
 func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicConfig) interfaces.IServicePoints {
@@ -21,7 +22,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	sp.type2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
-	sp.transactions = newTransactions()
+	sp.trManager = transaction.NewTransactionManager()
 	introspector.Registry().Register(&types.NotificationSet{})
 	return sp
 }
@@ -43,7 +44,7 @@ func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message
 	return nil
 }
 
-func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
+func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) (proto.Message, error) {
 	tName := reflect.ValueOf(pb).Elem().Type().Name()
 	h, ok := this.type2ServicePoint.Get(tName)
 	if !ok {
@@ -58,11 +59,13 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 		return h.Failed(pb, resourcs, msg)
 	}
 
-	if h.Transactional() && resourcs != nil && msg != nil {
-		if msg.Tr == nil {
-			return this.transactions.startTransactions(msg, vnic), nil
-		} else {
-			return this.transactions.runTransaction(msg, vnic), nil
+	if !insideTransaction {
+		if h.Transactional() && resourcs != nil && msg != nil {
+			if msg.Tr == nil {
+				return this.trManager.Start(msg, vnic)
+			} else {
+				return this.trManager.Run(msg, vnic)
+			}
 		}
 	}
 
@@ -89,7 +92,7 @@ func (this *ServicePointsImpl) doAction(h interfaces.IServicePointHandler, actio
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message) (proto.Message, error) {
+func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
 	notification := pb.(*types.NotificationSet)
 	h, ok := this.type2ServicePoint.Get(notification.TypeName)
 	if !ok {
