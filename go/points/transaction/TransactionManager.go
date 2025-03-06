@@ -67,7 +67,7 @@ func (this *TransactionManager) Run(msg *types.Message, vnic interfaces.IVirtual
 	case types.TransactionState_Commit:
 		this.commit(msg, vnic)
 	case types.TransactionState_Commited:
-		this.clean(msg)
+		this.commited(msg)
 	case types.TransactionState_Errored:
 	default:
 		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
@@ -86,16 +86,20 @@ func (this *TransactionManager) create(msg *types.Message) {
 }
 
 func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
+	tt := this.topicTransaction(msg)
+	tt.mtx.Lock()
+	defer tt.mtx.Unlock()
+
 	if msg.Tr.State != types.TransactionState_Start {
 		panic("start: Unexpected transaction state " + msg.Tr.State.String())
 	}
+
 	healthCenter := health.Health(vnic.Resources())
 	isLeader := healthCenter.Leader(msg.Type, msg.Vlan) == vnic.Resources().Config().LocalUuid
 	if !isLeader {
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Start transaction invoked on a follower"
 	}
-	tt := this.topicTransaction(msg)
 
 	//Try to lock on all the followers
 	msg.Tr.State = types.TransactionState_Lock
@@ -106,7 +110,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 
 	//now try to lock on the leader
 	msg.Tr.State = types.TransactionState_Lock
-	ok = tt.lock(msg)
+	ok = tt.lock(msg, false)
 	//We were not able to lock on the leader
 	if !ok {
 		return
@@ -123,28 +127,27 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 
 	//Try to commit on the leader
 	msg.Tr.State = types.TransactionState_Commit
-	ok = tt.commit(msg, vnic)
+	ok = tt.commit(msg, vnic, false)
 	if !ok {
 
 	}
 
 	//Cleanup and release the lock
 	requestFromAllPeers(msg, vnic)
-	this.clean(msg)
+	tt.commited(msg, false)
 }
 
 func (this *TransactionManager) lock(msg *types.Message) {
 	tt := this.topicTransaction(msg)
-	tt.lock(msg)
+	tt.lock(msg, true)
 }
 
 func (this *TransactionManager) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
-	tt.commit(msg, vnic)
+	tt.commit(msg, vnic, true)
 }
 
-func (this *TransactionManager) clean(msg *types.Message) {
+func (this *TransactionManager) commited(msg *types.Message) {
 	tt := this.topicTransaction(msg)
-	tt.commited(msg)
-
+	tt.commited(msg, true)
 }

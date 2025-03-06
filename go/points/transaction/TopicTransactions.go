@@ -42,9 +42,11 @@ func (this *TopicTransactions) addTransaction(msg *types.Message) {
 	this.pendingMap[msg.Tr.Id] = msg
 }
 
-func (this *TopicTransactions) commited(msg *types.Message) {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
+func (this *TopicTransactions) commited(msg *types.Message, lock bool) {
+	if lock {
+		this.mtx.Lock()
+		defer this.mtx.Unlock()
+	}
 	if this.locked == nil {
 		return
 	}
@@ -53,12 +55,15 @@ func (this *TopicTransactions) commited(msg *types.Message) {
 	}
 }
 
-func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) bool {
+func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
+	if lock {
+		this.mtx.Lock()
+		defer this.mtx.Unlock()
+	}
+
 	if msg.Tr.State != types.TransactionState_Commit {
 		panic("commit: Unexpected transaction state " + msg.Tr.State.String())
 	}
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
 
 	if this.locked == nil {
 		msg.Tr.State = types.TransactionState_Errored
@@ -107,13 +112,15 @@ func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtu
 	return true
 }
 
-func (this *TopicTransactions) lock(msg *types.Message) bool {
+func (this *TopicTransactions) lock(msg *types.Message, lock bool) bool {
+	if lock {
+		this.mtx.Lock()
+		defer this.mtx.Unlock()
+	}
+
 	if msg.Tr.State != types.TransactionState_Lock {
 		panic("lock: Unexpected transaction state " + msg.Tr.State.String())
 	}
-
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
 
 	if this.locked == nil {
 		m := this.pendingMap[msg.Tr.Id]
