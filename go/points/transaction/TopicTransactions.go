@@ -44,18 +44,21 @@ func (this *TopicTransactions) addTransaction(msg *types.Message) {
 	this.pendingMap[msg.Tr.Id] = msg
 }
 
-func (this *TopicTransactions) commited(msg *types.Message, lock bool) {
+func (this *TopicTransactions) finish(msg *types.Message, lock bool) {
 	if lock {
 		this.mtx.Lock()
 		defer this.mtx.Unlock()
 	}
 	if this.locked == nil {
+		this.preCommitObject = nil
 		return
 	}
 	if this.locked.Tr.Id == msg.Tr.Id {
 		this.locked = nil
+		this.preCommitObject = nil
 	}
 	delete(this.pendingMap, msg.Tr.Id)
+	msg.Tr.State = types.TransactionState_Finished
 }
 
 func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
@@ -241,5 +244,6 @@ func (this *TopicTransactions) lock(msg *types.Message, lock bool) bool {
 	}
 
 	msg.Tr.State = types.TransactionState_LockFailed
+	msg.Tr.Error = "Failed to lock : " + msg.Topic
 	return false
 }

@@ -79,8 +79,8 @@ func (this *TransactionManager) Run(msg *types.Message, vnic interfaces.IVirtual
 		this.lock(msg)
 	case types.TransactionState_Commit:
 		this.commit(msg, vnic)
-	case types.TransactionState_Commited:
-		this.commited(msg)
+	case types.TransactionState_Finish:
+		this.finish(msg)
 	case types.TransactionState_Rollback:
 		this.rollback(msg, vnic)
 	case types.TransactionState_Errored:
@@ -103,7 +103,16 @@ func (this *TransactionManager) create(msg *types.Message) {
 func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
 	tt.mtx.Lock()
-	defer tt.mtx.Unlock()
+	defer func() {
+		//Cleanup
+		oldState := msg.Tr.State
+		msg.Tr.State = types.TransactionState_Finish
+		requestFromAllPeers(msg, vnic)
+		tt.finish(msg, false)
+		msg.Tr.State = oldState
+
+		tt.mtx.Unlock()
+	}()
 
 	if msg.Tr.State != types.TransactionState_Start {
 		panic("start: Unexpected transaction state " + msg.Tr.State.String())
@@ -121,9 +130,6 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 	msg.Tr.State = types.TransactionState_Lock
 	ok, _ := requestFromAllPeers(msg, vnic)
 	if !ok {
-		//Cleanup
-		msg.Tr.State = types.TransactionState_Commited
-		requestFromAllPeers(msg, vnic)
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Failed to lock followers"
 		return
@@ -134,9 +140,6 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 	ok = tt.lock(msg, false)
 	//We were not able to lock on the leader
 	if !ok {
-		//Cleanup
-		msg.Tr.State = types.TransactionState_Commited
-		requestFromAllPeers(msg, vnic)
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Failed to lock leader"
 		return
@@ -150,9 +153,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 		//Request a rollback only from those peers that commited
 		msg.Tr.State = types.TransactionState_Rollback
 		requestFromPeers(msg, vnic, peers)
-		//Cleanup
-		msg.Tr.State = types.TransactionState_Commited
-		requestFromAllPeers(msg, vnic)
+
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Followers failed to commit"
 		return
@@ -165,17 +166,18 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 		//Request a rollback from the followers
 		msg.Tr.State = types.TransactionState_Rollback
 		requestFromAllPeers(msg, vnic)
-		//Cleanup
-		msg.Tr.State = types.TransactionState_Commited
-		requestFromAllPeers(msg, vnic)
+
+		errorMsg := "Leader failed to commit"
+		if !ok {
+			errorMsg = "Leader failed to commit and failed to clean up"
+		}
 		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Leader failed to commit"
+		msg.Tr.Error = errorMsg
 		return
 	}
 
 	//Cleanup and release the lock
-	requestFromAllPeers(msg, vnic)
-	tt.commited(msg, false)
+	msg.Tr.State = types.TransactionState_Commited
 }
 
 func (this *TransactionManager) lock(msg *types.Message) {
@@ -193,7 +195,7 @@ func (this *TransactionManager) rollback(msg *types.Message, vnic interfaces.IVi
 	tt.rollback(msg, vnic, true)
 }
 
-func (this *TransactionManager) commited(msg *types.Message) {
+func (this *TransactionManager) finish(msg *types.Message) {
 	tt := this.topicTransaction(msg)
-	tt.commited(msg, true)
+	tt.finish(msg, true)
 }

@@ -66,6 +66,7 @@ func reset(name string) {
 		t.ErrorMode = false
 		t.Tr = false
 	}
+	time.Sleep(time.Second)
 }
 
 func setupTopology() {

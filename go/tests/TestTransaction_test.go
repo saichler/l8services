@@ -17,11 +17,6 @@ func TestTransaction(t *testing.T) {
 	for _, ts := range tsps {
 		ts.Tr = true
 	}
-	defer func() {
-		for _, ts := range tsps {
-			ts.Tr = false
-		}
-	}()
 
 	if !doTransaction(types.Action_POST, eg3, 1, t, true) {
 		return
@@ -38,15 +33,10 @@ func TestTransaction(t *testing.T) {
 }
 
 func TestTransactionPut(t *testing.T) {
-	defer reset("TestTransaction")
+	defer reset("TestTransactionPut")
 	for _, ts := range tsps {
 		ts.Tr = true
 	}
-	defer func() {
-		for _, ts := range tsps {
-			ts.Tr = false
-		}
-	}()
 
 	if !doTransaction(types.Action_PUT, eg3, 1, t, true) {
 		return
@@ -57,7 +47,7 @@ func TestTransactionPut(t *testing.T) {
 }
 
 func TestTransactionPutRollback(t *testing.T) {
-	defer reset("TestTransaction")
+	defer reset("TestTransactionPutRollback")
 	for _, ts := range tsps {
 		ts.Tr = true
 		if ts.Name == "eg2" {
