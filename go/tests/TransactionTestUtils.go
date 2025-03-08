@@ -9,6 +9,8 @@ import (
 )
 
 var trs = make([]*types.Transaction, 0)
+var gets = make([]*tests.TestProto, 0)
+
 var trsMtx = &sync.Mutex{}
 
 func doTransaction(action types.Action, vnic interfaces.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
@@ -42,6 +44,13 @@ func doTransaction(action types.Action, vnic interfaces.IVirtualNetworkInterface
 	return true
 }
 
+func do50Gets(nic interfaces.IVirtualNetworkInterface) bool {
+	for i := 0; i < 50; i++ {
+		sendGet(nic)
+	}
+	return true
+}
+
 func do50Transactions(nic interfaces.IVirtualNetworkInterface) bool {
 	for i := 0; i < 50; i++ {
 		sendTransaction(nic)
@@ -61,4 +70,18 @@ func sendTransaction(nic interfaces.IVirtualNetworkInterface) {
 	trsMtx.Lock()
 	defer trsMtx.Unlock()
 	trs = append(trs, tr)
+}
+
+func sendGet(nic interfaces.IVirtualNetworkInterface) {
+	pb := &tests.TestProto{MyString: "test"}
+	resp, err := nic.Transaction(types.Action_GET, 0, "TestProto", pb)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	tr := resp.(*tests.TestProto)
+	trsMtx.Lock()
+	defer trsMtx.Unlock()
+	gets = append(gets, tr)
 }

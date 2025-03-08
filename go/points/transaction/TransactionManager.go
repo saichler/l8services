@@ -35,11 +35,18 @@ func (this *TransactionManager) topicTransaction(msg *types.Message) *TopicTrans
 }
 
 func (this *TransactionManager) Start(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error) {
-	createTransaction(msg)
 	tt := this.topicTransaction(msg)
+
+	//This is a Get request, needs to be handled outside a transaction
+	resp, err, ok := tt.shouldHandleAsTransaction(msg, vnic)
+	if !ok {
+		return resp, err
+	}
+
+	createTransaction(msg)
 	tt.addTransaction(msg)
 
-	ok, _ := requestFromAllPeers(msg, vnic)
+	ok, _ = requestFromAllPeers(msg, vnic)
 	if !ok {
 		//Cleanup as we failed
 		msg.Tr.State = types.TransactionState_Commited
@@ -102,7 +109,7 @@ func (this *TransactionManager) create(msg *types.Message) {
 
 func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
-	tt.mtx.Lock()
+	tt.cond.L.Lock()
 	defer func() {
 		//Cleanup
 		oldState := msg.Tr.State
@@ -110,8 +117,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtu
 		requestFromAllPeers(msg, vnic)
 		tt.finish(msg, false)
 		msg.Tr.State = oldState
-
-		tt.mtx.Unlock()
+		tt.cond.L.Unlock()
 	}()
 
 	if msg.Tr.State != types.TransactionState_Start {

@@ -11,7 +11,7 @@ import (
 )
 
 type TopicTransactions struct {
-	mtx             *sync.Mutex
+	cond            *sync.Cond
 	pendingMap      map[string]*types.Message
 	locked          *types.Message
 	preCommitObject proto.Message
@@ -20,7 +20,7 @@ type TopicTransactions struct {
 func newTopicTransactions() *TopicTransactions {
 	tt := &TopicTransactions{}
 	tt.pendingMap = make(map[string]*types.Message)
-	tt.mtx = &sync.Mutex{}
+	tt.cond = sync.NewCond(&sync.Mutex{})
 	return tt
 }
 
@@ -33,9 +33,27 @@ func createTransaction(msg *types.Message) {
 	}
 }
 
+func (this *TopicTransactions) shouldHandleAsTransaction(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error, bool) {
+	if msg.Action == types.Action_GET {
+		this.cond.L.Lock()
+		defer this.cond.L.Unlock()
+		for this.locked != nil {
+			this.cond.Wait()
+		}
+		servicePoints := vnic.Resources().ServicePoints()
+		pb, err := protocol.ProtoOf(msg, vnic.Resources())
+		if err != nil {
+			return nil, err, false
+		}
+		resp, err := servicePoints.Handle(pb, msg.Action, vnic, msg, true)
+		return resp, err, false
+	}
+	return nil, nil, true
+}
+
 func (this *TopicTransactions) addTransaction(msg *types.Message) {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
+	this.cond.L.Lock()
+	defer this.cond.L.Unlock()
 	_, ok := this.pendingMap[msg.Tr.Id]
 	if ok {
 		panic("Trying to add a duplicate transaction")
@@ -45,9 +63,10 @@ func (this *TopicTransactions) addTransaction(msg *types.Message) {
 }
 
 func (this *TopicTransactions) finish(msg *types.Message, lock bool) {
+	defer this.cond.Broadcast()
 	if lock {
-		this.mtx.Lock()
-		defer this.mtx.Unlock()
+		this.cond.L.Lock()
+		defer this.cond.L.Unlock()
 	}
 	if this.locked == nil {
 		this.preCommitObject = nil
@@ -63,8 +82,8 @@ func (this *TopicTransactions) finish(msg *types.Message, lock bool) {
 
 func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
-		this.mtx.Lock()
-		defer this.mtx.Unlock()
+		this.cond.L.Lock()
+		defer this.cond.L.Unlock()
 	}
 
 	if msg.Tr.State != types.TransactionState_Commit {
@@ -168,8 +187,8 @@ func (this *TopicTransactions) setRollbackAction(msg *types.Message) {
 
 func (this *TopicTransactions) rollback(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
-		this.mtx.Lock()
-		defer this.mtx.Unlock()
+		this.cond.L.Lock()
+		defer this.cond.L.Unlock()
 	}
 
 	if msg.Tr.State != types.TransactionState_Rollback {
@@ -213,8 +232,8 @@ func (this *TopicTransactions) rollback(msg *types.Message, vnic interfaces.IVir
 
 func (this *TopicTransactions) lock(msg *types.Message, lock bool) bool {
 	if lock {
-		this.mtx.Lock()
-		defer this.mtx.Unlock()
+		this.cond.L.Lock()
+		defer this.cond.L.Unlock()
 	}
 
 	if msg.Tr.State != types.TransactionState_Lock {

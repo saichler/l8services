@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/types"
 	"testing"
 	"time"
@@ -46,6 +47,27 @@ func TestTransactionPut(t *testing.T) {
 	}
 }
 
+func TestTransactionGet(t *testing.T) {
+	defer reset("TestTransactionGet")
+	for _, ts := range tsps {
+		ts.Tr = true
+	}
+
+	pb := &tests.TestProto{}
+	_, err := eg3.Transaction(types.Action_GET, 0, "TestProto", pb)
+	if err != nil {
+		log.Fail(t, err.Error())
+		return
+	}
+
+	if tsps["eg2"].GetNumber != 0 {
+		log.Fail(t, "Expected 0 Get")
+	}
+	if tsps["eg3"].GetNumber != 1 {
+		log.Fail(t, "Expected 1 Get")
+	}
+}
+
 func TestTransactionPutRollback(t *testing.T) {
 	defer reset("TestTransactionPutRollback")
 	for _, ts := range tsps {
@@ -76,6 +98,9 @@ func TestParallel(t *testing.T) {
 	}()
 	go do50Transactions(eg2)
 	go do50Transactions(eg4)
+	go do50Gets(eg2)
+	go do50Gets(eg3)
+
 	time.Sleep(time.Second)
 	log.Info("Total:", len(trs))
 	if len(trs) != 100 {
@@ -87,6 +112,11 @@ func TestParallel(t *testing.T) {
 			log.Fail(t, "transaction state:", tr.State)
 		}
 		log.Info("Tr:", tr.State.String(), " ", tr.Id, " ", tr.Error)
+	}
+
+	if len(gets) != 100 {
+		log.Fail(t, "number of gets:", len(gets))
+		return
 	}
 }
 
