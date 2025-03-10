@@ -9,11 +9,11 @@ import (
 	"github.com/saichler/shared/go/share/logger"
 	"github.com/saichler/shared/go/share/registry"
 	"github.com/saichler/shared/go/share/resources"
-	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/tests/infra"
-	"github.com/saichler/shared/go/types"
 	"github.com/saichler/types/go/common"
 	. "github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/types/go/types"
 	"time"
 )
 
@@ -41,6 +41,9 @@ func initGlobals() {
 		TxQueueSize: resources.DEFAULT_QUEUE_SIZE,
 		LocalAlias:  "servicepointstest"}
 	secure, err := common.LoadSecurityProvider("security.so")
+	if err != nil {
+		panic(err)
+	}
 	inspector := inspect.NewIntrospect(registry)
 	sps := service_points.NewServicePoints(inspector, config)
 	globals = resources.NewResources(registry, secure, sps, log, nil, nil, config, inspector)
@@ -118,6 +121,9 @@ func createSwitch(port uint32, name string) *vnet.VNet {
 func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInterface {
 	reg := registry.NewRegistry()
 	secure, err := common.LoadSecurityProvider("security.so")
+	if err != nil {
+		panic(err)
+	}
 	config := &types.VNicConfig{MaxDataSize: resources.DEFAULT_MAX_DATA_SIZE,
 		RxQueueSize:              resources.DEFAULT_QUEUE_SIZE,
 		TxQueueSize:              resources.DEFAULT_QUEUE_SIZE,
@@ -126,13 +132,14 @@ func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInte
 	ins := inspect.NewIntrospect(reg)
 	sps := service_points.NewServicePoints(ins, config)
 
-	resourcs := resources.NewResources(reg, security, sps, log, nil, nil, config, ins)
+	resourcs := resources.NewResources(reg, secure, sps, log, nil, nil, config, ins)
+	secure.Init(resourcs)
 	resourcs.Config().VnetPort = port
 	tsps[name] = infra.NewTestServicePointHandler(name)
 
 	if addTestTopic {
 		sp := resourcs.ServicePoints()
-		err := sp.RegisterServicePoint(0, &tests.TestProto{}, tsps[name])
+		err := sp.RegisterServicePoint(0, &testtypes.TestProto{}, tsps[name])
 		if err != nil {
 			panic(err)
 		}

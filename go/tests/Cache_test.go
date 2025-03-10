@@ -4,7 +4,7 @@ import (
 	"github.com/saichler/reflect/go/reflect/inspect"
 	"github.com/saichler/reflect/go/tests/utils"
 	"github.com/saichler/servicepoints/go/points/cache"
-	"github.com/saichler/shared/go/tests"
+	"github.com/saichler/types/go/testtypes"
 	"testing"
 	"time"
 )
@@ -20,7 +20,7 @@ func TestCacheListener(t *testing.T) {
 		return
 	}
 	item2 := utils.CreateTestModelInstance(1)
-	item2.MyEnum = tests.TestEnum_ValueTwo
+	item2.MyEnum = testtypes.TestEnum_ValueTwo
 	err = c.Update(item2.MyString, item2)
 	if err != nil {
 		log.Fail(t, err.Error())

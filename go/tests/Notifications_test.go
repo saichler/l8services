@@ -7,7 +7,7 @@ import (
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/shared/go/share/registry"
 	"github.com/saichler/shared/go/tests"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/types"
 	"testing"
 	"time"
 )

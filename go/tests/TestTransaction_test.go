@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"github.com/saichler/shared/go/tests"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/types/go/types"
 	"testing"
 	"time"
 )
@@ -53,7 +53,7 @@ func TestTransactionGet(t *testing.T) {
 		ts.Tr = true
 	}
 
-	pb := &tests.TestProto{}
+	pb := &testtypes.TestProto{}
 	_, err := eg3.Transaction(types.Action_GET, 0, "TestProto", pb)
 	if err != nil {
 		log.Fail(t, err.Error())

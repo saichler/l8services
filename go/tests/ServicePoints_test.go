@@ -3,7 +3,7 @@ package tests
 import (
 	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/tests/infra"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/types"
 	"testing"
 )
 
