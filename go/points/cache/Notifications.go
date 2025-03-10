@@ -5,8 +5,8 @@ import (
 	"github.com/saichler/reflect/go/reflect/property"
 	"github.com/saichler/reflect/go/reflect/updater"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 )
 
 func CreateNotificationSet(t types.NotificationType, typeName, source string, changeCount int, sequence uint32) *types.NotificationSet {
@@ -117,7 +117,7 @@ func (this *Cache) createUpdateNotification(changes []*updater.Change) (*types.N
 	return CreateUpdateNotification(changes, this.typeName, this.source, len(changes), this.sequence)
 }
 
-func ItemOf(n *types.NotificationSet, i interfaces.IIntrospector) (interface{}, error) {
+func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, error) {
 	switch n.Type {
 	case types.NotificationType_Replace:
 		fallthrough

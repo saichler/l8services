@@ -2,8 +2,8 @@ package transaction
 
 import (
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
 	"strings"
 	"sync"
@@ -27,13 +27,13 @@ func newTopicTransactions() *TopicTransactions {
 func createTransaction(msg *types.Message) {
 	if msg.Tr == nil {
 		msg.Tr = &types.Transaction{}
-		msg.Tr.Id = interfaces.NewUuid()
+		msg.Tr.Id = common.NewUuid()
 		msg.Tr.StartTime = time.Now().Unix()
 		msg.Tr.State = types.TransactionState_Create
 	}
 }
 
-func (this *TopicTransactions) shouldHandleAsTransaction(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error, bool) {
+func (this *TopicTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
 	if msg.Action == types.Action_GET {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -80,7 +80,7 @@ func (this *TopicTransactions) finish(msg *types.Message, lock bool) {
 	msg.Tr.State = types.TransactionState_Finished
 }
 
-func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
+func (this *TopicTransactions) commit(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -144,7 +144,7 @@ func (this *TopicTransactions) commit(msg *types.Message, vnic interfaces.IVirtu
 	return true
 }
 
-func (this *TopicTransactions) setPreCommitObject(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) bool {
+func (this *TopicTransactions) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
 
 	pb, err := protocol.ProtoOf(this.locked, vnic.Resources())
 	if err != nil {
@@ -185,7 +185,7 @@ func (this *TopicTransactions) setRollbackAction(msg *types.Message) {
 	}
 }
 
-func (this *TopicTransactions) rollback(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, lock bool) bool {
+func (this *TopicTransactions) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()

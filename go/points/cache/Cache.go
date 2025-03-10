@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/saichler/reflect/go/reflect/clone"
 	"github.com/saichler/reflect/go/reflect/updater"
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 	"reflect"
 	"sync"
 )
@@ -16,7 +16,7 @@ type Cache struct {
 	cond         *sync.Cond
 	listener     ICacheListener
 	cloner       *clone.Cloner
-	introspector interfaces.IIntrospector
+	introspector common.IIntrospector
 	source       string
 	typeName     string
 	sequence     uint32
@@ -26,7 +26,7 @@ type ICacheListener interface {
 	PropertyChangeNotification(*types.NotificationSet)
 }
 
-func NewModelCache(source string, listener ICacheListener, introspector interfaces.IIntrospector) *Cache {
+func NewModelCache(source string, listener ICacheListener, introspector common.IIntrospector) *Cache {
 	this := &Cache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}

@@ -1,8 +1,8 @@
 package service_points
 
 import (
-	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/share/maps"
+	"github.com/saichler/types/go/common"
 	"reflect"
 )
 
@@ -16,14 +16,14 @@ func NewString2ServicePointMap() *String2ServicePointMap {
 	return newMap
 }
 
-func (mp *String2ServicePointMap) Put(key string, value interfaces.IServicePointHandler) bool {
+func (mp *String2ServicePointMap) Put(key string, value common.IServicePointHandler) bool {
 	return mp.impl.Put(key, value)
 }
 
-func (mp *String2ServicePointMap) Get(key string) (interfaces.IServicePointHandler, bool) {
+func (mp *String2ServicePointMap) Get(key string) (common.IServicePointHandler, bool) {
 	value, ok := mp.impl.Get(key)
 	if value != nil {
-		return value.(interfaces.IServicePointHandler), ok
+		return value.(common.IServicePointHandler), ok
 	}
 	return nil, ok
 }

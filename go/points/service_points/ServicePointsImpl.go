@@ -4,20 +4,20 @@ import (
 	"errors"
 	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/servicepoints/go/points/transaction"
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
 	"reflect"
 )
 
 type ServicePointsImpl struct {
 	type2ServicePoint *String2ServicePointMap
-	introspector      interfaces.IIntrospector
+	introspector      common.IIntrospector
 	config            *types.VNicConfig
 	trManager         *transaction.TransactionManager
 }
 
-func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicConfig) interfaces.IServicePoints {
+func NewServicePoints(introspector common.IIntrospector, config *types.VNicConfig) common.IServicePoints {
 	sp := &ServicePointsImpl{}
 	sp.type2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
@@ -27,7 +27,7 @@ func NewServicePoints(introspector interfaces.IIntrospector, config *types.VNicC
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message, handler interfaces.IServicePointHandler) error {
+func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message, handler common.IServicePointHandler) error {
 	if pb == nil {
 		return errors.New("cannot register handler with nil proto")
 	}
@@ -40,17 +40,18 @@ func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message
 		return err
 	}
 	this.type2ServicePoint.Put(typ.Name(), handler)
-	interfaces.AddTopic(this.config, vlan, typ.Name())
+	common.AddTopic(this.config, vlan, typ.Name())
 	return nil
 }
 
-func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) (proto.Message, error) {
+func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) (proto.Message, error) {
+	err := vnic.Resources().Security().CanDo()
 	tName := reflect.ValueOf(pb).Elem().Type().Name()
 	h, ok := this.type2ServicePoint.Get(tName)
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + tName)
 	}
-	var resourcs interfaces.IResources
+	var resourcs common.IResources
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
@@ -74,8 +75,8 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 	return resp, err
 }
 
-func (this *ServicePointsImpl) doAction(h interfaces.IServicePointHandler, action types.Action,
-	pb proto.Message, resourcs interfaces.IResources) (proto.Message, error) {
+func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action types.Action,
+	pb proto.Message, resourcs common.IResources) (proto.Message, error) {
 	switch action {
 	case types.Action_POST:
 		return h.Post(pb, resourcs)
@@ -92,13 +93,13 @@ func (this *ServicePointsImpl) doAction(h interfaces.IServicePointHandler, actio
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic interfaces.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
+func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
 	notification := pb.(*types.NotificationSet)
 	h, ok := this.type2ServicePoint.Get(notification.TypeName)
 	if !ok {
 		return nil, errors.New("Cannot find handler for type " + notification.TypeName)
 	}
-	var resourcs interfaces.IResources
+	var resourcs common.IResources
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
@@ -126,6 +127,6 @@ func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vni
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(topic string) (interfaces.IServicePointHandler, bool) {
+func (this *ServicePointsImpl) ServicePointHandler(topic string) (common.IServicePointHandler, bool) {
 	return this.type2ServicePoint.Get(topic)
 }

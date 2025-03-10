@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/tests"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 	"sync"
 	"testing"
 )
@@ -13,7 +13,7 @@ var gets = make([]*tests.TestProto, 0)
 
 var trsMtx = &sync.Mutex{}
 
-func doTransaction(action types.Action, vnic interfaces.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
+func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
 	pb := &tests.TestProto{MyString: "test"}
 	resp, err := vnic.Transaction(action, 0, "TestProto", pb)
 	if err != nil {
@@ -44,21 +44,21 @@ func doTransaction(action types.Action, vnic interfaces.IVirtualNetworkInterface
 	return true
 }
 
-func do50Gets(nic interfaces.IVirtualNetworkInterface) bool {
+func do50Gets(nic common.IVirtualNetworkInterface) bool {
 	for i := 0; i < 50; i++ {
 		sendGet(nic)
 	}
 	return true
 }
 
-func do50Transactions(nic interfaces.IVirtualNetworkInterface) bool {
+func do50Transactions(nic common.IVirtualNetworkInterface) bool {
 	for i := 0; i < 50; i++ {
 		sendTransaction(nic)
 	}
 	return true
 }
 
-func sendTransaction(nic interfaces.IVirtualNetworkInterface) {
+func sendTransaction(nic common.IVirtualNetworkInterface) {
 	pb := &tests.TestProto{MyString: "test"}
 	resp, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
 	if err != nil {
@@ -72,7 +72,7 @@ func sendTransaction(nic interfaces.IVirtualNetworkInterface) {
 	trs = append(trs, tr)
 }
 
-func sendGet(nic interfaces.IVirtualNetworkInterface) {
+func sendGet(nic common.IVirtualNetworkInterface) {
 	pb := &tests.TestProto{MyString: "test"}
 	resp, err := nic.Transaction(types.Action_GET, 0, "TestProto", pb)
 	if err != nil {

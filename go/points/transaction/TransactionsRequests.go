@@ -2,8 +2,8 @@ package transaction
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 	"sync"
 )
 
@@ -20,7 +20,7 @@ func newRequest() *Requests {
 	return rq
 }
 
-func (this *Requests) requestFromPeer(vnic interfaces.IVirtualNetworkInterface, msg *types.Message, target string) {
+func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg *types.Message, target string) {
 	this.cond.L.Lock()
 	this.pending[target] = true
 	this.count++
@@ -51,11 +51,11 @@ func (this *Requests) requestFromPeer(vnic interfaces.IVirtualNetworkInterface, 
 	}
 }
 
-func requestFromAllPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (bool, map[string]bool) {
+func requestFromAllPeers(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, map[string]bool) {
 	return requestFromPeers(msg, vnic, nil)
 }
 
-func requestFromPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInterface, peers map[string]bool) (bool, map[string]bool) {
+func requestFromPeers(msg *types.Message, vnic common.IVirtualNetworkInterface, peers map[string]bool) (bool, map[string]bool) {
 	hc := health.Health(vnic.Resources())
 	targets := hc.Uuids(msg.Type, msg.Vlan, true)
 	delete(targets, vnic.Resources().Config().LocalUuid)
@@ -94,7 +94,7 @@ func requestFromPeers(msg *types.Message, vnic interfaces.IVirtualNetworkInterfa
 	return true, this.pending
 }
 
-func IsLeader(resourcs interfaces.IResources, localUuid, topic string, vlan int32) (bool, string) {
+func IsLeader(resourcs common.IResources, localUuid, topic string, vlan int32) (bool, string) {
 	hc := health.Health(resourcs)
 	leader := hc.Leader(topic, vlan)
 	return leader == localUuid, leader

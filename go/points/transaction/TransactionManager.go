@@ -5,8 +5,8 @@ import (
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/reflect/go/reflect/clone"
 	"github.com/saichler/serializer/go/serialize/serializers"
-	"github.com/saichler/shared/go/share/interfaces"
-	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
 	"sync"
 )
@@ -34,7 +34,7 @@ func (this *TransactionManager) topicTransaction(msg *types.Message) *TopicTrans
 	return tt
 }
 
-func (this *TransactionManager) Start(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error) {
+func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
 	tt := this.topicTransaction(msg)
 
 	//This is a Get request, needs to be handled outside a transaction
@@ -76,7 +76,7 @@ func (this *TransactionManager) Start(msg *types.Message, vnic interfaces.IVirtu
 	return msgClone.Tr, nil
 }
 
-func (this *TransactionManager) Run(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) (proto.Message, error) {
+func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
 	switch msg.Tr.State {
 	case types.TransactionState_Create:
 		this.create(msg)
@@ -107,7 +107,7 @@ func (this *TransactionManager) create(msg *types.Message) {
 	msg.Tr.State = types.TransactionState_Created
 }
 
-func (this *TransactionManager) start(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
+func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
 	tt.cond.L.Lock()
 	defer func() {
@@ -191,12 +191,12 @@ func (this *TransactionManager) lock(msg *types.Message) {
 	tt.lock(msg, true)
 }
 
-func (this *TransactionManager) commit(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
+func (this *TransactionManager) commit(msg *types.Message, vnic common.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
 	tt.commit(msg, vnic, true)
 }
 
-func (this *TransactionManager) rollback(msg *types.Message, vnic interfaces.IVirtualNetworkInterface) {
+func (this *TransactionManager) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface) {
 	tt := this.topicTransaction(msg)
 	tt.rollback(msg, vnic, true)
 }

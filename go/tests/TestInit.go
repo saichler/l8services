@@ -6,14 +6,14 @@ import (
 	vnic2 "github.com/saichler/layer8/go/overlay/vnic"
 	"github.com/saichler/reflect/go/reflect/inspect"
 	"github.com/saichler/servicepoints/go/points/service_points"
-	. "github.com/saichler/shared/go/share/interfaces"
 	"github.com/saichler/shared/go/share/logger"
 	"github.com/saichler/shared/go/share/registry"
 	"github.com/saichler/shared/go/share/resources"
-	"github.com/saichler/shared/go/share/shallow_security"
 	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/shared/go/types"
+	"github.com/saichler/types/go/common"
+	. "github.com/saichler/types/go/common"
 	"time"
 )
 
@@ -40,10 +40,11 @@ func initGlobals() {
 		RxQueueSize: resources.DEFAULT_QUEUE_SIZE,
 		TxQueueSize: resources.DEFAULT_QUEUE_SIZE,
 		LocalAlias:  "servicepointstest"}
-	security := shallow_security.CreateShallowSecurityProvider()
+	secure, err := common.LoadSecurityProvider("security.so")
 	inspector := inspect.NewIntrospect(registry)
 	sps := service_points.NewServicePoints(inspector, config)
-	globals = resources.NewResources(registry, security, sps, log, nil, nil, config, inspector)
+	globals = resources.NewResources(registry, secure, sps, log, nil, nil, config, inspector)
+	secure.Init(globals)
 }
 
 func setup() {
@@ -95,7 +96,10 @@ func shutdownTopology() {
 
 func createSwitch(port uint32, name string) *vnet.VNet {
 	reg := registry.NewRegistry()
-	security := shallow_security.CreateShallowSecurityProvider()
+	secure, err := common.LoadSecurityProvider("security.so")
+	if err != nil {
+		panic("")
+	}
 	config := &types.VNicConfig{MaxDataSize: resources.DEFAULT_MAX_DATA_SIZE,
 		RxQueueSize: resources.DEFAULT_QUEUE_SIZE,
 		TxQueueSize: resources.DEFAULT_QUEUE_SIZE,
@@ -103,7 +107,8 @@ func createSwitch(port uint32, name string) *vnet.VNet {
 	ins := inspect.NewIntrospect(reg)
 	sps := service_points.NewServicePoints(ins, config)
 
-	res := resources.NewResources(reg, security, sps, log, nil, nil, config, ins)
+	res := resources.NewResources(reg, secure, sps, log, nil, nil, config, ins)
+	secure.Init(res)
 	res.Config().VnetPort = port
 	sw := vnet.NewVNet(res)
 	sw.Start()
@@ -112,7 +117,7 @@ func createSwitch(port uint32, name string) *vnet.VNet {
 
 func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInterface {
 	reg := registry.NewRegistry()
-	security := shallow_security.CreateShallowSecurityProvider()
+	secure, err := common.LoadSecurityProvider("security.so")
 	config := &types.VNicConfig{MaxDataSize: resources.DEFAULT_MAX_DATA_SIZE,
 		RxQueueSize:              resources.DEFAULT_QUEUE_SIZE,
 		TxQueueSize:              resources.DEFAULT_QUEUE_SIZE,
