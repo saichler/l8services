@@ -2,8 +2,8 @@ package cache
 
 import (
 	"errors"
-	"github.com/saichler/reflect/go/reflect/property"
-	"github.com/saichler/reflect/go/reflect/updater"
+	"github.com/saichler/reflect/go/reflect/properties"
+	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
@@ -86,7 +86,7 @@ func (this *Cache) createDeleteNotification(any interface{}) (*types.Notificatio
 	return CreateDeleteNotification(any, this.typeName, this.source, 1, this.sequence)
 }
 
-func CreateUpdateNotification(changes []*updater.Change, typeName, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateUpdateNotification(changes []*updating.Change, typeName, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Update, typeName, source, changeCount, sequence)
 	for i, change := range changes {
 		n := &types.Notification{}
@@ -112,7 +112,7 @@ func CreateUpdateNotification(changes []*updater.Change, typeName, source string
 	return notificationSet, nil
 }
 
-func (this *Cache) createUpdateNotification(changes []*updater.Change) (*types.NotificationSet, error) {
+func (this *Cache) createUpdateNotification(changes []*updating.Change) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateUpdateNotification(changes, this.typeName, this.source, len(changes), this.sequence)
 }
@@ -139,7 +139,7 @@ func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, erro
 			return nil, err
 		}
 		for _, notif := range n.NotificationList {
-			p, e := property.PropertyOf(notif.PropertyId, i)
+			p, e := properties.PropertyOf(notif.PropertyId, i)
 			if e != nil {
 				panic(e)
 			}

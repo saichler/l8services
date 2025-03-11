@@ -2,8 +2,8 @@ package cache
 
 import (
 	"errors"
-	"github.com/saichler/reflect/go/reflect/clone"
-	"github.com/saichler/reflect/go/reflect/updater"
+	"github.com/saichler/reflect/go/reflect/cloning"
+	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"reflect"
@@ -15,7 +15,7 @@ type Cache struct {
 	mtx          *sync.RWMutex
 	cond         *sync.Cond
 	listener     ICacheListener
-	cloner       *clone.Cloner
+	cloner       *cloning.Cloner
 	introspector common.IIntrospector
 	source       string
 	typeName     string
@@ -32,7 +32,7 @@ func NewModelCache(source string, listener ICacheListener, introspector common.I
 	this.mtx = &sync.RWMutex{}
 	this.cond = sync.NewCond(this.mtx)
 	this.listener = listener
-	this.cloner = clone.NewCloner()
+	this.cloner = cloning.NewCloner()
 	this.introspector = introspector
 	this.source = source
 	return this
@@ -75,7 +75,7 @@ func (this *Cache) Put(k string, v interface{}) error {
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
-	putUpdater := updater.NewUpdater(this.introspector, true)
+	putUpdater := updating.NewUpdater(this.introspector, true)
 	//update the item clone with the new element where nil is valid
 	err := putUpdater.Update(itemClone, v)
 	if err != nil {
@@ -115,7 +115,7 @@ func (this *Cache) Update(k string, v interface{}) error {
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
-	patchUpdater := updater.NewUpdater(this.introspector, false)
+	patchUpdater := updating.NewUpdater(this.introspector, false)
 	//update the item clone with the new element where nil is valid
 	err := patchUpdater.Update(itemClone, v)
 	if err != nil {
