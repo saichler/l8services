@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"github.com/saichler/reflect/go/reflect/inspect"
+	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/reflect/go/tests/utils"
 	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/types/go/testtypes"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestCacheListener(t *testing.T) {
-	ni := inspect.NewIntrospect(globals.Registry())
+	ni := introspecting.NewIntrospect(globals.Registry())
 	c := cache.NewModelCache("", nil, ni)
 	item1 := utils.CreateTestModelInstance(1)
 	ni.Inspect(item1)

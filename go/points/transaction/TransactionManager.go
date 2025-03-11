@@ -3,7 +3,7 @@ package transaction
 import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"github.com/saichler/reflect/go/reflect/clone"
+	"github.com/saichler/reflect/go/reflect/cloning"
 	"github.com/saichler/serializer/go/serialize/serializers"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
@@ -64,7 +64,7 @@ func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNe
 
 	//from this point onwards, we are going to use a clone
 	//As we only need the message attributes, without the data
-	msgClone := clone.NewCloner().Clone(msg).(*types.Message)
+	msgClone := cloning.NewCloner().Clone(msg).(*types.Message)
 	msgClone.Data, _ = protocol.DataFor(&types.Transaction{}, &serializers.ProtoBuffBinary{}, vnic.Resources().Security())
 
 	if !isLeader {

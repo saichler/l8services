@@ -1,15 +1,15 @@
 package tests
 
 import (
-	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/shared/go/tests/infra"
+	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
 )
 
 func TestServicePoints(t *testing.T) {
 	testsp := infra.NewTestServicePointHandler("testsp")
-	pb := &tests.TestProto{}
+	pb := &testtypes.TestProto{}
 	err := globals.ServicePoints().RegisterServicePoint(0, nil, testsp)
 	if err == nil {
 		log.Fail("Expected an error")

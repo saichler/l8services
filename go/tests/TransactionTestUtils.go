@@ -1,20 +1,20 @@
 package tests
 
 import (
-	"github.com/saichler/shared/go/tests"
 	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"sync"
 	"testing"
 )
 
 var trs = make([]*types.Transaction, 0)
-var gets = make([]*tests.TestProto, 0)
+var gets = make([]*testtypes.TestProto, 0)
 
 var trsMtx = &sync.Mutex{}
 
 func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
-	pb := &tests.TestProto{MyString: "test"}
+	pb := &testtypes.TestProto{MyString: "test"}
 	resp, err := vnic.Transaction(action, 0, "TestProto", pb)
 	if err != nil {
 		log.Fail(t, err.Error())
@@ -59,7 +59,7 @@ func do50Transactions(nic common.IVirtualNetworkInterface) bool {
 }
 
 func sendTransaction(nic common.IVirtualNetworkInterface) {
-	pb := &tests.TestProto{MyString: "test"}
+	pb := &testtypes.TestProto{MyString: "test"}
 	resp, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
 	if err != nil {
 		log.Error(err.Error())
@@ -73,14 +73,14 @@ func sendTransaction(nic common.IVirtualNetworkInterface) {
 }
 
 func sendGet(nic common.IVirtualNetworkInterface) {
-	pb := &tests.TestProto{MyString: "test"}
+	pb := &testtypes.TestProto{MyString: "test"}
 	resp, err := nic.Transaction(types.Action_GET, 0, "TestProto", pb)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
-	tr := resp.(*tests.TestProto)
+	tr := resp.(*testtypes.TestProto)
 	trsMtx.Lock()
 	defer trsMtx.Unlock()
 	gets = append(gets, tr)
