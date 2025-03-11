@@ -45,7 +45,13 @@ func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message
 }
 
 func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) (proto.Message, error) {
-	err := vnic.Resources().Security().CanDo()
+	if vnic != nil {
+		err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().Config().LocalUuid, "")
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	tName := reflect.ValueOf(pb).Elem().Type().Name()
 	h, ok := this.type2ServicePoint.Get(tName)
 	if !ok {

@@ -8,7 +8,8 @@ import (
 )
 
 func TestServicePoints(t *testing.T) {
-	testsp := infra.NewTestServicePointHandler("testsp")
+	infra.Log = log
+	testsp := infra.NewTestServicePointHandler("TestProto")
 	pb := &testtypes.TestProto{}
 	err := globals.ServicePoints().RegisterServicePoint(0, nil, testsp)
 	if err == nil {

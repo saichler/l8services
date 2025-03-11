@@ -7,7 +7,7 @@ require (
 	github.com/saichler/reflect v0.0.0-20250311004024-727e5e843c48
 	github.com/saichler/serializer v0.0.0-20250311023608-9cd7f33dff21
 	github.com/saichler/shared v0.0.0-20250311023020-88d59c2d719e
-	github.com/saichler/types/go v0.0.0-20250311022909-5b89bee0150f
+	github.com/saichler/types/go v0.0.0-20250311033913-29964fd0e1eb
 	google.golang.org/protobuf v1.36.5
 )
 
