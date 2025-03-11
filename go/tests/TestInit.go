@@ -6,10 +6,9 @@ import (
 	vnic2 "github.com/saichler/layer8/go/overlay/vnic"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/servicepoints/go/points/service_points"
-	"github.com/saichler/shared/go/share/logger"
 	"github.com/saichler/shared/go/share/registry"
 	"github.com/saichler/shared/go/share/resources"
-	"github.com/saichler/shared/go/tests/infra"
+	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/common"
 	. "github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
@@ -17,7 +16,6 @@ import (
 	"time"
 )
 
-var log = logger.NewLoggerDirectImpl(&logger.FmtLogMethod{})
 var globals IResources
 var sw1 *vnet.VNet
 var sw2 *vnet.VNet
@@ -26,13 +24,12 @@ var eg2 IVirtualNetworkInterface
 var eg3 IVirtualNetworkInterface
 var eg4 IVirtualNetworkInterface
 var eg5 IVirtualNetworkInterface
-var tsps = make(map[string]*infra.TestServicePointHandler)
+var tsps = make(map[string]*TestServicePointHandler)
 
 func init() {
-	log.SetLogLevel(Trace_Level)
+	Log.SetLogLevel(Trace_Level)
 	protocol.UsingContainers = false
 	initGlobals()
-	infra.Log = log
 }
 
 func initGlobals() {
@@ -47,7 +44,7 @@ func initGlobals() {
 	}
 	inspector := introspecting.NewIntrospect(registry)
 	sps := service_points.NewServicePoints(inspector, config)
-	globals = resources.NewResources(registry, secure, sps, log, nil, nil, config, inspector)
+	globals = resources.NewResources(registry, secure, sps, Log, nil, nil, config, inspector)
 }
 
 func setup() {
@@ -59,16 +56,9 @@ func tear() {
 }
 
 func reset(name string) {
-	log.Info("*** ", name, " end ***")
+	Log.Info("*** ", name, " end ***")
 	for _, t := range tsps {
-		t.PostNumber = 0
-		t.DeleteNumber = 0
-		t.PutNumber = 0
-		t.PatchNumber = 0
-		t.GetNumber = 0
-		t.FailedNumber = 0
-		t.ErrorMode = false
-		t.Tr = false
+		t.Reset()
 	}
 	time.Sleep(time.Second)
 }
@@ -110,7 +100,7 @@ func createSwitch(port uint32, name string) *vnet.VNet {
 	ins := introspecting.NewIntrospect(reg)
 	sps := service_points.NewServicePoints(ins, config)
 
-	res := resources.NewResources(reg, secure, sps, log, nil, nil, config, ins)
+	res := resources.NewResources(reg, secure, sps, Log, nil, nil, config, ins)
 	res.Config().VnetPort = port
 	sw := vnet.NewVNet(res)
 	sw.Start()
@@ -131,9 +121,9 @@ func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInte
 	ins := introspecting.NewIntrospect(reg)
 	sps := service_points.NewServicePoints(ins, config)
 
-	resourcs := resources.NewResources(reg, secure, sps, log, nil, nil, config, ins)
+	resourcs := resources.NewResources(reg, secure, sps, Log, nil, nil, config, ins)
 	resourcs.Config().VnetPort = port
-	tsps[name] = infra.NewTestServicePointHandler(name)
+	tsps[name] = NewTestServicePointHandler(name)
 
 	if addTestTopic {
 		sp := resourcs.ServicePoints()

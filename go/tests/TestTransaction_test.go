@@ -1,6 +1,7 @@
 package tests
 
 import (
+	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
@@ -16,7 +17,7 @@ func TestMain(m *testing.M) {
 func TestTransaction(t *testing.T) {
 	defer reset("TestTransaction")
 	for _, ts := range tsps {
-		ts.Tr = true
+		ts.SetTr(true)
 	}
 
 	if !doTransaction(types.Action_POST, eg3, 1, t, true) {
@@ -36,44 +37,44 @@ func TestTransaction(t *testing.T) {
 func TestTransactionPut(t *testing.T) {
 	defer reset("TestTransactionPut")
 	for _, ts := range tsps {
-		ts.Tr = true
+		ts.SetTr(true)
 	}
 
 	if !doTransaction(types.Action_PUT, eg3, 1, t, true) {
 		return
 	}
-	if tsps["eg2"].PutNumber != 1 {
-		log.Fail(t, "Expected 1 put")
+	if tsps["eg2"].PutN() != 1 {
+		Log.Fail(t, "Expected 1 put")
 	}
 }
 
 func TestTransactionGet(t *testing.T) {
 	defer reset("TestTransactionGet")
 	for _, ts := range tsps {
-		ts.Tr = true
+		ts.SetTr(true)
 	}
 
 	pb := &testtypes.TestProto{}
 	_, err := eg3.Transaction(types.Action_GET, 0, "TestProto", pb)
 	if err != nil {
-		log.Fail(t, err.Error())
+		Log.Fail(t, err.Error())
 		return
 	}
 
-	if tsps["eg2"].GetNumber != 0 {
-		log.Fail(t, "Expected 0 Get")
+	if tsps["eg2"].GetN() != 0 {
+		Log.Fail(t, "Expected 0 Get")
 	}
-	if tsps["eg3"].GetNumber != 1 {
-		log.Fail(t, "Expected 1 Get")
+	if tsps["eg3"].GetN() != 1 {
+		Log.Fail(t, "Expected 1 Get")
 	}
 }
 
 func TestTransactionPutRollback(t *testing.T) {
 	defer reset("TestTransactionPutRollback")
 	for _, ts := range tsps {
-		ts.Tr = true
-		if ts.Name == "eg2" {
-			ts.ErrorMode = true
+		ts.SetTr(true)
+		if ts.Name() == "eg2" {
+			ts.SetErrorMode(true)
 		}
 	}
 
@@ -81,41 +82,37 @@ func TestTransactionPutRollback(t *testing.T) {
 		return
 	}
 	//2 put, one for the commit and 1 for the rollback
-	if tsps["eg4"].PutNumber != 2 {
-		log.Fail(t, "Expected 2 put")
+	if tsps["eg4"].PutN() != 2 {
+		Log.Fail(t, "Expected 2 put")
 	}
 }
 
 func TestParallel(t *testing.T) {
 	defer reset("TestTransaction")
 	for _, ts := range tsps {
-		ts.Tr = true
+		ts.SetTr(true)
 	}
-	defer func() {
-		for _, ts := range tsps {
-			ts.Tr = false
-		}
-	}()
+
 	go do50Transactions(eg2)
 	go do50Transactions(eg4)
 	go do50Gets(eg2)
 	go do50Gets(eg3)
 
 	time.Sleep(time.Second)
-	log.Info("Total:", len(trs))
+	Log.Info("Total:", len(trs))
 	if len(trs) != 100 {
-		log.Fail(t, "number of commited transactions:", len(trs))
+		Log.Fail(t, "number of commited transactions:", len(trs))
 		return
 	}
 	for _, tr := range trs {
 		if tr.State != types.TransactionState_Commited {
-			log.Fail(t, "transaction state:", tr.State)
+			Log.Fail(t, "transaction state:", tr.State)
 		}
-		log.Info("Tr:", tr.State.String(), " ", tr.Id, " ", tr.Error)
+		Log.Info("Tr:", tr.State.String(), " ", tr.Id, " ", tr.Error)
 	}
 
 	if len(gets) != 100 {
-		log.Fail(t, "number of gets:", len(gets))
+		Log.Fail(t, "number of gets:", len(gets))
 		return
 	}
 }
@@ -123,16 +120,11 @@ func TestParallel(t *testing.T) {
 func TestTransactionRollback(t *testing.T) {
 	defer reset("TestTransactionRollback")
 	for key, ts := range tsps {
-		ts.Tr = true
+		ts.SetTr(true)
 		if key == "eg2" {
-			ts.ErrorMode = true
+			ts.SetErrorMode(true)
 		}
 	}
-	defer func() {
-		for _, ts := range tsps {
-			ts.Tr = false
-		}
-	}()
 
 	if !doTransaction(types.Action_POST, eg3, 1, t, false) {
 		return
@@ -148,11 +140,11 @@ func TestTransactionRollback(t *testing.T) {
 
 	found := false
 	for _, ts := range tsps {
-		if ts.DeleteNumber > 0 {
+		if ts.DeleteN() > 0 {
 			found = true
 		}
 	}
 	if !found {
-		log.Fail(t, "Expected a rollback")
+		Log.Fail(t, "Expected a rollback")
 	}
 }

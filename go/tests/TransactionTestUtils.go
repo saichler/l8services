@@ -1,6 +1,7 @@
 package tests
 
 import (
+	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
@@ -17,28 +18,28 @@ func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, ex
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp, err := vnic.Transaction(action, 0, "TestProto", pb)
 	if err != nil {
-		log.Fail(t, err.Error())
+		Log.Fail(t, err.Error())
 		return false
 	}
 
 	tr := resp.(*types.Transaction)
 	if tr.State != types.TransactionState_Commited && failure {
-		log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State.String(), " ", tr.Error)
+		Log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State.String(), " ", tr.Error)
 		return false
 	}
 
 	if action == types.Action_POST {
-		if tsps["eg1"].PostNumber != expected && failure {
-			log.Fail(t, "eg1 Expected post to be ", expected, " but it is ", tsps["eg1"].PostNumber)
+		if tsps["eg1"].PostN() != expected && failure {
+			Log.Fail(t, "eg1 Expected post to be ", expected, " but it is ", tsps["eg1"].PostN())
 		}
-		if tsps["eg2"].PostNumber != expected && failure {
-			log.Fail(t, "eg2 Expected post to be ", expected, " but it is ", tsps["eg2"].PostNumber)
+		if tsps["eg2"].PostN() != expected && failure {
+			Log.Fail(t, "eg2 Expected post to be ", expected, " but it is ", tsps["eg2"].PostN())
 		}
-		if tsps["eg3"].PostNumber != expected && failure {
-			log.Fail(t, "eg3 Expected post to be ", expected, " but it is ", tsps["eg3"].PostNumber)
+		if tsps["eg3"].PostN() != expected && failure {
+			Log.Fail(t, "eg3 Expected post to be ", expected, " but it is ", tsps["eg3"].PostN())
 		}
-		if tsps["eg4"].PostNumber != expected && failure {
-			log.Fail(t, "eg4 Expected post to be ", expected, " but it is ", tsps["eg4"].PostNumber)
+		if tsps["eg4"].PostN() != expected && failure {
+			Log.Fail(t, "eg4 Expected post to be ", expected, " but it is ", tsps["eg4"].PostN())
 		}
 	}
 	return true
@@ -62,7 +63,7 @@ func sendTransaction(nic common.IVirtualNetworkInterface) {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
 	if err != nil {
-		log.Error(err.Error())
+		Log.Error(err.Error())
 		return
 	}
 
@@ -76,7 +77,7 @@ func sendGet(nic common.IVirtualNetworkInterface) {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp, err := nic.Transaction(types.Action_GET, 0, "TestProto", pb)
 	if err != nil {
-		log.Error(err.Error())
+		Log.Error(err.Error())
 		return
 	}
 
