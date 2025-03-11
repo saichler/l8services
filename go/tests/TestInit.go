@@ -32,6 +32,7 @@ func init() {
 	log.SetLogLevel(Trace_Level)
 	protocol.UsingContainers = false
 	initGlobals()
+	infra.Log = log
 }
 
 func initGlobals() {
@@ -47,7 +48,6 @@ func initGlobals() {
 	inspector := introspecting.NewIntrospect(registry)
 	sps := service_points.NewServicePoints(inspector, config)
 	globals = resources.NewResources(registry, secure, sps, log, nil, nil, config, inspector)
-	secure.Init(globals)
 }
 
 func setup() {
@@ -111,7 +111,6 @@ func createSwitch(port uint32, name string) *vnet.VNet {
 	sps := service_points.NewServicePoints(ins, config)
 
 	res := resources.NewResources(reg, secure, sps, log, nil, nil, config, ins)
-	secure.Init(res)
 	res.Config().VnetPort = port
 	sw := vnet.NewVNet(res)
 	sw.Start()
@@ -133,7 +132,6 @@ func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInte
 	sps := service_points.NewServicePoints(ins, config)
 
 	resourcs := resources.NewResources(reg, secure, sps, log, nil, nil, config, ins)
-	secure.Init(resourcs)
 	resourcs.Config().VnetPort = port
 	tsps[name] = infra.NewTestServicePointHandler(name)
 
