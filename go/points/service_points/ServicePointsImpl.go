@@ -2,6 +2,7 @@ package service_points
 
 import (
 	"errors"
+	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/types/go/common"
@@ -85,6 +86,10 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	pb proto.Message, resourcs common.IResources) (proto.Message, error) {
 	switch action {
 	case types.Action_POST:
+		if h.ReplicationCount() > 0 {
+			healthCenter := health.Health(resourcs)
+			healthCenter.AddScore(resourcs.Config().LocalUuid, h.Topic(), 0)
+		}
 		return h.Post(pb, resourcs)
 	case types.Action_PUT:
 		return h.Put(pb, resourcs)

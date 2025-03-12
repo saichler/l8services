@@ -15,7 +15,7 @@ func TestCacheListener(t *testing.T) {
 	c := cache.NewModelCache("", nil, ni)
 	item1 := utils.CreateTestModelInstance(1)
 	ni.Inspect(item1)
-	err := c.Put(item1.MyString, item1)
+	_, err := c.Put(item1.MyString, item1)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return

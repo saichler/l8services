@@ -49,9 +49,12 @@ func (this *Cache) Get(k string) interface{} {
 	return nil
 }
 
-func (this *Cache) Put(k string, v interface{}) error {
+func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
+	var n *types.NotificationSet
+	var e error
+
 	if this.typeName == "" {
 		this.typeName = reflect.ValueOf(v).Elem().Type().Name()
 	}
@@ -64,33 +67,33 @@ func (this *Cache) Put(k string, v interface{}) error {
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
 		if this.listener != nil {
-			n, e := this.createAddNotification(itemClone)
+			n, e = this.createAddNotification(itemClone)
 			if e != nil {
-				return e
+				return n, e
 			}
 			go this.listener.PropertyChangeNotification(n)
 		}
-		return nil
+		return n, e
 	}
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
 	putUpdater := updating.NewUpdater(this.introspector, true)
 	//update the item clone with the new element where nil is valid
-	err := putUpdater.Update(itemClone, v)
-	if err != nil {
-		return err
+	e = putUpdater.Update(itemClone, v)
+	if e != nil {
+		return n, e
 	}
 	//if there are changes, then nothing to do
 	changes := putUpdater.Changes()
 	if changes == nil {
-		return nil
+		return nil, nil
 	}
 
 	if this.listener != nil {
-		n, e := this.createReplaceNotification(item, itemClone)
+		n, e = this.createReplaceNotification(item, itemClone)
 		if e != nil {
-			return e
+			return n, e
 		}
 		go this.listener.PropertyChangeNotification(n)
 	}
@@ -100,7 +103,7 @@ func (this *Cache) Put(k string, v interface{}) error {
 		change.Apply(item)
 	}
 
-	return nil
+	return n, e
 }
 
 func (this *Cache) Update(k string, v interface{}) error {

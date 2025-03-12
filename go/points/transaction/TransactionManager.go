@@ -45,12 +45,17 @@ func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNe
 
 	createTransaction(msg)
 	tt.addTransaction(msg)
+	healthCenter := health.Health(vnic.Resources())
+	targets := healthCenter.Uuids(msg.Type, msg.Vlan, true)
+	delete(targets, vnic.Resources().Config().LocalUuid)
 
-	ok, _ = requestFromAllPeers(msg, vnic)
+	ok, _ = requestFromPeers(msg, vnic, targets)
 	if !ok {
 		//Cleanup as we failed
-		msg.Tr.State = types.TransactionState_Commited
-		requestFromAllPeers(msg, vnic)
+		msg.Tr.State = types.TransactionState_Finish
+		requestFromPeers(msg, vnic, targets)
+		tt.finish(msg, true)
+
 		//Mark as error
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Failed to create transaction"
@@ -58,7 +63,6 @@ func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNe
 	}
 
 	msg.Tr.State = types.TransactionState_Start
-	healthCenter := health.Health(vnic.Resources())
 	leader := healthCenter.Leader(msg.Type, msg.Vlan)
 	isLeader := leader == vnic.Resources().Config().LocalUuid
 
@@ -107,25 +111,60 @@ func (this *TransactionManager) create(msg *types.Message) {
 	msg.Tr.State = types.TransactionState_Created
 }
 
+func (this *TransactionManager) Targets(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
+	healthCenter := health.Health(vnic.Resources())
+	isLeader := healthCenter.Leader(msg.Type, msg.Vlan) == vnic.Resources().Config().LocalUuid
+	targets := healthCenter.Uuids(msg.Type, msg.Vlan, true)
+	replicas := make(map[string]bool)
+	for target, _ := range targets {
+		replicas[target] = true
+	}
+	isLeaderATarget := true
+
+	//If this is a replication count transaction and the action type is POST,
+	//Find out which of the targets need to be included in the commit.
+	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.Type)
+	if servicePoint.ReplicationCount() > 0 && msg.Action == types.Action_POST {
+		reps := healthCenter.ReplicasFor(msg.Type, msg.Vlan, servicePoint.ReplicationCount())
+		replicas = make(map[string]bool)
+		for target, _ := range reps {
+			replicas[target] = true
+		}
+		// Is the leader elected to be part of this commit
+		_, isLeaderATarget = replicas[vnic.Resources().Config().LocalUuid]
+	}
+
+	//Remove the leader from the targets & the replicas
+	delete(targets, vnic.Resources().Config().LocalUuid)
+	delete(replicas, vnic.Resources().Config().LocalUuid)
+
+	return isLeader, isLeaderATarget, targets, replicas
+}
+
 func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNetworkInterface) {
+	//Get the states from the health instance
+	isLeader, isLeaderATarget, targets, replicas := this.Targets(msg, vnic)
+
+	//Get the topic transactions and lock it
 	tt := this.topicTransaction(msg)
 	tt.cond.L.Lock()
 	defer func() {
 		//Cleanup
 		oldState := msg.Tr.State
 		msg.Tr.State = types.TransactionState_Finish
-		requestFromAllPeers(msg, vnic)
+		requestFromPeers(msg, vnic, targets)
 		tt.finish(msg, false)
 		msg.Tr.State = oldState
 		tt.cond.L.Unlock()
 	}()
 
+	//If the state isn't Start, this means there is a major bug so panic
 	if msg.Tr.State != types.TransactionState_Start {
 		panic("start: Unexpected transaction state " + msg.Tr.State.String())
 	}
 
-	healthCenter := health.Health(vnic.Resources())
-	isLeader := healthCenter.Leader(msg.Type, msg.Vlan) == vnic.Resources().Config().LocalUuid
+	//There is a race condition, if the leader has changed during this transaction
+	//Fail it
 	if !isLeader {
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Start transaction invoked on a follower"
@@ -134,7 +173,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 
 	//Try to lock on all the followers
 	msg.Tr.State = types.TransactionState_Lock
-	ok, _ := requestFromAllPeers(msg, vnic)
+	ok, _ := requestFromPeers(msg, vnic, targets)
 	if !ok {
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Failed to lock followers"
@@ -153,35 +192,45 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 
 	//At this point we are ready to commit
 	//Try to commit on the followers
+	//Note we do it on the replicas and not on targets as if this is a replication
+	//count commit, we want to commit only on the replicas
 	msg.Tr.State = types.TransactionState_Commit
-	ok, peers := requestFromAllPeers(msg, vnic)
+	ok, peers := requestFromPeers(msg, vnic, replicas)
 	if !ok {
 		//Request a rollback only from those peers that commited
 		msg.Tr.State = types.TransactionState_Rollback
-		requestFromPeers(msg, vnic, peers)
+		rollTarget := make(map[string]bool)
+		for target, e := range peers {
+			if e == "" {
+				rollTarget[target] = true
+			}
+		}
+		requestFromPeers(msg, vnic, rollTarget)
 
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Followers failed to commit"
 		return
 	}
 
-	//Try to commit on the leader
-	msg.Tr.State = types.TransactionState_Commit
-	ok = tt.commit(msg, vnic, false)
-	if !ok {
-		//Request a rollback from the followers
-		msg.Tr.State = types.TransactionState_Rollback
-		requestFromAllPeers(msg, vnic)
-
-		errorMsg := "Leader failed to commit"
+	//Try to commit on the leader, if you need to
+	if isLeaderATarget {
+		vnic.Resources().Logger().Error("Leader is a target")
+		msg.Tr.State = types.TransactionState_Commit
+		ok = tt.commit(msg, vnic, false)
 		if !ok {
-			errorMsg = "Leader failed to commit and failed to clean up"
-		}
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = errorMsg
-		return
-	}
+			//Request a rollback from the followers
+			msg.Tr.State = types.TransactionState_Rollback
+			requestFromPeers(msg, vnic, replicas)
 
+			errorMsg := "Leader failed to commit"
+			if !ok {
+				errorMsg = "Leader failed to commit and failed to clean up"
+			}
+			msg.Tr.State = types.TransactionState_Errored
+			msg.Tr.Error = errorMsg
+			return
+		}
+	}
 	//Cleanup and release the lock
 	msg.Tr.State = types.TransactionState_Commited
 }

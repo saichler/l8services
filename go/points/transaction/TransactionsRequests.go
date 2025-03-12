@@ -9,20 +9,20 @@ import (
 
 type Requests struct {
 	cond    *sync.Cond
-	pending map[string]bool
+	pending map[string]string
 	count   int
 }
 
 func newRequest() *Requests {
 	rq := &Requests{}
-	rq.pending = make(map[string]bool)
+	rq.pending = make(map[string]string)
 	rq.cond = sync.NewCond(&sync.Mutex{})
 	return rq
 }
 
 func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg *types.Message, target string) {
 	this.cond.L.Lock()
-	this.pending[target] = true
+	this.pending[target] = ""
 	this.count++
 	this.cond.L.Unlock()
 
@@ -30,7 +30,7 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 	if err != nil {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
-		this.pending[target] = false
+		this.pending[target] = err.Error()
 		this.cond.Broadcast()
 		return
 	}
@@ -41,7 +41,7 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 	defer this.cond.L.Unlock()
 
 	if tr.State == types.TransactionState_Errored {
-		this.pending[target] = false
+		this.pending[target] = tr.Error
 	}
 
 	this.count--
@@ -51,21 +51,7 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 	}
 }
 
-func requestFromAllPeers(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, map[string]bool) {
-	return requestFromPeers(msg, vnic, nil)
-}
-
-func requestFromPeers(msg *types.Message, vnic common.IVirtualNetworkInterface, peers map[string]bool) (bool, map[string]bool) {
-	hc := health.Health(vnic.Resources())
-	targets := hc.Uuids(msg.Type, msg.Vlan, true)
-	delete(targets, vnic.Resources().Config().LocalUuid)
-	if peers != nil {
-		for peer, ok := range peers {
-			if !ok {
-				delete(targets, peer)
-			}
-		}
-	}
+func requestFromPeers(msg *types.Message, vnic common.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
 
 	this := newRequest()
 
@@ -80,8 +66,9 @@ func requestFromPeers(msg *types.Message, vnic common.IVirtualNetworkInterface, 
 	this.cond.Wait()
 
 	ok := true
-	for _, ok = range this.pending {
-		if !ok {
+	for _, e := range this.pending {
+		if e != "" {
+			ok = false
 			break
 		}
 	}
