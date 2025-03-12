@@ -3,7 +3,7 @@ module github.com/saichler/servicepoints/go
 go 1.23.2
 
 require (
-	github.com/saichler/layer8/go v0.0.0-20250312173320-1c6a13bfb070
+	github.com/saichler/layer8/go v0.0.0-20250312193354-84090c252f51
 	github.com/saichler/reflect/go v0.0.0-20250312173133-5b8fdb96726c
 	github.com/saichler/serializer/go v0.0.0-20250312171751-f16ab3ede337
 	github.com/saichler/shared/go v0.0.0-20250311194431-666c46978b49

@@ -48,7 +48,7 @@ func doRound(ecount, score int, t *testing.T) bool {
 	rep := hp.ReplicasFor("TestProto", 0, 2)
 	for _, r := range rep {
 		if int(r) != score {
-			Log.Fail(t, "Expected score to be ", score, "got ", r)
+			Log.Fail(t, "Expected score to be ", score, " got ", r)
 			return false
 		}
 	}
