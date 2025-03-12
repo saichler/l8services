@@ -22,7 +22,7 @@ func TestCacheListener(t *testing.T) {
 	}
 	item2 := utils.CreateTestModelInstance(1)
 	item2.MyEnum = testtypes.TestEnum_ValueTwo
-	err = c.Update(item2.MyString, item2)
+	_, err = c.Update(item2.MyString, item2)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return

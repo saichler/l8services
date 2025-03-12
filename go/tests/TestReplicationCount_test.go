@@ -6,6 +6,7 @@ import (
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
+	"time"
 )
 
 func TestTransactionReplication(t *testing.T) {
@@ -18,6 +19,8 @@ func TestTransactionReplication(t *testing.T) {
 	if !doRound(2, 0, t) {
 		return
 	}
+
+	time.Sleep(time.Second)
 
 	if !doRound(4, 1, t) {
 		return

@@ -214,7 +214,6 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 
 	//Try to commit on the leader, if you need to
 	if isLeaderATarget {
-		vnic.Resources().Logger().Error("Leader is a target")
 		msg.Tr.State = types.TransactionState_Commit
 		ok = tt.commit(msg, vnic, false)
 		if !ok {

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"fmt"
 	"github.com/saichler/reflect/go/reflect/cloning"
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/types/go/common"
@@ -130,18 +131,21 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 	//if there are changes, then nothing to do
 	changes := patchUpdater.Changes()
 	if changes == nil {
+		fmt.Println("Has No changes ")
 		return nil, nil
 	}
-
+	fmt.Println("Has changes ")
 	//Apply the changes to the existing item
 	for _, change := range changes {
 		change.Apply(item)
 	}
+
+	n, e = this.createUpdateNotification(changes)
+	if e != nil {
+		return n, e
+	}
+
 	if this.listener != nil {
-		n, e = this.createUpdateNotification(changes)
-		if e != nil {
-			return n, e
-		}
 		go this.listener.PropertyChangeNotification(n)
 	}
 	return n, e
