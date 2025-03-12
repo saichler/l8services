@@ -106,29 +106,31 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	return n, e
 }
 
-func (this *Cache) Update(k string, v interface{}) error {
+func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
+	var n *types.NotificationSet
+	var e error
 
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
 	if !ok {
-		return errors.New("Key " + k + " not found")
+		return n, errors.New("Key " + k + " not found")
 	}
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
 	patchUpdater := updating.NewUpdater(this.introspector, false)
 	//update the item clone with the new element where nil is valid
-	err := patchUpdater.Update(itemClone, v)
-	if err != nil {
-		return err
+	e = patchUpdater.Update(itemClone, v)
+	if e != nil {
+		return n, e
 	}
 
 	//if there are changes, then nothing to do
 	changes := patchUpdater.Changes()
 	if changes == nil {
-		return nil
+		return nil, nil
 	}
 
 	//Apply the changes to the existing item
@@ -136,13 +138,13 @@ func (this *Cache) Update(k string, v interface{}) error {
 		change.Apply(item)
 	}
 	if this.listener != nil {
-		n, e := this.createUpdateNotification(changes)
+		n, e = this.createUpdateNotification(changes)
 		if e != nil {
-			return e
+			return n, e
 		}
 		go this.listener.PropertyChangeNotification(n)
 	}
-	return nil
+	return n, e
 }
 
 func (this *Cache) Delete(k string) error {
