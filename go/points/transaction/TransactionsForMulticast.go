@@ -10,18 +10,18 @@ import (
 	"time"
 )
 
-type TopicTransactions struct {
+type TransactionsForMulticast struct {
 	cond            *sync.Cond
 	pendingMap      map[string]*types.Message
 	locked          *types.Message
 	preCommitObject proto.Message
 }
 
-func newTopicTransactions() *TopicTransactions {
-	tt := &TopicTransactions{}
-	tt.pendingMap = make(map[string]*types.Message)
-	tt.cond = sync.NewCond(&sync.Mutex{})
-	return tt
+func newTransactionsForMulticast() *TransactionsForMulticast {
+	tfm := &TransactionsForMulticast{}
+	tfm.pendingMap = make(map[string]*types.Message)
+	tfm.cond = sync.NewCond(&sync.Mutex{})
+	return tfm
 }
 
 func createTransaction(msg *types.Message) {
@@ -33,7 +33,7 @@ func createTransaction(msg *types.Message) {
 	}
 }
 
-func (this *TopicTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
+func (this *TransactionsForMulticast) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
 	if msg.Action == types.Action_GET {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -51,7 +51,7 @@ func (this *TopicTransactions) shouldHandleAsTransaction(msg *types.Message, vni
 	return nil, nil, true
 }
 
-func (this *TopicTransactions) addTransaction(msg *types.Message) {
+func (this *TransactionsForMulticast) addTransaction(msg *types.Message) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
 	_, ok := this.pendingMap[msg.Tr.Id]
@@ -62,7 +62,7 @@ func (this *TopicTransactions) addTransaction(msg *types.Message) {
 	this.pendingMap[msg.Tr.Id] = msg
 }
 
-func (this *TopicTransactions) finish(msg *types.Message, lock bool) {
+func (this *TransactionsForMulticast) finish(msg *types.Message, lock bool) {
 	defer this.cond.Broadcast()
 	if lock {
 		this.cond.L.Lock()
@@ -80,7 +80,7 @@ func (this *TopicTransactions) finish(msg *types.Message, lock bool) {
 	msg.Tr.State = types.TransactionState_Finished
 }
 
-func (this *TopicTransactions) commit(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
+func (this *TransactionsForMulticast) commit(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -144,7 +144,7 @@ func (this *TopicTransactions) commit(msg *types.Message, vnic common.IVirtualNe
 	return true
 }
 
-func (this *TopicTransactions) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
+func (this *TransactionsForMulticast) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
 
 	pb, err := protocol.ProtoOf(this.locked, vnic.Resources())
 	if err != nil {
@@ -172,7 +172,7 @@ func (this *TopicTransactions) setPreCommitObject(msg *types.Message, vnic commo
 	return true
 }
 
-func (this *TopicTransactions) setRollbackAction(msg *types.Message) {
+func (this *TransactionsForMulticast) setRollbackAction(msg *types.Message) {
 	switch msg.Action {
 	case types.Action_POST:
 		this.locked.Action = types.Action_DELETE
@@ -185,7 +185,7 @@ func (this *TopicTransactions) setRollbackAction(msg *types.Message) {
 	}
 }
 
-func (this *TopicTransactions) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
+func (this *TransactionsForMulticast) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -230,7 +230,7 @@ func (this *TopicTransactions) rollback(msg *types.Message, vnic common.IVirtual
 	return true
 }
 
-func (this *TopicTransactions) lock(msg *types.Message, lock bool) bool {
+func (this *TransactionsForMulticast) lock(msg *types.Message, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -263,6 +263,6 @@ func (this *TopicTransactions) lock(msg *types.Message, lock bool) bool {
 	}
 
 	msg.Tr.State = types.TransactionState_LockFailed
-	msg.Tr.Error = "Failed to lock : " + msg.Topic
+	msg.Tr.Error = "Failed to lock : " + msg.MulticastGroup
 	return false
 }

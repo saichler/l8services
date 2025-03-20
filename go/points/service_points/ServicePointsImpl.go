@@ -8,67 +8,67 @@ import (
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
-	"reflect"
 )
 
 type ServicePointsImpl struct {
-	type2ServicePoint *String2ServicePointMap
-	introspector      common.IIntrospector
-	config            *types.VNicConfig
-	trManager         *transaction.TransactionManager
+	multicast2ServicePoint *String2ServicePointMap
+	introspector           common.IIntrospector
+	config                 *types.VNicConfig
+	trManager              *transaction.TransactionManager
 }
 
 func NewServicePoints(introspector common.IIntrospector, config *types.VNicConfig) common.IServicePoints {
 	sp := &ServicePointsImpl{}
-	sp.type2ServicePoint = NewString2ServicePointMap()
+	sp.multicast2ServicePoint = NewString2ServicePointMap()
 	sp.introspector = introspector
 	sp.config = config
 	sp.trManager = transaction.NewTransactionManager()
-	introspector.Registry().Register(&types.NotificationSet{})
+	_, err := introspector.Registry().Register(&types.NotificationSet{})
+	if err != nil {
+		panic(err)
+	}
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServicePoint(vlan int32, pb proto.Message, handler common.IServicePointHandler) error {
-	if pb == nil {
-		return errors.New("cannot register handler with nil proto")
+func (this *ServicePointsImpl) RegisterServicePoint(multicast string, vlan int32, handler common.IServicePointHandler) error {
+	if multicast == "" {
+		return errors.New("cannot register handler with blank multicast group")
 	}
-	typ := reflect.ValueOf(pb).Elem().Type()
 	if handler == nil {
-		return errors.New("cannot register nil handler for type " + typ.Name())
+		return errors.New("cannot register nil handler for multicast group " + multicast)
 	}
-	_, err := this.introspector.Registry().RegisterType(typ)
+	_, err := this.introspector.Registry().RegisterType(handler.SupportedType())
 	if err != nil {
 		return err
 	}
-	this.type2ServicePoint.Put(typ.Name(), handler)
-	common.AddTopic(this.config, vlan, typ.Name())
+	this.multicast2ServicePoint.Put(multicast, handler)
+	common.AddTopic(this.config, vlan, multicast)
 	return nil
 }
 
 func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) (proto.Message, error) {
-	if vnic != nil {
-		err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().Config().LocalUuid, "")
-		if err != nil {
-			return nil, err
-		}
+	if vnic == nil {
+		return nil, errors.New("Handle: vnic cannot be nil")
+	}
+	if msg == nil {
+		return nil, errors.New("Handle: message cannot be nil")
+	}
+	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().Config().LocalUuid, "")
+	if err != nil {
+		return nil, err
 	}
 
-	tName := reflect.ValueOf(pb).Elem().Type().Name()
-	h, ok := this.type2ServicePoint.Get(tName)
+	h, ok := this.multicast2ServicePoint.Get(msg.MulticastGroup)
 	if !ok {
-		return nil, errors.New("Cannot find handler for type " + tName)
-	}
-	var resourcs common.IResources
-	if vnic != nil {
-		resourcs = vnic.Resources()
+		return nil, errors.New("Cannot find handler for multicast group " + msg.MulticastGroup)
 	}
 
-	if msg != nil && msg.FailMsg != "" {
-		return h.Failed(pb, resourcs, msg)
+	if msg.FailMsg != "" {
+		return h.Failed(pb, vnic.Resources(), msg)
 	}
 
 	if !insideTransaction {
-		if h.Transactional() && resourcs != nil && msg != nil {
+		if h.Transactional() {
 			if msg.Tr == nil {
 				return this.trManager.Start(msg, vnic)
 			} else {
@@ -99,7 +99,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	case types.Action_POST:
 		if h.ReplicationCount() > 0 {
 			healthCenter := health.Health(vnic.Resources())
-			healthCenter.AddScore(vnic.Resources().Config().LocalUuid, h.Topic(), 0, vnic)
+			healthCenter.AddScore(vnic.Resources().Config().LocalUuid, h.Multicast(), 0, vnic)
 		}
 		return h.Post(pb, resourcs)
 	case types.Action_PUT:
@@ -115,11 +115,11 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
+func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
 	notification := pb.(*types.NotificationSet)
-	h, ok := this.type2ServicePoint.Get(notification.TypeName)
+	h, ok := this.multicast2ServicePoint.Get(notification.MulticastGroup)
 	if !ok {
-		return nil, errors.New("Cannot find handler for type " + notification.TypeName)
+		return nil, errors.New("Cannot find handler for multicast group " + notification.MulticastGroup)
 	}
 	var resourcs common.IResources
 	if vnic != nil {
@@ -149,6 +149,6 @@ func (this *ServicePointsImpl) Notify(pb proto.Message, action types.Action, vni
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(topic string) (common.IServicePointHandler, bool) {
-	return this.type2ServicePoint.Get(topic)
+func (this *ServicePointsImpl) ServicePointHandler(multicast string) (common.IServicePointHandler, bool) {
+	return this.multicast2ServicePoint.Get(multicast)
 }
