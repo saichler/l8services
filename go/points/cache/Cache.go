@@ -6,27 +6,27 @@ import (
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
-	"reflect"
 	"sync"
 )
 
 type Cache struct {
-	cache        map[string]interface{}
-	mtx          *sync.RWMutex
-	cond         *sync.Cond
-	listener     ICacheListener
-	cloner       *cloning.Cloner
-	introspector common.IIntrospector
-	source       string
-	typeName     string
-	sequence     uint32
+	cache          map[string]interface{}
+	mtx            *sync.RWMutex
+	cond           *sync.Cond
+	listener       ICacheListener
+	cloner         *cloning.Cloner
+	introspector   common.IIntrospector
+	source         string
+	multicastGroup string
+	protoType      string
+	sequence       uint32
 }
 
 type ICacheListener interface {
 	PropertyChangeNotification(*types.NotificationSet)
 }
 
-func NewModelCache(source string, listener ICacheListener, introspector common.IIntrospector) *Cache {
+func NewModelCache(multicastGroup, protoType, source string, listener ICacheListener, introspector common.IIntrospector) *Cache {
 	this := &Cache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}
@@ -35,6 +35,8 @@ func NewModelCache(source string, listener ICacheListener, introspector common.I
 	this.cloner = cloning.NewCloner()
 	this.introspector = introspector
 	this.source = source
+	this.multicastGroup = multicastGroup
+	this.protoType = protoType
 	return this
 }
 
@@ -55,9 +57,6 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	var n *types.NotificationSet
 	var e error
 
-	if this.typeName == "" {
-		this.typeName = reflect.ValueOf(v).Elem().Type().Name()
-	}
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
 	if !ok {
