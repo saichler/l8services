@@ -37,7 +37,7 @@ func (this *ServicePointsImpl) RegisterServicePoint(multicast string, vlan int32
 	if handler == nil {
 		return errors.New("cannot register nil handler for multicast group " + multicast)
 	}
-	_, err := this.introspector.Registry().RegisterType(handler.SupportedType())
+	_, err := this.introspector.Registry().RegisterType(handler.SupportedProto())
 	if err != nil {
 		return err
 	}
