@@ -11,7 +11,6 @@ import (
 	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/common"
 	. "github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"time"
 )
@@ -127,7 +126,7 @@ func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInte
 
 	if addTestTopic {
 		sp := resourcs.ServicePoints()
-		err := sp.RegisterServicePoint(0, &testtypes.TestProto{}, tsps[name])
+		err := sp.RegisterServicePoint(TEST_Multicast, 0, tsps[name])
 		if err != nil {
 			panic(err)
 		}

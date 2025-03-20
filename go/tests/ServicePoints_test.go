@@ -10,17 +10,17 @@ import (
 func TestServicePoints(t *testing.T) {
 	testsp := NewTestServicePointHandler("TestProto")
 	pb := &testtypes.TestProto{}
-	err := globals.ServicePoints().RegisterServicePoint(0, nil, testsp)
+	err := globals.ServicePoints().RegisterServicePoint("TestProto", 0, testsp)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(0, pb, nil)
+	err = globals.ServicePoints().RegisterServicePoint(TEST_Multicast, 0, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(0, pb, testsp)
+	err = globals.ServicePoints().RegisterServicePoint(TEST_Multicast, 0, testsp)
 	if err != nil {
 		Log.Fail(t, err)
 		return
@@ -30,13 +30,15 @@ func TestServicePoints(t *testing.T) {
 		Log.Fail(t, "Service Point Not Found")
 		return
 	}
-	sp.Topic()
+	sp.Multicast()
+	
 	globals.ServicePoints().Handle(pb, types.Action_POST, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_PUT, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_DELETE, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_GET, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_PATCH, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_Invalid_Action, nil, nil, false)
+
 	msg := &types.Message{}
 	msg.FailMsg = "The failed message"
 	msg.SourceUuid = "The source uuid"

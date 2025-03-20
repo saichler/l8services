@@ -61,7 +61,7 @@ func do50Transactions(nic common.IVirtualNetworkInterface) bool {
 
 func sendTransaction(nic common.IVirtualNetworkInterface) {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := nic.Request(types.CastMode_Single, types.Action_POST, 0, "TestProto", pb)
+	resp, err := nic.Transaction(types.Action_POST, 0, TEST_Multicast, pb)
 	if err != nil {
 		Log.Error(err.Error())
 		return
