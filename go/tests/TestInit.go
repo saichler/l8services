@@ -126,7 +126,7 @@ func createEdge(port uint32, name string, addTestTopic bool) IVirtualNetworkInte
 
 	if addTestTopic {
 		sp := resourcs.ServicePoints()
-		err := sp.RegisterServicePoint(TEST_Multicast, 0, tsps[name])
+		err := sp.RegisterServicePoint(tsps[name], 0)
 		if err != nil {
 			panic(err)
 		}

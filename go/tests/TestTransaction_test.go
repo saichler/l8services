@@ -55,7 +55,7 @@ func TestTransactionGet(t *testing.T) {
 	}
 
 	pb := &testtypes.TestProto{}
-	_, err := eg3.Transaction(types.Action_GET, 0, "TestProto", pb)
+	_, err := eg3.SingleRequest(ServiceName, 0, types.Action_GET, pb)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return

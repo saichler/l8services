@@ -12,7 +12,7 @@ import (
 
 func TestCacheListener(t *testing.T) {
 	ni := introspecting.NewIntrospect(globals.Registry())
-	c := cache.NewModelCache(TEST_Multicast, "TestProto", "", nil, ni)
+	c := cache.NewModelCache(ServiceName, 0, "TestProto", "", nil, ni)
 	item1 := utils.CreateTestModelInstance(1)
 	ni.Inspect(item1)
 	_, err := c.Put(item1.MyString, item1)

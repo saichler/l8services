@@ -16,7 +16,7 @@ var trsMtx = &sync.Mutex{}
 
 func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := vnic.Transaction(action, 0, "TestProto", pb)
+	resp, err := vnic.SingleRequest(ServiceName, 0, action, pb)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return false
@@ -61,7 +61,7 @@ func do50Transactions(nic common.IVirtualNetworkInterface) bool {
 
 func sendTransaction(nic common.IVirtualNetworkInterface) {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := nic.Transaction(types.Action_POST, 0, TEST_Multicast, pb)
+	resp, err := nic.SingleRequest(ServiceName, 0, types.Action_POST, pb)
 	if err != nil {
 		Log.Error(err.Error())
 		return
@@ -75,7 +75,7 @@ func sendTransaction(nic common.IVirtualNetworkInterface) {
 
 func sendGet(nic common.IVirtualNetworkInterface) {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := nic.Transaction(types.Action_GET, 0, "TestProto", pb)
+	resp, err := nic.SingleRequest(ServiceName, 0, types.Action_GET, pb)
 	if err != nil {
 		Log.Error(err.Error())
 		return

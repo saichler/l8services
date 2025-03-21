@@ -29,7 +29,7 @@ func TestTransactionReplication(t *testing.T) {
 
 func doRound(ecount, score int, t *testing.T) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	_, err := eg3.Transaction(types.Action_POST, 0, "TestProto", pb)
+	_, err := eg3.SingleRequest(ServiceName, 0, types.Action_POST, pb)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return false

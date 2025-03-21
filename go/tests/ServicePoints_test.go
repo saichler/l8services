@@ -10,28 +10,28 @@ import (
 func TestServicePoints(t *testing.T) {
 	testsp := NewTestServicePointHandler("TestProto")
 	pb := &testtypes.TestProto{}
-	err := globals.ServicePoints().RegisterServicePoint("TestProto", 0, testsp)
+	err := globals.ServicePoints().RegisterServicePoint(testsp, 0)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(TEST_Multicast, 0, nil)
+	err = globals.ServicePoints().RegisterServicePoint(nil, 0)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(TEST_Multicast, 0, testsp)
+	err = globals.ServicePoints().RegisterServicePoint(testsp, 0)
 	if err != nil {
 		Log.Fail(t, err)
 		return
 	}
-	sp, ok := globals.ServicePoints().ServicePointHandler("TestProto")
+	sp, ok := globals.ServicePoints().ServicePointHandler(ServiceName, 0)
 	if !ok {
 		Log.Fail(t, "Service Point Not Found")
 		return
 	}
-	sp.Multicast()
-	
+	sp.ServiceName()
+
 	globals.ServicePoints().Handle(pb, types.Action_POST, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_PUT, nil, nil, false)
 	globals.ServicePoints().Handle(pb, types.Action_DELETE, nil, nil, false)
@@ -41,7 +41,7 @@ func TestServicePoints(t *testing.T) {
 
 	msg := &types.Message{}
 	msg.FailMsg = "The failed message"
-	msg.SourceUuid = "The source uuid"
+	msg.Source = "The source uuid"
 	globals.ServicePoints().Handle(pb, types.Action_POST, nil, msg, false)
 	if testsp.PostN() != 1 {
 		Log.Fail(t, "Post is not 1")
