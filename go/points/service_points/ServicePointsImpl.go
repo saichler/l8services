@@ -82,13 +82,13 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 		}
 	}
 
-	resp, err := this.doAction(h, action, pb, vnic)
+	resp, err := this.doAction(h, action, msg.ServiceArea, pb, vnic)
 
 	return resp, err
 }
 
 func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action types.Action,
-	pb proto.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
+	serviceArea int32, pb proto.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
 
 	if h == nil {
 		return pb, nil
@@ -104,7 +104,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	case types.Action_POST:
 		if h.ReplicationCount() > 0 {
 			healthCenter := health.Health(vnic.Resources())
-			healthCenter.AddScore(vnic.Resources().Config().LocalUuid, h.Multicast(), 0, vnic)
+			healthCenter.AddScore(vnic.Resources().Config().LocalUuid, h.ServiceName(), serviceArea, vnic)
 		}
 		return h.Post(pb, resourcs)
 	case types.Action_PUT:
