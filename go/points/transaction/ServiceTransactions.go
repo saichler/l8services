@@ -1,24 +1,26 @@
 package transaction
 
 import (
+	"bytes"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-type TransactionsForMulticast struct {
+type ServiceTransactions struct {
 	cond            *sync.Cond
 	pendingMap      map[string]*types.Message
 	locked          *types.Message
 	preCommitObject proto.Message
 }
 
-func newTransactionsForMulticast() *TransactionsForMulticast {
-	tfm := &TransactionsForMulticast{}
+func newTransactionsForMulticast() *ServiceTransactions {
+	tfm := &ServiceTransactions{}
 	tfm.pendingMap = make(map[string]*types.Message)
 	tfm.cond = sync.NewCond(&sync.Mutex{})
 	return tfm
@@ -33,7 +35,7 @@ func createTransaction(msg *types.Message) {
 	}
 }
 
-func (this *TransactionsForMulticast) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
 	if msg.Action == types.Action_GET {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -51,7 +53,7 @@ func (this *TransactionsForMulticast) shouldHandleAsTransaction(msg *types.Messa
 	return nil, nil, true
 }
 
-func (this *TransactionsForMulticast) addTransaction(msg *types.Message) {
+func (this *ServiceTransactions) addTransaction(msg *types.Message) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
 	_, ok := this.pendingMap[msg.Tr.Id]
@@ -62,7 +64,7 @@ func (this *TransactionsForMulticast) addTransaction(msg *types.Message) {
 	this.pendingMap[msg.Tr.Id] = msg
 }
 
-func (this *TransactionsForMulticast) finish(msg *types.Message, lock bool) {
+func (this *ServiceTransactions) finish(msg *types.Message, lock bool) {
 	defer this.cond.Broadcast()
 	if lock {
 		this.cond.L.Lock()
@@ -80,7 +82,7 @@ func (this *TransactionsForMulticast) finish(msg *types.Message, lock bool) {
 	msg.Tr.State = types.TransactionState_Finished
 }
 
-func (this *TransactionsForMulticast) commit(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
+func (this *ServiceTransactions) commit(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -109,7 +111,7 @@ func (this *TransactionsForMulticast) commit(msg *types.Message, vnic common.IVi
 		return false
 	}
 
-	if time.Now().Unix()-this.locked.Tr.StartTime >= 2 { //@TODO add the timeout
+	if time.Now().Unix()-this.locked.Tr.StartTime >= 20 { //@TODO add the timeout
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Commit: Transaction has timed out"
 		return false
@@ -144,7 +146,7 @@ func (this *TransactionsForMulticast) commit(msg *types.Message, vnic common.IVi
 	return true
 }
 
-func (this *TransactionsForMulticast) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
+func (this *ServiceTransactions) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
 
 	pb, err := protocol.ProtoOf(this.locked, vnic.Resources())
 	if err != nil {
@@ -172,7 +174,7 @@ func (this *TransactionsForMulticast) setPreCommitObject(msg *types.Message, vni
 	return true
 }
 
-func (this *TransactionsForMulticast) setRollbackAction(msg *types.Message) {
+func (this *ServiceTransactions) setRollbackAction(msg *types.Message) {
 	switch msg.Action {
 	case types.Action_POST:
 		this.locked.Action = types.Action_DELETE
@@ -185,7 +187,7 @@ func (this *TransactionsForMulticast) setRollbackAction(msg *types.Message) {
 	}
 }
 
-func (this *TransactionsForMulticast) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
+func (this *ServiceTransactions) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -230,7 +232,7 @@ func (this *TransactionsForMulticast) rollback(msg *types.Message, vnic common.I
 	return true
 }
 
-func (this *TransactionsForMulticast) lock(msg *types.Message, lock bool) bool {
+func (this *ServiceTransactions) lock(msg *types.Message, lock bool) bool {
 	if lock {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
@@ -263,6 +265,13 @@ func (this *TransactionsForMulticast) lock(msg *types.Message, lock bool) bool {
 	}
 
 	msg.Tr.State = types.TransactionState_LockFailed
-	msg.Tr.Error = "Failed to lock : " + msg.MulticastGroup
+	msg.Tr.Error = "Failed to lock : " + msg.ServiceName + ":" + strconv.Itoa(int(msg.ServiceArea))
 	return false
+}
+
+func ServiceKey(serviceName string, serviceArea int32) string {
+	buff := bytes.Buffer{}
+	buff.WriteString(serviceName)
+	buff.WriteString(strconv.Itoa(int(serviceArea)))
+	return buff.String()
 }

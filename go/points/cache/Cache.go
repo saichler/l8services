@@ -10,23 +10,25 @@ import (
 )
 
 type Cache struct {
-	cache          map[string]interface{}
-	mtx            *sync.RWMutex
-	cond           *sync.Cond
-	listener       ICacheListener
-	cloner         *cloning.Cloner
-	introspector   common.IIntrospector
-	source         string
-	multicastGroup string
-	protoType      string
-	sequence       uint32
+	cache        map[string]interface{}
+	mtx          *sync.RWMutex
+	cond         *sync.Cond
+	listener     ICacheListener
+	cloner       *cloning.Cloner
+	introspector common.IIntrospector
+	source       string
+	serviceName  string
+	serviceArea  int32
+	modelType    string
+	sequence     uint32
 }
 
 type ICacheListener interface {
 	PropertyChangeNotification(*types.NotificationSet)
 }
 
-func NewModelCache(multicastGroup, protoType, source string, listener ICacheListener, introspector common.IIntrospector) *Cache {
+func NewModelCache(serviceName string, serviceArea int32, modelType, source string,
+	listener ICacheListener, introspector common.IIntrospector) *Cache {
 	this := &Cache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}
@@ -35,8 +37,9 @@ func NewModelCache(multicastGroup, protoType, source string, listener ICacheList
 	this.cloner = cloning.NewCloner()
 	this.introspector = introspector
 	this.source = source
-	this.multicastGroup = multicastGroup
-	this.protoType = protoType
+	this.serviceName = serviceName
+	this.serviceArea = serviceArea
+	this.modelType = modelType
 	return this
 }
 

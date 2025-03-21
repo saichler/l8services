@@ -98,7 +98,7 @@ func TestParallel(t *testing.T) {
 	go do50Gets(eg2)
 	go do50Gets(eg3)
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 5)
 	Log.Info("Total:", len(trs))
 	if len(trs) != 100 {
 		Log.Fail(t, "number of commited transactions:", len(trs))

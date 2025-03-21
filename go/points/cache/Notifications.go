@@ -9,10 +9,12 @@ import (
 	"github.com/saichler/types/go/types"
 )
 
-func CreateNotificationSet(t types.NotificationType, multicast, protoType, source string, changeCount int, sequence uint32) *types.NotificationSet {
+func CreateNotificationSet(t types.NotificationType, serviceName string, serviceArea int32, modelType, source string,
+	changeCount int, sequence uint32) *types.NotificationSet {
 	notificationSet := &types.NotificationSet{}
-	notificationSet.MulticastGroup = multicast
-	notificationSet.ProtoType = protoType
+	notificationSet.ServiceName = serviceName
+	notificationSet.ServiceArea = serviceArea
+	notificationSet.ModelType = modelType
 	notificationSet.Source = source
 	notificationSet.Type = t
 	notificationSet.NotificationList = make([]*types.Notification, changeCount)
@@ -22,11 +24,11 @@ func CreateNotificationSet(t types.NotificationType, multicast, protoType, sourc
 
 func (this *Cache) createNotificationSet(t types.NotificationType, changeCount int) *types.NotificationSet {
 	defer func() { this.sequence++ }()
-	return CreateNotificationSet(t, this.multicastGroup, this.protoType, this.source, changeCount, this.sequence)
+	return CreateNotificationSet(t, this.serviceName, this.serviceArea, this.modelType, this.source, changeCount, this.sequence)
 }
 
-func CreateAddNotification(any interface{}, multicastGroup, protoType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Add, multicastGroup, protoType, source, changeCount, sequence)
+func CreateAddNotification(any interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+	notificationSet := CreateNotificationSet(types.NotificationType_Add, serviceName, serviceArea, modelType, source, changeCount, sequence)
 	obj := object.NewEncode([]byte{}, 0)
 	err := obj.Add(any)
 	if err != nil {
@@ -40,11 +42,11 @@ func CreateAddNotification(any interface{}, multicastGroup, protoType, source st
 
 func (this *Cache) createAddNotification(any interface{}) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
-	return CreateAddNotification(any, this.multicastGroup, this.protoType, this.source, 1, this.sequence)
+	return CreateAddNotification(any, this.serviceName, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateReplaceNotification(old, new interface{}, multicastGroup, protoType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Replace, multicastGroup, protoType, source, 1, sequence)
+func CreateReplaceNotification(old, new interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+	notificationSet := CreateNotificationSet(types.NotificationType_Replace, serviceName, serviceArea, modelType, source, 1, sequence)
 	oldObj := object.NewEncode([]byte{}, 0)
 	err := oldObj.Add(old)
 	if err != nil {
@@ -66,11 +68,11 @@ func CreateReplaceNotification(old, new interface{}, multicastGroup, protoType, 
 
 func (this *Cache) createReplaceNotification(old, new interface{}) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
-	return CreateReplaceNotification(old, new, this.multicastGroup, this.protoType, this.source, 1, this.sequence)
+	return CreateReplaceNotification(old, new, this.serviceName, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateDeleteNotification(any interface{}, multicastGroup, protoType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Delete, multicastGroup, protoType, source, 1, sequence)
+func CreateDeleteNotification(any interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+	notificationSet := CreateNotificationSet(types.NotificationType_Delete, serviceName, serviceArea, modelType, source, 1, sequence)
 	obj := object.NewEncode([]byte{}, 0)
 	err := obj.Add(any)
 	if err != nil {
@@ -84,11 +86,11 @@ func CreateDeleteNotification(any interface{}, multicastGroup, protoType, source
 
 func (this *Cache) createDeleteNotification(any interface{}) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
-	return CreateDeleteNotification(any, this.multicastGroup, this.protoType, this.source, 1, this.sequence)
+	return CreateDeleteNotification(any, this.serviceName, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateUpdateNotification(changes []*updating.Change, multicastGroup, protoType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Update, multicastGroup, protoType, source, changeCount, sequence)
+func CreateUpdateNotification(changes []*updating.Change, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+	notificationSet := CreateNotificationSet(types.NotificationType_Update, serviceName, serviceArea, modelType, source, changeCount, sequence)
 	for i, change := range changes {
 		n := &types.Notification{}
 		n.PropertyId = change.PropertyId()
@@ -115,7 +117,7 @@ func CreateUpdateNotification(changes []*updating.Change, multicastGroup, protoT
 
 func (this *Cache) createUpdateNotification(changes []*updating.Change) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
-	return CreateUpdateNotification(changes, this.multicastGroup, this.protoType, this.source, len(changes), this.sequence)
+	return CreateUpdateNotification(changes, this.serviceName, this.serviceArea, this.modelType, this.source, len(changes), this.sequence)
 }
 
 func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, error) {
@@ -123,15 +125,15 @@ func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, erro
 	case types.NotificationType_Replace:
 		fallthrough
 	case types.NotificationType_Add:
-		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, n.ProtoType, i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, n.ModelType, i.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Delete:
-		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, n.ProtoType, i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, n.ModelType, i.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Update:
-		info, err := i.Registry().Info(n.ProtoType)
+		info, err := i.Registry().Info(n.ModelType)
 		if err != nil {
 			return nil, err
 		}

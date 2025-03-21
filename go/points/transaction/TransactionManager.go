@@ -12,41 +12,42 @@ import (
 )
 
 type TransactionManager struct {
-	multicast2transactions map[string]*TransactionsForMulticast
-	mtx                    *sync.Mutex
+	serviceTransactions map[string]*ServiceTransactions
+	mtx                 *sync.Mutex
 }
 
 func NewTransactionManager() *TransactionManager {
 	tm := &TransactionManager{}
 	tm.mtx = &sync.Mutex{}
-	tm.multicast2transactions = make(map[string]*TransactionsForMulticast)
+	tm.serviceTransactions = make(map[string]*ServiceTransactions)
 	return tm
 }
 
-func (this *TransactionManager) multicastTransaction(msg *types.Message) *TransactionsForMulticast {
+func (this *TransactionManager) transactionsOf(msg *types.Message) *ServiceTransactions {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
-	tfm, ok := this.multicast2transactions[msg.MulticastGroup]
+	serviceKey := ServiceKey(msg.ServiceName, msg.ServiceArea)
+	st, ok := this.serviceTransactions[serviceKey]
 	if !ok {
-		this.multicast2transactions[msg.MulticastGroup] = newTransactionsForMulticast()
-		tfm = this.multicast2transactions[msg.MulticastGroup]
+		this.serviceTransactions[serviceKey] = newTransactionsForMulticast()
+		st = this.serviceTransactions[serviceKey]
 	}
-	return tfm
+	return st
 }
 
 func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
-	tfm := this.multicastTransaction(msg)
+	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction
-	resp, err, ok := tfm.shouldHandleAsTransaction(msg, vnic)
+	resp, err, ok := st.shouldHandleAsTransaction(msg, vnic)
 	if !ok {
 		return resp, err
 	}
 
 	createTransaction(msg)
-	tfm.addTransaction(msg)
+	st.addTransaction(msg)
 	healthCenter := health.Health(vnic.Resources())
-	targets := healthCenter.Uuids(msg.MulticastGroup, msg.Vlan, true)
+	targets := healthCenter.Uuids(msg.ServiceName, msg.ServiceArea, true)
 	delete(targets, vnic.Resources().Config().LocalUuid)
 
 	ok, _ = requestFromPeers(msg, vnic, targets)
@@ -54,7 +55,7 @@ func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNe
 		//Cleanup as we failed
 		msg.Tr.State = types.TransactionState_Finish
 		requestFromPeers(msg, vnic, targets)
-		tfm.finish(msg, true)
+		st.finish(msg, true)
 
 		//Mark as error
 		msg.Tr.State = types.TransactionState_Errored
@@ -63,7 +64,7 @@ func (this *TransactionManager) Start(msg *types.Message, vnic common.IVirtualNe
 	}
 
 	msg.Tr.State = types.TransactionState_Start
-	leader := healthCenter.Leader(msg.MulticastGroup, msg.Vlan)
+	leader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea)
 	isLeader := leader == vnic.Resources().Config().LocalUuid
 
 	//from this point onwards, we are going to use a clone
@@ -106,15 +107,15 @@ func (this *TransactionManager) create(msg *types.Message) {
 		panic("create: Unexpected transaction state " + msg.Tr.State.String())
 	}
 	createTransaction(msg)
-	tfm := this.multicastTransaction(msg)
-	tfm.addTransaction(msg)
+	st := this.transactionsOf(msg)
+	st.addTransaction(msg)
 	msg.Tr.State = types.TransactionState_Created
 }
 
 func (this *TransactionManager) Targets(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
 	healthCenter := health.Health(vnic.Resources())
-	isLeader := healthCenter.Leader(msg.MulticastGroup, msg.Vlan) == vnic.Resources().Config().LocalUuid
-	targets := healthCenter.Uuids(msg.MulticastGroup, msg.Vlan, true)
+	isLeader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea) == vnic.Resources().Config().LocalUuid
+	targets := healthCenter.Uuids(msg.ServiceName, msg.ServiceArea, true)
 	replicas := make(map[string]bool)
 	for target, _ := range targets {
 		replicas[target] = true
@@ -123,9 +124,9 @@ func (this *TransactionManager) Targets(msg *types.Message, vnic common.IVirtual
 
 	//If this is a replication count transaction and the action type is POST,
 	//Find out which of the targets need to be included in the commit.
-	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.MulticastGroup)
+	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.ServiceName, msg.ServiceArea)
 	if servicePoint.ReplicationCount() > 0 && msg.Action == types.Action_POST {
-		reps := healthCenter.ReplicasFor(msg.MulticastGroup, msg.Vlan, servicePoint.ReplicationCount())
+		reps := healthCenter.ReplicasFor(msg.ServiceName, msg.ServiceArea, servicePoint.ReplicationCount())
 		replicas = make(map[string]bool)
 		for target, _ := range reps {
 			replicas[target] = true
@@ -146,16 +147,16 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 	isLeader, isLeaderATarget, targets, replicas := this.Targets(msg, vnic)
 
 	//Get the topic transactions and lock it
-	tfm := this.multicastTransaction(msg)
-	tfm.cond.L.Lock()
+	st := this.transactionsOf(msg)
+	st.cond.L.Lock()
 	defer func() {
 		//Cleanup
 		oldState := msg.Tr.State
 		msg.Tr.State = types.TransactionState_Finish
 		requestFromPeers(msg, vnic, targets)
-		tfm.finish(msg, false)
+		st.finish(msg, false)
 		msg.Tr.State = oldState
-		tfm.cond.L.Unlock()
+		st.cond.L.Unlock()
 	}()
 
 	//If the state isn't Start, this means there is a major bug so panic
@@ -182,7 +183,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 
 	//now try to lock on the leader
 	msg.Tr.State = types.TransactionState_Lock
-	ok = tfm.lock(msg, false)
+	ok = st.lock(msg, false)
 	//We were not able to lock on the leader
 	if !ok {
 		msg.Tr.State = types.TransactionState_Errored
@@ -215,7 +216,7 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 	//Try to commit on the leader, if you need to
 	if isLeaderATarget {
 		msg.Tr.State = types.TransactionState_Commit
-		ok = tfm.commit(msg, vnic, false)
+		ok = st.commit(msg, vnic, false)
 		if !ok {
 			//Request a rollback from the followers
 			msg.Tr.State = types.TransactionState_Rollback
@@ -235,21 +236,21 @@ func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNe
 }
 
 func (this *TransactionManager) lock(msg *types.Message) {
-	tfm := this.multicastTransaction(msg)
-	tfm.lock(msg, true)
+	st := this.transactionsOf(msg)
+	st.lock(msg, true)
 }
 
 func (this *TransactionManager) commit(msg *types.Message, vnic common.IVirtualNetworkInterface) {
-	tfm := this.multicastTransaction(msg)
-	tfm.commit(msg, vnic, true)
+	st := this.transactionsOf(msg)
+	st.commit(msg, vnic, true)
 }
 
 func (this *TransactionManager) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface) {
-	tfm := this.multicastTransaction(msg)
-	tfm.rollback(msg, vnic, true)
+	st := this.transactionsOf(msg)
+	st.rollback(msg, vnic, true)
 }
 
 func (this *TransactionManager) finish(msg *types.Message) {
-	tfm := this.multicastTransaction(msg)
-	tfm.finish(msg, true)
+	st := this.transactionsOf(msg)
+	st.finish(msg, true)
 }

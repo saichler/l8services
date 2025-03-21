@@ -47,14 +47,14 @@ func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, ex
 
 func do50Gets(nic common.IVirtualNetworkInterface) bool {
 	for i := 0; i < 50; i++ {
-		sendGet(nic)
+		go sendGet(nic)
 	}
 	return true
 }
 
 func do50Transactions(nic common.IVirtualNetworkInterface) bool {
 	for i := 0; i < 50; i++ {
-		sendTransaction(nic)
+		go sendTransaction(nic)
 	}
 	return true
 }

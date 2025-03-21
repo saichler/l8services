@@ -8,18 +8,19 @@ import (
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
+	"strconv"
 )
 
 type ServicePointsImpl struct {
-	multicast2ServicePoint *String2ServicePointMap
-	introspector           common.IIntrospector
-	config                 *types.VNicConfig
-	trManager              *transaction.TransactionManager
+	services     *ServicesMap
+	introspector common.IIntrospector
+	config       *types.VNicConfig
+	trManager    *transaction.TransactionManager
 }
 
 func NewServicePoints(introspector common.IIntrospector, config *types.VNicConfig) common.IServicePoints {
 	sp := &ServicePointsImpl{}
-	sp.multicast2ServicePoint = NewString2ServicePointMap()
+	sp.services = NewServicesMap()
 	sp.introspector = introspector
 	sp.config = config
 	sp.trManager = transaction.NewTransactionManager()
@@ -30,19 +31,22 @@ func NewServicePoints(introspector common.IIntrospector, config *types.VNicConfi
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServicePoint(multicast string, vlan int32, handler common.IServicePointHandler) error {
-	if multicast == "" {
-		return errors.New("cannot register handler with blank multicast group")
-	}
+func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePointHandler, serviceArea int32) error {
 	if handler == nil {
-		return errors.New("cannot register nil handler for multicast group " + multicast)
+		return errors.New("cannot register a nil handler")
 	}
-	_, err := this.introspector.Registry().Register(handler.SupportedProto())
-	if err != nil {
-		return err
+	if handler.ServiceName() == "" {
+		return errors.New("cannot register handler with blank Service Name")
 	}
-	this.multicast2ServicePoint.Put(multicast, handler)
-	common.AddTopic(this.config, vlan, multicast)
+
+	if handler.ServiceModel() != nil {
+		_, err := this.introspector.Registry().Register(handler.ServiceModel())
+		if err != nil {
+			return err
+		}
+	}
+	this.services.Put(handler.ServiceName(), serviceArea, handler)
+	common.AddService(this.config, handler.ServiceName(), serviceArea)
 	return nil
 }
 
@@ -58,9 +62,10 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 		return nil, err
 	}
 
-	h, ok := this.multicast2ServicePoint.Get(msg.MulticastGroup)
+	h, ok := this.services.Get(msg.ServiceName, msg.ServiceArea)
 	if !ok {
-		return nil, errors.New("Cannot find handler for multicast group " + msg.MulticastGroup)
+		return nil, errors.New("Cannot find handler for service " + msg.ServiceName +
+			" area " + strconv.Itoa(int(msg.ServiceArea)))
 	}
 
 	if msg.FailMsg != "" {
@@ -117,9 +122,10 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 
 func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
 	notification := pb.(*types.NotificationSet)
-	h, ok := this.multicast2ServicePoint.Get(notification.MulticastGroup)
+	h, ok := this.services.Get(notification.ServiceName, notification.ServiceArea)
 	if !ok {
-		return nil, errors.New("Cannot find handler for multicast group " + notification.MulticastGroup)
+		return nil, errors.New("Cannot find handler for service " + msg.ServiceName +
+			" area " + strconv.Itoa(int(msg.ServiceArea)))
 	}
 	var resourcs common.IResources
 	if vnic != nil {
@@ -149,6 +155,6 @@ func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetw
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(multicast string) (common.IServicePointHandler, bool) {
-	return this.multicast2ServicePoint.Get(multicast)
+func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea int32) (common.IServicePointHandler, bool) {
+	return this.services.Get(serviceName, serviceArea)
 }
