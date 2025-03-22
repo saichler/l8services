@@ -3,44 +3,42 @@ package transaction
 import (
 	"bytes"
 	"github.com/saichler/layer8/go/overlay/protocol"
+	"github.com/saichler/shared/go/share/maps"
+	"github.com/saichler/shared/go/share/queues"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"google.golang.org/protobuf/proto"
 	"strconv"
-	"strings"
 	"sync"
-	"time"
 )
 
 type ServiceTransactions struct {
-	cond            *sync.Cond
-	pendingMap      map[string]*types.Message
+	trMap           *maps.SyncMap
+	trVnicMap       *maps.SyncMap
+	trCondsMap      *maps.SyncMap
+	trQueue         *queues.Queue
 	locked          *types.Message
 	preCommitObject proto.Message
+	trCond          *sync.Cond
 }
 
-func newTransactionsForMulticast() *ServiceTransactions {
-	tfm := &ServiceTransactions{}
-	tfm.pendingMap = make(map[string]*types.Message)
-	tfm.cond = sync.NewCond(&sync.Mutex{})
-	return tfm
-}
-
-func createTransaction(msg *types.Message) {
-	if msg.Tr == nil {
-		msg.Tr = &types.Transaction{}
-		msg.Tr.Id = common.NewUuid()
-		msg.Tr.StartTime = time.Now().Unix()
-		msg.Tr.State = types.TransactionState_Create
-	}
+func newServiceTransactions(serviceName string) *ServiceTransactions {
+	serviceTransactions := &ServiceTransactions{}
+	serviceTransactions.trMap = maps.NewSyncMap()
+	serviceTransactions.trVnicMap = maps.NewSyncMap()
+	serviceTransactions.trCondsMap = maps.NewSyncMap()
+	serviceTransactions.trQueue = queues.NewQueue(serviceName, 5000)
+	serviceTransactions.trCond = sync.NewCond(&sync.Mutex{})
+	go serviceTransactions.processTransactions()
+	return serviceTransactions
 }
 
 func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
 	if msg.Action == types.Action_GET {
-		this.cond.L.Lock()
-		defer this.cond.L.Unlock()
+		this.trCond.L.Lock()
+		defer this.trCond.L.Unlock()
 		for this.locked != nil {
-			this.cond.Wait()
+			this.trCond.Wait()
 		}
 		servicePoints := vnic.Resources().ServicePoints()
 		pb, err := protocol.ProtoOf(msg, vnic.Resources())
@@ -54,219 +52,75 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, v
 }
 
 func (this *ServiceTransactions) addTransaction(msg *types.Message) {
-	this.cond.L.Lock()
-	defer this.cond.L.Unlock()
-	_, ok := this.pendingMap[msg.Tr.Id]
-	if ok {
-		panic("Trying to add a duplicate transaction")
-	}
 	msg.Tr.State = types.TransactionState_Create
-	this.pendingMap[msg.Tr.Id] = msg
+	this.trMap.Put(msg.Tr.Id, msg)
 }
 
-func (this *ServiceTransactions) finish(msg *types.Message, lock bool) {
-	defer this.cond.Broadcast()
-	if lock {
-		this.cond.L.Lock()
-		defer this.cond.L.Unlock()
-	}
+func (this *ServiceTransactions) delTransaction(msg *types.Message) {
+	msg.Tr.State = types.TransactionState_Errored
+	this.trMap.Delete(msg.Tr.Id)
+}
+
+func (this *ServiceTransactions) finish(msg *types.Message) {
+	this.trCond.L.Lock()
+	defer func() {
+		this.trCond.Broadcast()
+		this.trCond.L.Unlock()
+	}()
+
 	if this.locked == nil {
 		this.preCommitObject = nil
 		return
 	}
+
 	if this.locked.Tr.Id == msg.Tr.Id {
 		this.locked = nil
 		this.preCommitObject = nil
 	}
-	delete(this.pendingMap, msg.Tr.Id)
+	this.trMap.Delete(msg.Tr.Id)
+	this.trVnicMap.Delete(msg.Tr.Id)
 	msg.Tr.State = types.TransactionState_Finished
 }
 
-func (this *ServiceTransactions) commit(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
-	if lock {
-		this.cond.L.Lock()
-		defer this.cond.L.Unlock()
-	}
+func (this *ServiceTransactions) start(msg *types.Message, vnic common.IVirtualNetworkInterface) {
+	this.trVnicMap.Put(msg.Tr.Id, vnic)
+	trCond := sync.NewCond(&sync.Mutex{})
+	this.trCondsMap.Put(msg.Tr.Id, trCond)
 
-	if msg.Tr.State != types.TransactionState_Commit {
-		panic("commit: Unexpected transaction state " + msg.Tr.State.String())
+	m, ok := this.trMap.Get(msg.Tr.Id)
+	if !ok {
+		panic("error")
 	}
+	message := m.(*types.Message)
+	message.Tr.State = msg.Tr.State
 
-	if this.locked == nil {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Commit: No pending transaction"
-		return false
-	}
+	trCond.L.Lock()
+	defer trCond.L.Unlock()
+	this.trQueue.Add(msg.Tr.Id)
+	trCond.Wait()
+	msg.Tr = message.Tr
+}
 
-	if this.locked.Tr.Id != msg.Tr.Id {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Commit: commit is for another transaction"
-		return false
-	}
-
-	if this.locked.Tr.State != types.TransactionState_Locked &&
-		this.locked.Tr.State != types.TransactionState_Commit { //The state will be commit if the message hit the leader
-		msg.Tr.Error = "Commit: Transaction is not in locked state " + msg.Tr.State.String()
-		msg.Tr.State = types.TransactionState_Errored
-		return false
-	}
-
-	if time.Now().Unix()-this.locked.Tr.StartTime >= 20 { //@TODO add the timeout
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Commit: Transaction has timed out"
-		return false
-	}
-
-	servicePoints := vnic.Resources().ServicePoints()
-	if msg.Action == types.Action_Notify {
-		//_, err := servicePoints.Notify()
-	} else {
-		pb, err := protocol.ProtoOf(this.locked, vnic.Resources())
-		if err != nil {
-			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Commit: Protocol Error: " + err.Error()
-			return false
-		}
-		ok := this.setPreCommitObject(msg, vnic)
+func (this *ServiceTransactions) processTransactions() {
+	for {
+		trId := this.trQueue.Next().(string)
+		v, ok := this.trVnicMap.Get(trId)
 		if !ok {
-			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Commit: Could not set pre-commit object"
-			return false
+			panic("Cannot find vnic for tr " + trId)
 		}
-		_, err = servicePoints.Handle(pb, this.locked.Action, vnic, this.locked, true)
-		if err != nil {
-			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Commit: Handle Error: " + err.Error()
-			return false
+		m, ok := this.trMap.Get(trId)
+		if !ok {
+			panic("Cannot find msg for tr " + trId)
 		}
-		this.locked.Tr.State = types.TransactionState_Commited
-	}
-
-	msg.Tr.State = types.TransactionState_Commited
-	return true
-}
-
-func (this *ServiceTransactions) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
-
-	pb, err := protocol.ProtoOf(this.locked, vnic.Resources())
-	if err != nil {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Pre Commit Object Fetch: Protocol Error: " + err.Error()
-		return false
-	}
-
-	if msg.Action == types.Action_PUT ||
-		msg.Action == types.Action_DELETE ||
-		msg.Action == types.Action_PATCH {
-		servicePoints := vnic.Resources().ServicePoints()
-		//Get the object before performing the action so we could rollback
-		//if necessary.
-		resp, e := servicePoints.Handle(pb, types.Action_GET, vnic, this.locked, true)
-		if e != nil {
-			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Pre Commit Object Fetch: Service Point: " + e.Error()
-			return false
+		c, ok := this.trCondsMap.Get(trId)
+		if !ok {
+			panic("Cannot find cond for tr " + trId)
 		}
-		this.preCommitObject = resp
-	} else {
-		this.preCommitObject = pb
+		vnic := v.(common.IVirtualNetworkInterface)
+		msg := m.(*types.Message)
+		cond := c.(*sync.Cond)
+		this.run(msg, vnic, cond)
 	}
-	return true
-}
-
-func (this *ServiceTransactions) setRollbackAction(msg *types.Message) {
-	switch msg.Action {
-	case types.Action_POST:
-		this.locked.Action = types.Action_DELETE
-	case types.Action_DELETE:
-		this.locked.Action = types.Action_POST
-	case types.Action_PUT:
-		this.locked.Action = types.Action_PUT
-	case types.Action_PATCH:
-		this.locked.Action = types.Action_PUT
-	}
-}
-
-func (this *ServiceTransactions) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface, lock bool) bool {
-	if lock {
-		this.cond.L.Lock()
-		defer this.cond.L.Unlock()
-	}
-
-	if msg.Tr.State != types.TransactionState_Rollback {
-		panic("commit: Unexpected transaction state " + msg.Tr.State.String())
-	}
-
-	if this.locked == nil {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Rollback: No committed transaction"
-		return false
-	}
-
-	if this.locked.Tr.Id != msg.Tr.Id {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Rollback: commit was for another transaction"
-		return false
-	}
-
-	if this.locked.Tr.State != types.TransactionState_Commited {
-		msg.Tr.Error = "Rollback: Transaction is not in committed state " + msg.Tr.State.String()
-		msg.Tr.State = types.TransactionState_Errored
-		return false
-	}
-
-	servicePoints := vnic.Resources().ServicePoints()
-	if msg.Action == types.Action_Notify {
-		//_, err := servicePoints.Notify()
-	} else {
-		this.setRollbackAction(msg)
-		_, err := servicePoints.Handle(this.preCommitObject, this.locked.Action, vnic, this.locked, true)
-		if err != nil {
-			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Rollback: Handle Error: " + err.Error()
-			return false
-		}
-	}
-
-	msg.Tr.State = types.TransactionState_Rollbacked
-	return true
-}
-
-func (this *ServiceTransactions) lock(msg *types.Message, lock bool) bool {
-	if lock {
-		this.cond.L.Lock()
-		defer this.cond.L.Unlock()
-	}
-
-	if msg.Tr.State != types.TransactionState_Lock {
-		panic("lock: Unexpected transaction state " + msg.Tr.State.String())
-	}
-
-	if this.locked == nil {
-		m := this.pendingMap[msg.Tr.Id]
-		if m == nil {
-			panic("Can't find message " + msg.Tr.Id)
-		}
-		this.locked = m
-		msg.Tr.State = types.TransactionState_Locked
-		m.Tr.State = msg.Tr.State
-		return true
-	} else if this.locked.Tr.Id != msg.Tr.Id &&
-		this.locked.Tr.State != types.TransactionState_Locked &&
-		strings.Compare(this.locked.Tr.Id, msg.Tr.Id) == -1 {
-		m := this.pendingMap[msg.Tr.Id]
-		if m == nil {
-			panic("Can't find message " + msg.Tr.Id)
-		}
-		this.locked = m
-		msg.Tr.State = types.TransactionState_Locked
-		m.Tr.State = msg.Tr.State
-		return true
-	}
-
-	msg.Tr.State = types.TransactionState_LockFailed
-	msg.Tr.Error = "Failed to lock : " + msg.ServiceName + ":" + strconv.Itoa(int(msg.ServiceArea))
-	return false
 }
 
 func ServiceKey(serviceName string, serviceArea int32) string {

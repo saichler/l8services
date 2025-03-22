@@ -1,11 +1,11 @@
 package tests
 
 import (
+	"github.com/saichler/shared/go/share/workers"
 	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -93,26 +93,33 @@ func TestParallel(t *testing.T) {
 		ts.SetTr(true)
 	}
 
-	go do50Transactions(eg2)
-	go do50Transactions(eg4)
-	go do50Gets(eg2)
-	go do50Gets(eg3)
+	multi := workers.NewMultiTask()
+	add50Transactions(multi, eg2)
+	add50Transactions(multi, eg4)
+	add50GetTasks(multi, eg2)
+	add50GetTasks(multi, eg3)
 
-	time.Sleep(time.Second * 5)
-	Log.Info("Total:", len(trs))
-	if len(trs) != 100 {
-		Log.Fail(t, "number of commited transactions:", len(trs))
+	results := multi.RunAll()
+
+	post := 0
+	get := 0
+
+	for _, result := range results {
+		tr, ok := result.(*types.Transaction)
+		if ok && tr.State == types.TransactionState_Commited {
+			post++
+		}
+		_, ok = result.(*testtypes.TestProto)
+		if ok {
+			get++
+		}
+	}
+	if post != 100 {
+		Log.Fail(t, "expected 100 successful transactions")
 		return
 	}
-	for _, tr := range trs {
-		if tr.State != types.TransactionState_Commited {
-			Log.Fail(t, "transaction state:", tr.State)
-		}
-		Log.Info("Tr:", tr.State.String(), " ", tr.Id, " ", tr.Error)
-	}
-
-	if len(gets) != 100 {
-		Log.Fail(t, "number of gets:", len(gets))
+	if get != 100 {
+		Log.Fail(t, "expected 100 successful gets")
 		return
 	}
 }

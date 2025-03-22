@@ -1,0 +1,129 @@
+package transaction
+
+import (
+	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/types"
+	"sync"
+)
+
+func (this *ServiceTransactions) run(msg *types.Message, vnic common.IVirtualNetworkInterface, cond *sync.Cond) *types.Transaction {
+	isLeader, isLeaderATarget, targets, replicas := Targets(msg, vnic)
+	cond.L.Lock()
+	defer func() {
+		//Cleanup
+		oldState := msg.Tr.State
+		msg.Tr.State = types.TransactionState_Finish
+		requestFromPeers(msg, vnic, targets)
+		this.finish(msg)
+		msg.Tr.State = oldState
+		cond.Broadcast()
+		cond.L.Unlock()
+	}()
+
+	//If the state isn't Start, this means there is a major bug so panic
+	if msg.Tr.State != types.TransactionState_Start {
+		panic("start: Unexpected transaction state " + msg.Tr.State.String())
+	}
+
+	//There is a race condition, if the leader has changed during this transaction
+	//Fail it
+	if !isLeader {
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Start transaction invoked on a follower"
+		return msg.Tr
+	}
+
+	//Try to lock on all the followers
+	msg.Tr.State = types.TransactionState_Lock
+	ok, _ := requestFromPeers(msg, vnic, targets)
+	if !ok {
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Failed to lock followers"
+		return msg.Tr
+	}
+
+	//now try to lock on the leader
+	msg.Tr.State = types.TransactionState_Lock
+	ok = this.lock(msg)
+	//We were not able to lock on the leader
+	if !ok {
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Failed to lock leader"
+		return msg.Tr
+	}
+
+	//At this point we are ready to commit
+	//Try to commit on the followers
+	//Note we do it on the replicas and not on targets as if this is a replication
+	//count commit, we want to commit only on the replicas
+	msg.Tr.State = types.TransactionState_Commit
+	ok, peers := requestFromPeers(msg, vnic, replicas)
+	if !ok {
+		//Request a rollback only from those peers that commited
+		msg.Tr.State = types.TransactionState_Rollback
+		rollTarget := make(map[string]bool)
+		for target, e := range peers {
+			if e == "" {
+				rollTarget[target] = true
+			}
+		}
+		requestFromPeers(msg, vnic, rollTarget)
+
+		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr.Error = "Followers failed to commit"
+		return msg.Tr
+	}
+
+	//Try to commit on the leader, if you need to
+	if isLeaderATarget {
+		msg.Tr.State = types.TransactionState_Commit
+		ok = this.commit(msg, vnic)
+		if !ok {
+			//Request a rollback from the followers
+			msg.Tr.State = types.TransactionState_Rollback
+			requestFromPeers(msg, vnic, replicas)
+
+			errorMsg := "Leader failed to commit"
+			if !ok {
+				errorMsg = "Leader failed to commit and failed to clean up"
+			}
+			msg.Tr.State = types.TransactionState_Errored
+			msg.Tr.Error = errorMsg
+			return msg.Tr
+		}
+	}
+	//Cleanup and release the lock
+	msg.Tr.State = types.TransactionState_Commited
+	return msg.Tr
+}
+
+func Targets(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
+	healthCenter := health.Health(vnic.Resources())
+	isLeader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea) == vnic.Resources().Config().LocalUuid
+	targets := healthCenter.Uuids(msg.ServiceName, msg.ServiceArea, true)
+	replicas := make(map[string]bool)
+	for target, _ := range targets {
+		replicas[target] = true
+	}
+	isLeaderATarget := true
+
+	//If this is a replication count transaction and the action type is POST,
+	//Find out which of the targets need to be included in the commit.
+	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.ServiceName, msg.ServiceArea)
+	if servicePoint.ReplicationCount() > 0 && msg.Action == types.Action_POST {
+		reps := healthCenter.ReplicasFor(msg.ServiceName, msg.ServiceArea, servicePoint.ReplicationCount())
+		replicas = make(map[string]bool)
+		for target, _ := range reps {
+			replicas[target] = true
+		}
+		// Is the leader elected to be part of this commit
+		_, isLeaderATarget = replicas[vnic.Resources().Config().LocalUuid]
+	}
+
+	//Remove the leader from the targets & the replicas
+	delete(targets, vnic.Resources().Config().LocalUuid)
+	delete(replicas, vnic.Resources().Config().LocalUuid)
+
+	return isLeader, isLeaderATarget, targets, replicas
+}

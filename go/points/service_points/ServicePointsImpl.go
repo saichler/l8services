@@ -75,7 +75,7 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 	if !insideTransaction {
 		if h.Transactional() {
 			if msg.Tr == nil {
-				return this.trManager.Start(msg, vnic)
+				return this.trManager.Create(msg, vnic)
 			} else {
 				return this.trManager.Run(msg, vnic)
 			}

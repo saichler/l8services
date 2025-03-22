@@ -1,18 +1,13 @@
 package tests
 
 import (
+	"github.com/saichler/shared/go/share/workers"
 	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
-	"sync"
 	"testing"
 )
-
-var trs = make([]*types.Transaction, 0)
-var gets = make([]*testtypes.TestProto, 0)
-
-var trsMtx = &sync.Mutex{}
 
 func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
@@ -45,44 +40,41 @@ func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, ex
 	return true
 }
 
-func do50Gets(nic common.IVirtualNetworkInterface) bool {
+func add50GetTasks(multiTask *workers.MultiTask, vnic common.IVirtualNetworkInterface) {
 	for i := 0; i < 50; i++ {
-		go sendGet(nic)
+		multiTask.AddTask(&GetTask{Vnic: vnic})
+	}
+}
+
+func add50Transactions(multiTask *workers.MultiTask, vnic common.IVirtualNetworkInterface) bool {
+	for i := 0; i < 50; i++ {
+		multiTask.AddTask(&PostTask{Vnic: vnic})
 	}
 	return true
 }
 
-func do50Transactions(nic common.IVirtualNetworkInterface) bool {
-	for i := 0; i < 50; i++ {
-		go sendTransaction(nic)
-	}
-	return true
+type PostTask struct {
+	Vnic common.IVirtualNetworkInterface
 }
 
-func sendTransaction(nic common.IVirtualNetworkInterface) {
+func (this *PostTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := nic.SingleRequest(ServiceName, 0, types.Action_POST, pb)
+	resp, err := this.Vnic.SingleRequest(ServiceName, 0, types.Action_POST, pb)
 	if err != nil {
-		Log.Error(err.Error())
-		return
+		return Log.Error(err.Error())
 	}
-
-	tr := resp.(*types.Transaction)
-	trsMtx.Lock()
-	defer trsMtx.Unlock()
-	trs = append(trs, tr)
+	return resp
 }
 
-func sendGet(nic common.IVirtualNetworkInterface) {
-	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := nic.SingleRequest(ServiceName, 0, types.Action_GET, pb)
-	if err != nil {
-		Log.Error(err.Error())
-		return
-	}
+type GetTask struct {
+	Vnic common.IVirtualNetworkInterface
+}
 
-	tr := resp.(*testtypes.TestProto)
-	trsMtx.Lock()
-	defer trsMtx.Unlock()
-	gets = append(gets, tr)
+func (this *GetTask) Run() interface{} {
+	pb := &testtypes.TestProto{MyString: "test"}
+	resp, err := this.Vnic.SingleRequest(ServiceName, 0, types.Action_GET, pb)
+	if err != nil {
+		return Log.Error(err.Error())
+	}
+	return resp
 }
