@@ -1,10 +1,11 @@
 package tests
 
 import (
+	. "github.com/saichler/l8test/go/infra/t_resources"
+	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/reflect/go/tests/utils"
 	"github.com/saichler/servicepoints/go/points/cache"
-	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/testtypes"
 	"testing"
 	"time"

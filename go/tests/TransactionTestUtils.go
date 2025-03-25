@@ -1,8 +1,9 @@
 package tests
 
 import (
+	. "github.com/saichler/l8test/go/infra/t_resources"
+	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/shared/go/share/workers"
-	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
@@ -24,17 +25,12 @@ func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, ex
 	}
 
 	if action == types.Action_POST {
-		if tsps["eg1"].PostN() != expected && failure {
-			Log.Fail(t, "eg1 Expected post to be ", expected, " but it is ", tsps["eg1"].PostN())
-		}
-		if tsps["eg2"].PostN() != expected && failure {
-			Log.Fail(t, "eg2 Expected post to be ", expected, " but it is ", tsps["eg2"].PostN())
-		}
-		if tsps["eg3"].PostN() != expected && failure {
-			Log.Fail(t, "eg3 Expected post to be ", expected, " but it is ", tsps["eg3"].PostN())
-		}
-		if tsps["eg4"].PostN() != expected && failure {
-			Log.Fail(t, "eg4 Expected post to be ", expected, " but it is ", tsps["eg4"].PostN())
+		handlers := topo.AllHandlers()
+		for _, handler := range handlers {
+			if handler.PostN() != expected && failure {
+				Log.Fail(t, handler.Name(), " Expected post to be ", expected, " but it is ", handler.PostN())
+				return false
+			}
 		}
 	}
 	return true

@@ -2,13 +2,12 @@ package tests
 
 import (
 	"fmt"
+	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/shared/go/share/registry"
-	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/testtypes"
-	"github.com/saichler/types/go/types"
 	"testing"
 	"time"
 )
@@ -20,7 +19,7 @@ func TestSubStructProperty(t *testing.T) {
 		Log.Fail(t, "failed with inspect: ", err.Error())
 		return
 	}
-	_introspect.AddDecorator(types.DecoratorType_Primary, []string{"MyString"}, node)
+	introspecting.AddPrimaryKeyDecorator(node, "MyString")
 
 	aside := &testtypes.TestProto{MyString: "Hello"}
 	zside := &testtypes.TestProto{MyString: "Hello"}

@@ -1,7 +1,8 @@
 package tests
 
 import (
-	. "github.com/saichler/shared/go/tests/infra"
+	. "github.com/saichler/l8test/go/infra/t_resources"
+	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"

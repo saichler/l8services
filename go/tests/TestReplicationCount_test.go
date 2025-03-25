@@ -1,8 +1,9 @@
 package tests
 
 import (
+	. "github.com/saichler/l8test/go/infra/t_resources"
+	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/layer8/go/overlay/health"
-	. "github.com/saichler/shared/go/tests/infra"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
@@ -11,10 +12,7 @@ import (
 
 func TestTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
-	for _, ts := range tsps {
-		ts.SetTr(true)
-		ts.SetReplicationCount(2)
-	}
+	setTransactionMode(2)
 
 	if !doRound(2, 0, t) {
 		return
@@ -29,14 +27,16 @@ func TestTransactionReplication(t *testing.T) {
 
 func doRound(ecount, score int, t *testing.T) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	_, err := eg3.SingleRequest(ServiceName, 0, types.Action_POST, pb)
+	eg := topo.VnicByVnetNum(2, 1)
+	_, err := eg.SingleRequest(ServiceName, 0, types.Action_POST, pb)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return false
 	}
 
 	count := 0
-	for _, ts := range tsps {
+	handlers := topo.AllHandlers()
+	for _, ts := range handlers {
 		count += ts.PostN()
 	}
 	if count != ecount {
@@ -44,7 +44,7 @@ func doRound(ecount, score int, t *testing.T) bool {
 		return false
 	}
 
-	hp := health.Health(eg3.Resources())
+	hp := health.Health(eg.Resources())
 	rep := hp.ReplicasFor("TestProto", 0, 2)
 	for _, r := range rep {
 		if int(r) != score {

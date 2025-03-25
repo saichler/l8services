@@ -99,7 +99,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
-
+	
 	switch action {
 	case types.Action_POST:
 		if h.ReplicationCount() > 0 {
