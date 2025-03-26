@@ -13,7 +13,7 @@ import (
 func TestTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
 	setTransactionMode(2)
-
+	
 	if !doRound(2, 0, t) {
 		return
 	}
