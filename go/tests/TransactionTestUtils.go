@@ -18,7 +18,7 @@ func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, ex
 		return false
 	}
 
-	tr := resp.Elem().(*types.Transaction)
+	tr := resp.Element().(*types.Transaction)
 	if tr.State != types.TransactionState_Commited && failure {
 		Log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State.String(), " ", tr.Error)
 		return false
@@ -59,7 +59,7 @@ func (this *PostTask) Run() interface{} {
 	if resp != nil && resp.Error() != nil {
 		return Log.Error(resp.Error().Error())
 	}
-	return resp.Elem()
+	return resp.Element()
 }
 
 type GetTask struct {
@@ -72,5 +72,5 @@ func (this *GetTask) Run() interface{} {
 	if resp != nil && resp.Error() != nil {
 		return Log.Error(resp.Error().Error())
 	}
-	return resp.Elem()
+	return resp.Element()
 }

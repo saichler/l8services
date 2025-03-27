@@ -3,6 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
+	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
@@ -10,7 +11,7 @@ import (
 
 func TestServicePoints(t *testing.T) {
 	testsp := NewTestServicePointHandler("TestProto")
-	pb := &testtypes.TestProto{}
+	pb := object.New(nil, &testtypes.TestProto{})
 	err := globals.ServicePoints().RegisterServicePoint(testsp, 0)
 	if err == nil {
 		Log.Fail("Expected an error")

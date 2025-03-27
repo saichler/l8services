@@ -39,7 +39,7 @@ func TestSubStructProperty(t *testing.T) {
 			Log.Fail(t, "failed with inspect: ", err.Error())
 		}
 		data := obj.Data()
-		obj = object.NewDecode(data, 0, "", _introspect.Registry())
+		obj = object.NewDecode(data, 0, _introspect.Registry())
 		newval, err := obj.Get()
 		if err != nil {
 			Log.Fail(t, "failed with inspect: ", err.Error())
