@@ -60,7 +60,7 @@ func (this *ServiceTransactions) commit(msg *types.Message, vnic common.IVirtual
 		resp := servicePoints.Handle(pb, this.locked.Action, vnic, this.locked, true)
 		if resp.Error() != nil {
 			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Commit: Handle Error: " + err.Error()
+			msg.Tr.Error = "Commit: Handle Error: " + resp.Error().Error()
 			return false
 		}
 		this.locked.Tr.State = types.TransactionState_Commited

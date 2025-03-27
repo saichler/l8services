@@ -12,13 +12,13 @@ import (
 
 func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := vnic.SingleRequest(ServiceName, 0, action, pb)
-	if err != nil {
-		Log.Fail(t, err.Error())
+	resp := vnic.SingleRequest(ServiceName, 0, action, pb)
+	if resp.Error() != nil {
+		Log.Fail(t, resp.Error().Error())
 		return false
 	}
 
-	tr := resp.(*types.Transaction)
+	tr := resp.List()[0].(*types.Transaction)
 	if tr.State != types.TransactionState_Commited && failure {
 		Log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State.String(), " ", tr.Error)
 		return false
@@ -55,11 +55,11 @@ type PostTask struct {
 
 func (this *PostTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := this.Vnic.SingleRequest(ServiceName, 0, types.Action_POST, pb)
-	if err != nil {
-		return Log.Error(err.Error())
+	resp := this.Vnic.SingleRequest(ServiceName, 0, types.Action_POST, pb)
+	if resp.Error() != nil {
+		return Log.Error(resp.Error().Error())
 	}
-	return resp
+	return resp.List()[0]
 }
 
 type GetTask struct {
@@ -68,9 +68,9 @@ type GetTask struct {
 
 func (this *GetTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp, err := this.Vnic.SingleRequest(ServiceName, 0, types.Action_GET, pb)
-	if err != nil {
-		return Log.Error(err.Error())
+	resp := this.Vnic.SingleRequest(ServiceName, 0, types.Action_GET, pb)
+	if resp.Error() != nil {
+		return Log.Error(resp.Error().Error())
 	}
-	return resp
+	return resp.List()[0]
 }

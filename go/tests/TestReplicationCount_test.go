@@ -13,7 +13,7 @@ import (
 func TestTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
 	setTransactionMode(2)
-	
+
 	if !doRound(2, 0, t) {
 		return
 	}
@@ -28,9 +28,9 @@ func TestTransactionReplication(t *testing.T) {
 func doRound(ecount, score int, t *testing.T) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
 	eg := topo.VnicByVnetNum(2, 1)
-	_, err := eg.SingleRequest(ServiceName, 0, types.Action_POST, pb)
-	if err != nil {
-		Log.Fail(t, err.Error())
+	resp := eg.SingleRequest(ServiceName, 0, types.Action_POST, pb)
+	if resp.Error() != nil {
+		Log.Fail(t, resp.Error().Error())
 		return false
 	}
 

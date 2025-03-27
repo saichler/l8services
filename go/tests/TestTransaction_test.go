@@ -57,9 +57,9 @@ func TestTransactionGet(t *testing.T) {
 
 	pb := &testtypes.TestProto{}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	_, err := eg3_1.SingleRequest(ServiceName, 0, types.Action_GET, pb)
-	if err != nil {
-		Log.Fail(t, err.Error())
+	resp := eg3_1.SingleRequest(ServiceName, 0, types.Action_GET, pb)
+	if resp.Error() != nil {
+		Log.Fail(t, resp.Error().Error())
 		return
 	}
 
@@ -84,7 +84,7 @@ func TestTransactionPutRollback(t *testing.T) {
 	if !doTransaction(types.Action_PUT, eg3_1, 1, t, false) {
 		return
 	}
-	
+
 	//2 put, one for the commit and 1 for the rollback
 	handler = topo.HandlerByVnetNum(1, 2)
 	if handler.PutN() != 2 {
@@ -119,11 +119,11 @@ func TestParallel(t *testing.T) {
 		}
 	}
 	if post != 100 {
-		Log.Fail(t, "expected 100 successful transactions")
+		Log.Fail(t, "expected 100 successful transactions:", post)
 		return
 	}
 	if get != 100 {
-		Log.Fail(t, "expected 100 successful gets")
+		Log.Fail(t, "expected 100 successful gets:", get)
 		return
 	}
 }
