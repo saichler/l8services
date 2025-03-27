@@ -40,7 +40,7 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	}
 
 	if handler.ServiceModel() != nil {
-		_, err := this.introspector.Registry().Register(handler.ServiceModel())
+		_, err := this.introspector.Registry().Register(handler.ServiceModel().Element())
 		if err != nil {
 			return err
 		}
