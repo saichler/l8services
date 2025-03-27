@@ -4,6 +4,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/shared/go/share/workers"
+	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
 	"github.com/saichler/types/go/types"
 	"testing"
@@ -94,6 +95,7 @@ func TestTransactionPutRollback(t *testing.T) {
 }
 
 func TestParallel(t *testing.T) {
+	Log.SetLogLevel(common.Error_Level)
 	defer reset("TestTransaction")
 	setTransactionMode(0)
 

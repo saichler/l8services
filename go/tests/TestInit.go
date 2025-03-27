@@ -26,6 +26,7 @@ func tear() {
 func reset(name string) {
 	Log.Info("*** ", name, " end ***")
 	topo.ResetHandlers()
+	Log.SetLogLevel(Trace_Level)
 }
 
 func setupTopology() {
