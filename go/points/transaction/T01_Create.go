@@ -60,7 +60,8 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 	//from this point onwards, we are going to use a clone
 	//As we only need the message attributes, without the data
 	msgClone := cloning.NewCloner().Clone(msg).(*types.Message)
-	msgClone.Data, _ = protocol.DataFor(&types.Transaction{}, &serializers.ProtoBuffBinary{}, vnic.Resources().Security())
+	o := object.New(nil, &types.Transaction{})
+	msgClone.Data, _ = protocol.DataFor(o, vnic.Resources().Security())
 
 	//If this is not the leader, forward to the leader
 	if !isLeader {

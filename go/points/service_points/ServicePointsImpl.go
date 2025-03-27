@@ -138,7 +138,7 @@ func (this *ServicePointsImpl) Notify(pb common.IMObjects, vnic common.IVirtualN
 	if err != nil {
 		return object.NewError(err.Error())
 	}
-	npb := item.(common.IMObjects)
+	npb := object.New(nil, item)
 
 	switch notification.Type {
 	case types.NotificationType_Add:
