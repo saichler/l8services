@@ -3,6 +3,7 @@ package transaction
 import (
 	"bytes"
 	"github.com/saichler/layer8/go/overlay/protocol"
+	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/shared/go/share/queues"
 	"github.com/saichler/types/go/common"
@@ -33,7 +34,7 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error, bool) {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (common.IResponse, bool) {
 	if msg.Action == types.Action_GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()
@@ -43,12 +44,12 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, v
 		servicePoints := vnic.Resources().ServicePoints()
 		pb, err := protocol.ProtoOf(msg, vnic.Resources())
 		if err != nil {
-			return nil, err, false
+			return response.New(nil, err), false
 		}
-		resp, err := servicePoints.Handle(pb, msg.Action, vnic, msg, true)
-		return resp, err, false
+		resp := servicePoints.Handle(pb, msg.Action, vnic, msg, true)
+		return resp, false
 	}
-	return nil, nil, true
+	return nil, true
 }
 
 func (this *ServiceTransactions) addTransaction(msg *types.Message) {

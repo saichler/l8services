@@ -26,16 +26,16 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 	this.count++
 	this.cond.L.Unlock()
 
-	resp, err := vnic.Forward(msg, target)
-	if err != nil {
+	resp := vnic.Forward(msg, target)
+	if resp.Error() != nil {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
-		this.pending[target] = err.Error()
+		this.pending[target] = resp.Error().Error()
 		this.cond.Broadcast()
 		return
 	}
 
-	tr := resp.(*types.Transaction)
+	tr := resp.List()[0].(*types.Transaction)
 
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()

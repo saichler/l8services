@@ -36,10 +36,10 @@ func (this *ServiceTransactions) rollback(msg *types.Message, vnic common.IVirtu
 		//_, err := servicePoints.Notify()
 	} else {
 		this.setRollbackAction(msg)
-		_, err := servicePoints.Handle(this.preCommitObject, this.locked.Action, vnic, this.locked, true)
-		if err != nil {
+		resp := servicePoints.Handle(this.preCommitObject, this.locked.Action, vnic, this.locked, true)
+		if resp.Error() != nil {
 			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Rollback: Handle Error: " + err.Error()
+			msg.Tr.Error = "Rollback: Handle Error: " + resp.Error().Error()
 			return false
 		}
 	}

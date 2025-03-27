@@ -1,9 +1,9 @@
 package transaction
 
 import (
+	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
-	"google.golang.org/protobuf/proto"
 	"sync"
 )
 
@@ -31,7 +31,7 @@ func (this *TransactionManager) transactionsOf(msg *types.Message) *ServiceTrans
 	return st
 }
 
-func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
+func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IResponse {
 	switch msg.Tr.State {
 	case types.TransactionState_Create:
 		this.create(msg)
@@ -49,7 +49,7 @@ func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetw
 	default:
 		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
 	}
-	return msg.Tr, nil
+	return response.NewSl(msg.Tr)
 }
 
 func (this *TransactionManager) create(msg *types.Message) {

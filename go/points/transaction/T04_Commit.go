@@ -4,6 +4,7 @@ import (
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
+	"google.golang.org/protobuf/proto"
 	"time"
 )
 
@@ -56,8 +57,8 @@ func (this *ServiceTransactions) commit(msg *types.Message, vnic common.IVirtual
 			msg.Tr.Error = "Commit: Could not set pre-commit object"
 			return false
 		}
-		_, err = servicePoints.Handle(pb, this.locked.Action, vnic, this.locked, true)
-		if err != nil {
+		resp := servicePoints.Handle(pb, this.locked.Action, vnic, this.locked, true)
+		if resp.Error() != nil {
 			msg.Tr.State = types.TransactionState_Errored
 			msg.Tr.Error = "Commit: Handle Error: " + err.Error()
 			return false
@@ -84,13 +85,13 @@ func (this *ServiceTransactions) setPreCommitObject(msg *types.Message, vnic com
 		servicePoints := vnic.Resources().ServicePoints()
 		//Get the object before performing the action so we could rollback
 		//if necessary.
-		resp, e := servicePoints.Handle(pb, types.Action_GET, vnic, this.locked, true)
-		if e != nil {
+		resp := servicePoints.Handle(pb, types.Action_GET, vnic, this.locked, true)
+		if resp.Error() != nil {
 			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Pre Commit Object Fetch: Service Point: " + e.Error()
+			msg.Tr.Error = "Pre Commit Object Fetch: Service Point: " + resp.Error().Error()
 			return false
 		}
-		this.preCommitObject = resp
+		this.preCommitObject = resp.List()[0].(proto.Message)
 	} else {
 		this.preCommitObject = pb
 	}

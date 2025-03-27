@@ -3,6 +3,7 @@ package service_points
 import (
 	"errors"
 	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/types/go/common"
@@ -50,21 +51,21 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	return nil
 }
 
-func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) (proto.Message, error) {
+func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IResponse {
 	if vnic == nil {
-		return nil, errors.New("Handle: vnic cannot be nil")
+		return response.NewErr("Handle: vnic cannot be nil")
 	}
 	if msg == nil {
-		return nil, errors.New("Handle: message cannot be nil")
+		return response.NewErr("Handle: message cannot be nil")
 	}
 	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().Config().LocalUuid, "")
 	if err != nil {
-		return nil, err
+		return response.NewErr(err.Error())
 	}
 
 	h, ok := this.services.Get(msg.ServiceName, msg.ServiceArea)
 	if !ok {
-		return nil, errors.New("Cannot find handler for service " + msg.ServiceName +
+		return response.NewErr("Cannot find handler for service " + msg.ServiceName +
 			" area " + strconv.Itoa(int(msg.ServiceArea)))
 	}
 
@@ -82,16 +83,15 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 		}
 	}
 
-	resp, err := this.doAction(h, action, msg.ServiceArea, pb, vnic)
+	return this.doAction(h, action, msg.ServiceArea, pb, vnic)
 
-	return resp, err
 }
 
 func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action types.Action,
-	serviceArea int32, pb proto.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
+	serviceArea int32, pb proto.Message, vnic common.IVirtualNetworkInterface) common.IResponse {
 
 	if h == nil {
-		return pb, nil
+		return response.NewSl(pb)
 	}
 
 	var resourcs common.IResources
@@ -99,7 +99,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
-	
+
 	switch action {
 	case types.Action_POST:
 		if h.ReplicationCount() > 0 {
@@ -116,15 +116,15 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	case types.Action_GET:
 		return h.Get(pb, resourcs)
 	default:
-		return nil, errors.New("invalid action, ignoring")
+		return response.NewErr("invalid action, ignoring")
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) (proto.Message, error) {
+func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IResponse {
 	notification := pb.(*types.NotificationSet)
 	h, ok := this.services.Get(notification.ServiceName, notification.ServiceArea)
 	if !ok {
-		return nil, errors.New("Cannot find handler for service " + msg.ServiceName +
+		return response.NewErr("Cannot find handler for service " + msg.ServiceName +
 			" area " + strconv.Itoa(int(msg.ServiceArea)))
 	}
 	var resourcs common.IResources
@@ -137,7 +137,7 @@ func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetw
 	}
 	item, err := cache.ItemOf(notification, this.introspector)
 	if err != nil {
-		return nil, err
+		return response.NewErr(err.Error())
 	}
 	npb := item.(proto.Message)
 
@@ -151,7 +151,7 @@ func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetw
 	case types.NotificationType_Delete:
 		return h.Delete(npb, resourcs)
 	default:
-		return nil, errors.New("invalid notification type, ignoring")
+		return response.NewErr("invalid notification type, ignoring")
 	}
 }
 

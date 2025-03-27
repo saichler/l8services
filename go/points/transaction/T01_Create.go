@@ -4,10 +4,10 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/reflect/go/reflect/cloning"
+	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/serializer/go/serialize/serializers"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
-	"google.golang.org/protobuf/proto"
 	"time"
 )
 
@@ -20,13 +20,13 @@ func createTransaction(msg *types.Message) {
 	}
 }
 
-func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) (proto.Message, error) {
+func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IResponse {
 	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction
-	resp, err, ok := st.shouldHandleAsTransaction(msg, vnic)
+	resp, ok := st.shouldHandleAsTransaction(msg, vnic)
 	if !ok {
-		return resp, err
+		return resp
 	}
 
 	//Create the new transaction inside the message
@@ -49,7 +49,7 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 		requestFromPeers(msg, vnic, targets)
 		st.delTransaction(msg)
 		msg.Tr.Error = "Failed to create transaction"
-		return msg.Tr, nil
+		return response.NewSl(msg.Tr)
 	}
 
 	//Move the transaction state to start and find the leader
@@ -64,10 +64,10 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 
 	//If this is not the leader, forward to the leader
 	if !isLeader {
-		response, e := vnic.Forward(msgClone, leader)
-		return response.(proto.Message), e
+		response := vnic.Forward(msgClone, leader)
+		return response
 	}
 
 	this.start(msgClone, vnic)
-	return msgClone.Tr, nil
+	return response.NewSl(msgClone.Tr)
 }
