@@ -8,7 +8,6 @@ import (
 	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
-	"google.golang.org/protobuf/proto"
 	"strconv"
 )
 
@@ -53,19 +52,19 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 
 func (this *ServicePointsImpl) Handle(pb common.IMObjects, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IMObjects {
 	if vnic == nil {
-		return response.NewError("Handle: vnic cannot be nil")
+		return object.NewError("Handle: vnic cannot be nil")
 	}
 	if msg == nil {
-		return response.NewError("Handle: message cannot be nil")
+		return object.NewError("Handle: message cannot be nil")
 	}
 	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().Config().LocalUuid, "")
 	if err != nil {
-		return response.NewError(err.Error())
+		return object.NewError(err.Error())
 	}
 
 	h, ok := this.services.Get(msg.ServiceName, msg.ServiceArea)
 	if !ok {
-		return response.NewError("Cannot find handler for service " + msg.ServiceName +
+		return object.NewError("Cannot find handler for service " + msg.ServiceName +
 			" area " + strconv.Itoa(int(msg.ServiceArea)))
 	}
 
@@ -91,7 +90,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	serviceArea int32, pb common.IMObjects, vnic common.IVirtualNetworkInterface) common.IMObjects {
 
 	if h == nil {
-		return response.New(nil, pb)
+		return object.New(nil, pb)
 	}
 
 	var resourcs common.IResources
@@ -116,15 +115,15 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	case types.Action_GET:
 		return h.Get(pb, resourcs)
 	default:
-		return response.NewError("invalid action, ignoring")
+		return object.NewError("invalid action, ignoring")
 	}
 }
 
 func (this *ServicePointsImpl) Notify(pb common.IMObjects, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IMObjects {
-	notification := pb.(*types.NotificationSet)
+	notification := pb.Element().(*types.NotificationSet)
 	h, ok := this.services.Get(notification.ServiceName, notification.ServiceArea)
 	if !ok {
-		return response.NewError("Cannot find handler for service " + msg.ServiceName +
+		return object.NewError("Cannot find handler for service " + msg.ServiceName +
 			" area " + strconv.Itoa(int(msg.ServiceArea)))
 	}
 	var resourcs common.IResources
@@ -137,7 +136,7 @@ func (this *ServicePointsImpl) Notify(pb common.IMObjects, vnic common.IVirtualN
 	}
 	item, err := cache.ItemOf(notification, this.introspector)
 	if err != nil {
-		return response.NewError(err.Error())
+		return object.NewError(err.Error())
 	}
 	npb := item.(common.IMObjects)
 
@@ -151,7 +150,7 @@ func (this *ServicePointsImpl) Notify(pb common.IMObjects, vnic common.IVirtualN
 	case types.NotificationType_Delete:
 		return h.Delete(npb, resourcs)
 	default:
-		return response.NewError("invalid notification type, ignoring")
+		return object.NewError("invalid notification type, ignoring")
 	}
 }
 

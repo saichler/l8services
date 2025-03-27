@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"sync"
@@ -48,7 +49,7 @@ func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetw
 	default:
 		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
 	}
-	return response.New(nil, msg.Tr)
+	return object.New(nil, msg.Tr)
 }
 
 func (this *TransactionManager) create(msg *types.Message) {

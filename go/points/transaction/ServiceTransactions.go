@@ -3,11 +3,11 @@ package transaction
 import (
 	"bytes"
 	"github.com/saichler/layer8/go/overlay/protocol"
+	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/shared/go/share/queues"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
-	"google.golang.org/protobuf/proto"
 	"strconv"
 	"sync"
 )
@@ -41,9 +41,9 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, v
 			this.trCond.Wait()
 		}
 		servicePoints := vnic.Resources().ServicePoints()
-		pb, err := protocol.ProtoOf(msg, vnic.Resources())
+		pb, err := protocol.MObjectsOf(msg, vnic.Resources())
 		if err != nil {
-			return response.NewError(err.Error()), false
+			return object.NewError(err.Error()), false
 		}
 		resp := servicePoints.Handle(pb, msg.Action, vnic, msg, true)
 		return resp, false

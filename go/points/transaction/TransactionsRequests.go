@@ -35,7 +35,7 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 		return
 	}
 
-	tr := resp.Elem().(*types.Transaction)
+	tr := resp.Element().(*types.Transaction)
 
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()

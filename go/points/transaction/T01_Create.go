@@ -4,6 +4,7 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/reflect/go/reflect/cloning"
+	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/serializer/go/serialize/serializers"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
@@ -48,7 +49,7 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 		requestFromPeers(msg, vnic, targets)
 		st.delTransaction(msg)
 		msg.Tr.Error = "Failed to create transaction"
-		return response.New(nil, msg.Tr)
+		return object.New(nil, msg.Tr)
 	}
 
 	//Move the transaction state to start and find the leader
@@ -68,5 +69,5 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 	}
 
 	this.start(msgClone, vnic)
-	return response.New(nil, msgClone.Tr)
+	return object.New(nil, msgClone.Tr)
 }
