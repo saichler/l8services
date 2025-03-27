@@ -5,7 +5,6 @@ import (
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/reflect/go/reflect/cloning"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/serializer/go/serialize/serializers"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"time"
