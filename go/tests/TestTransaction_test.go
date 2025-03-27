@@ -58,8 +58,8 @@ func TestTransactionGet(t *testing.T) {
 	pb := &testtypes.TestProto{}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
 	resp := eg3_1.SingleRequest(ServiceName, 0, types.Action_GET, pb)
-	if resp.Err() != nil {
-		Log.Fail(t, resp.Err().Error())
+	if resp.Error() != nil {
+		Log.Fail(t, resp.Error().Error())
 		return
 	}
 

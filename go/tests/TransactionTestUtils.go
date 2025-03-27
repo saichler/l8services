@@ -13,8 +13,8 @@ import (
 func doTransaction(action types.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp := vnic.SingleRequest(ServiceName, 0, action, pb)
-	if resp.Err() != nil {
-		Log.Fail(t, resp.Err().Error())
+	if resp != nil && resp.Error() != nil {
+		Log.Fail(t, resp.Error().Error())
 		return false
 	}
 
@@ -56,8 +56,8 @@ type PostTask struct {
 func (this *PostTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp := this.Vnic.SingleRequest(ServiceName, 0, types.Action_POST, pb)
-	if resp.Err() != nil {
-		return Log.Error(resp.Err().Error())
+	if resp != nil && resp.Error() != nil {
+		return Log.Error(resp.Error().Error())
 	}
 	return resp.Elem()
 }
@@ -69,8 +69,8 @@ type GetTask struct {
 func (this *GetTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp := this.Vnic.SingleRequest(ServiceName, 0, types.Action_GET, pb)
-	if resp.Err() != nil {
-		return Log.Error(resp.Err().Error())
+	if resp != nil && resp.Error() != nil {
+		return Log.Error(resp.Error().Error())
 	}
 	return resp.Elem()
 }

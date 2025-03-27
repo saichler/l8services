@@ -27,10 +27,10 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 	this.cond.L.Unlock()
 
 	resp := vnic.Forward(msg, target)
-	if resp.Err() != nil {
+	if resp != nil && resp.Error() != nil {
 		this.cond.L.Lock()
 		defer this.cond.L.Unlock()
-		this.pending[target] = resp.Err().Error()
+		this.pending[target] = resp.Error().Error()
 		this.cond.Broadcast()
 		return
 	}
