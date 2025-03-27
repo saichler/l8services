@@ -3,7 +3,6 @@ package transaction
 import (
 	"bytes"
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/shared/go/share/queues"
 	"github.com/saichler/types/go/common"
@@ -19,7 +18,7 @@ type ServiceTransactions struct {
 	trCondsMap      *maps.SyncMap
 	trQueue         *queues.Queue
 	locked          *types.Message
-	preCommitObject proto.Message
+	preCommitObject common.IMObjects
 	trCond          *sync.Cond
 }
 
@@ -34,7 +33,7 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (common.IResponse, bool) {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (common.IMObjects, bool) {
 	if msg.Action == types.Action_GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()

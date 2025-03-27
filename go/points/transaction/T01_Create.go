@@ -4,7 +4,6 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/reflect/go/reflect/cloning"
-	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/serializer/go/serialize/serializers"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
@@ -20,7 +19,7 @@ func createTransaction(msg *types.Message) {
 	}
 }
 
-func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IResponse {
+func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IMObjects {
 	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction

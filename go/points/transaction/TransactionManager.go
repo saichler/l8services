@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"github.com/saichler/serializer/go/serialize/response"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"sync"
@@ -31,7 +30,7 @@ func (this *TransactionManager) transactionsOf(msg *types.Message) *ServiceTrans
 	return st
 }
 
-func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IResponse {
+func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IMObjects {
 	switch msg.Tr.State {
 	case types.TransactionState_Create:
 		this.create(msg)

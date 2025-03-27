@@ -3,7 +3,7 @@ package service_points
 import (
 	"errors"
 	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/serializer/go/serialize/response"
+	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/types/go/common"
@@ -51,7 +51,7 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	return nil
 }
 
-func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IResponse {
+func (this *ServicePointsImpl) Handle(pb common.IMObjects, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IMObjects {
 	if vnic == nil {
 		return response.NewError("Handle: vnic cannot be nil")
 	}
@@ -88,7 +88,7 @@ func (this *ServicePointsImpl) Handle(pb proto.Message, action types.Action, vni
 }
 
 func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action types.Action,
-	serviceArea int32, pb proto.Message, vnic common.IVirtualNetworkInterface) common.IResponse {
+	serviceArea int32, pb common.IMObjects, vnic common.IVirtualNetworkInterface) common.IMObjects {
 
 	if h == nil {
 		return response.New(nil, pb)
@@ -120,7 +120,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IResponse {
+func (this *ServicePointsImpl) Notify(pb common.IMObjects, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IMObjects {
 	notification := pb.(*types.NotificationSet)
 	h, ok := this.services.Get(notification.ServiceName, notification.ServiceArea)
 	if !ok {
@@ -139,7 +139,7 @@ func (this *ServicePointsImpl) Notify(pb proto.Message, vnic common.IVirtualNetw
 	if err != nil {
 		return response.NewError(err.Error())
 	}
-	npb := item.(proto.Message)
+	npb := item.(common.IMObjects)
 
 	switch notification.Type {
 	case types.NotificationType_Add:
