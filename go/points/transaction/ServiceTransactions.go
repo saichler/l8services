@@ -44,7 +44,7 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, v
 		servicePoints := vnic.Resources().ServicePoints()
 		pb, err := protocol.ProtoOf(msg, vnic.Resources())
 		if err != nil {
-			return response.NewErr(err.Error()), false
+			return response.NewError(err.Error()), false
 		}
 		resp := servicePoints.Handle(pb, msg.Action, vnic, msg, true)
 		return resp, false

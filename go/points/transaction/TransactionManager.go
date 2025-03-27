@@ -49,7 +49,7 @@ func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetw
 	default:
 		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
 	}
-	return response.NewSl(msg.Tr)
+	return response.New(nil, msg.Tr)
 }
 
 func (this *TransactionManager) create(msg *types.Message) {
