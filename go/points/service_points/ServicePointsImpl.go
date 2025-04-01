@@ -14,11 +14,11 @@ import (
 type ServicePointsImpl struct {
 	services     *ServicesMap
 	introspector common.IIntrospector
-	config       *types.VNicConfig
+	config       *types.SysConfig
 	trManager    *transaction.TransactionManager
 }
 
-func NewServicePoints(introspector common.IIntrospector, config *types.VNicConfig) common.IServicePoints {
+func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig) common.IServicePoints {
 	sp := &ServicePointsImpl{}
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
@@ -50,14 +50,14 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	return nil
 }
 
-func (this *ServicePointsImpl) Handle(pb common.IMObjects, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IMObjects {
+func (this *ServicePointsImpl) Handle(pb common.IElements, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
 	if msg == nil {
 		return object.NewError("Handle: message cannot be nil")
 	}
-	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().Config().LocalUuid, "")
+	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().SysConfig().LocalUuid, "")
 	if err != nil {
 		return object.NewError(err.Error())
 	}
@@ -87,7 +87,7 @@ func (this *ServicePointsImpl) Handle(pb common.IMObjects, action types.Action, 
 }
 
 func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action types.Action,
-	serviceArea int32, pb common.IMObjects, vnic common.IVirtualNetworkInterface) common.IMObjects {
+	serviceArea int32, pb common.IElements, vnic common.IVirtualNetworkInterface) common.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
@@ -103,7 +103,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	case types.Action_POST:
 		if h.ReplicationCount() > 0 {
 			healthCenter := health.Health(vnic.Resources())
-			healthCenter.AddScore(vnic.Resources().Config().LocalUuid, h.ServiceName(), serviceArea, vnic)
+			healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, h.ServiceName(), serviceArea, vnic)
 		}
 		return h.Post(pb, resourcs)
 	case types.Action_PUT:
@@ -119,7 +119,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb common.IMObjects, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IMObjects {
+func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IElements {
 	notification := pb.Element().(*types.NotificationSet)
 	h, ok := this.services.Get(notification.ServiceName, notification.ServiceArea)
 	if !ok {

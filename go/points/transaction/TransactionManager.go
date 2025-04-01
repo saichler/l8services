@@ -31,7 +31,7 @@ func (this *TransactionManager) transactionsOf(msg *types.Message) *ServiceTrans
 	return st
 }
 
-func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IMObjects {
+func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IElements {
 	switch msg.Tr.State {
 	case types.TransactionState_Create:
 		this.create(msg)

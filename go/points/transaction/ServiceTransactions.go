@@ -18,7 +18,7 @@ type ServiceTransactions struct {
 	trCondsMap      *maps.SyncMap
 	trQueue         *queues.Queue
 	locked          *types.Message
-	preCommitObject common.IMObjects
+	preCommitObject common.IElements
 	trCond          *sync.Cond
 }
 
@@ -33,7 +33,7 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (common.IMObjects, bool) {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (common.IElements, bool) {
 	if msg.Action == types.Action_GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()
@@ -41,7 +41,7 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, v
 			this.trCond.Wait()
 		}
 		servicePoints := vnic.Resources().ServicePoints()
-		pb, err := protocol.MObjectsOf(msg, vnic.Resources())
+		pb, err := protocol.ElementsOf(msg, vnic.Resources())
 		if err != nil {
 			return object.NewError(err.Error()), false
 		}

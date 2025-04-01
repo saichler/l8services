@@ -44,7 +44,7 @@ func (this *ServiceTransactions) commit(msg *types.Message, vnic common.IVirtual
 	if msg.Action == types.Action_Notify {
 		//_, err := servicePoints.Notify()
 	} else {
-		pb, err := protocol.MObjectsOf(this.locked, vnic.Resources())
+		pb, err := protocol.ElementsOf(this.locked, vnic.Resources())
 		if err != nil {
 			msg.Tr.State = types.TransactionState_Errored
 			msg.Tr.Error = "Commit: Protocol Error: " + err.Error()
@@ -71,7 +71,7 @@ func (this *ServiceTransactions) commit(msg *types.Message, vnic common.IVirtual
 
 func (this *ServiceTransactions) setPreCommitObject(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
 
-	pb, err := protocol.MObjectsOf(this.locked, vnic.Resources())
+	pb, err := protocol.ElementsOf(this.locked, vnic.Resources())
 	if err != nil {
 		msg.Tr.State = types.TransactionState_Errored
 		msg.Tr.Error = "Pre Commit Object Fetch: Protocol Error: " + err.Error()

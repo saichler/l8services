@@ -19,7 +19,7 @@ func createTransaction(msg *types.Message) {
 	}
 }
 
-func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IMObjects {
+func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IElements {
 	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction
@@ -37,7 +37,7 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 	//Compile a list of this service peers, takeaway this instance
 	healthCenter := health.Health(vnic.Resources())
 	targets := healthCenter.Uuids(msg.ServiceName, msg.ServiceArea, true)
-	delete(targets, vnic.Resources().Config().LocalUuid)
+	delete(targets, vnic.Resources().SysConfig().LocalUuid)
 
 	//Send the new transaction message to all the peers.
 	ok, _ = requestFromPeers(msg, vnic, targets)
@@ -54,7 +54,7 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 	//Move the transaction state to start and find the leader
 	msg.Tr.State = types.TransactionState_Start
 	leader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea)
-	isLeader := leader == vnic.Resources().Config().LocalUuid
+	isLeader := leader == vnic.Resources().SysConfig().LocalUuid
 
 	//from this point onwards, we are going to use a clone
 	//As we only need the message attributes, without the data

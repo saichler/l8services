@@ -3,12 +3,12 @@ module github.com/saichler/servicepoints/go
 go 1.24.1
 
 require (
-	github.com/saichler/l8test/go v0.0.0-20250327180559-be26a2d56481
-	github.com/saichler/layer8/go v0.0.0-20250327183324-ab554613aa33
-	github.com/saichler/reflect/go v0.0.0-20250327160656-726672fb5ebf
-	github.com/saichler/serializer/go v0.0.0-20250327171601-74f9cc127488
-	github.com/saichler/shared/go v0.0.0-20250327144546-dc40bb3ea146
-	github.com/saichler/types/go v0.0.0-20250327162701-de3b6c266ee5
+	github.com/saichler/l8test/go v0.0.0-20250331141617-04c64718b5cb
+	github.com/saichler/layer8/go v0.0.0-20250401005439-8e6031070e15
+	github.com/saichler/reflect/go v0.0.0-20250331164246-d7b9b678fa7d
+	github.com/saichler/serializer/go v0.0.0-20250401005026-5a030df2a5b0
+	github.com/saichler/shared/go v0.0.0-20250401001154-c1e50505e5c3
+	github.com/saichler/types/go v0.0.0-20250401004724-ceaf6fa9f9d0
 )
 
 require (

@@ -100,7 +100,7 @@ func (this *ServiceTransactions) run(msg *types.Message, vnic common.IVirtualNet
 
 func Targets(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
 	healthCenter := health.Health(vnic.Resources())
-	isLeader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea) == vnic.Resources().Config().LocalUuid
+	isLeader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea) == vnic.Resources().SysConfig().LocalUuid
 	targets := healthCenter.Uuids(msg.ServiceName, msg.ServiceArea, true)
 	replicas := make(map[string]bool)
 	for target, _ := range targets {
@@ -118,12 +118,12 @@ func Targets(msg *types.Message, vnic common.IVirtualNetworkInterface) (bool, bo
 			replicas[target] = true
 		}
 		// Is the leader elected to be part of this commit
-		_, isLeaderATarget = replicas[vnic.Resources().Config().LocalUuid]
+		_, isLeaderATarget = replicas[vnic.Resources().SysConfig().LocalUuid]
 	}
 
 	//Remove the leader from the targets & the replicas
-	delete(targets, vnic.Resources().Config().LocalUuid)
-	delete(replicas, vnic.Resources().Config().LocalUuid)
+	delete(targets, vnic.Resources().SysConfig().LocalUuid)
+	delete(replicas, vnic.Resources().SysConfig().LocalUuid)
 
 	return isLeader, isLeaderATarget, targets, replicas
 }
