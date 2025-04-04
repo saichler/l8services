@@ -29,7 +29,7 @@ func (this *Cache) createNotificationSet(t types.NotificationType, changeCount i
 
 func CreateAddNotification(any interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Add, serviceName, serviceArea, modelType, source, changeCount, sequence)
-	obj := object.NewEncode([]byte{}, 0)
+	obj := object.NewEncode()
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
@@ -47,13 +47,13 @@ func (this *Cache) createAddNotification(any interface{}) (*types.NotificationSe
 
 func CreateReplaceNotification(old, new interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Replace, serviceName, serviceArea, modelType, source, 1, sequence)
-	oldObj := object.NewEncode([]byte{}, 0)
+	oldObj := object.NewEncode()
 	err := oldObj.Add(old)
 	if err != nil {
 		return nil, err
 	}
 
-	newObj := object.NewEncode([]byte{}, 0)
+	newObj := object.NewEncode()
 	err = newObj.Add(new)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (this *Cache) createReplaceNotification(old, new interface{}) (*types.Notif
 
 func CreateDeleteNotification(any interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Delete, serviceName, serviceArea, modelType, source, 1, sequence)
-	obj := object.NewEncode([]byte{}, 0)
+	obj := object.NewEncode()
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func CreateUpdateNotification(changes []*updating.Change, serviceName string, se
 		n := &types.Notification{}
 		n.PropertyId = change.PropertyId()
 		if change.OldValue() != nil {
-			obj := object.NewEncode([]byte{}, 0)
+			obj := object.NewEncode()
 			err := obj.Add(change.OldValue())
 			if err != nil {
 				return nil, err
@@ -103,7 +103,7 @@ func CreateUpdateNotification(changes []*updating.Change, serviceName string, se
 			n.OldValue = obj.Data()
 		}
 		if change.NewValue() != nil {
-			obj := object.NewEncode([]byte{}, 0)
+			obj := object.NewEncode()
 			err := obj.Add(change.NewValue())
 			if err != nil {
 				return nil, err

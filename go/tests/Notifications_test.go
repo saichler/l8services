@@ -33,7 +33,7 @@ func TestSubStructProperty(t *testing.T) {
 	changes := putUpdater.Changes()
 
 	for _, change := range changes {
-		obj := object.NewEncode([]byte{}, 0)
+		obj := object.NewEncode()
 		err = obj.Add(change.NewValue())
 		if err != nil {
 			Log.Fail(t, "failed with inspect: ", err.Error())
