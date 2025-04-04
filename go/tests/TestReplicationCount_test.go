@@ -4,8 +4,8 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
-	"github.com/saichler/types/go/types"
 	"testing"
 	"time"
 )
@@ -28,7 +28,7 @@ func TestTransactionReplication(t *testing.T) {
 func doRound(ecount, score int, t *testing.T) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
 	eg := topo.VnicByVnetNum(2, 1)
-	resp := eg.SingleRequest(ServiceName, 0, types.Action_POST, pb)
+	resp := eg.SingleRequest(ServiceName, 0, common.POST, pb)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false

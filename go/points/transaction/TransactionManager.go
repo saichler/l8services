@@ -48,7 +48,7 @@ func (this *TransactionManager) Run(msg common.IMessage, vnic common.IVirtualNet
 	default:
 		panic("Unexpected transaction state " + msg.Tr().State().String() + ":" + msg.Tr().ErrorMessage())
 	}
-	return object.New(nil, msg.Tr)
+	return object.New(nil, msg.Tr())
 }
 
 func (this *TransactionManager) create(msg common.IMessage) {

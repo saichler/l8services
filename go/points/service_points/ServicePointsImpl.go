@@ -74,7 +74,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 
 	if !insideTransaction {
 		if h.Transactional() {
-			if msg.Tr == nil {
+			if common.IsNil(msg.Tr()) {
 				return this.trManager.Create(msg, vnic)
 			} else {
 				return this.trManager.Run(msg, vnic)

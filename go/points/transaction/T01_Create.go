@@ -8,7 +8,7 @@ import (
 )
 
 func createTransaction(msg common.IMessage) {
-	if msg.Tr() == nil {
+	if common.IsNil(msg.Tr()) {
 		msg.SetTr(protocol.NewTransaction())
 	}
 }
@@ -64,5 +64,5 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 	}
 
 	this.start(msgClone, vnic)
-	return object.New(nil, msgClone.Tr)
+	return object.New(nil, msgClone.Tr())
 }

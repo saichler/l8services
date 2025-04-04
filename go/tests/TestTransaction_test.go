@@ -6,7 +6,6 @@ import (
 	"github.com/saichler/shared/go/share/workers"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/testtypes"
-	"github.com/saichler/types/go/types"
 	"testing"
 )
 
@@ -23,15 +22,15 @@ func TestTransaction(t *testing.T) {
 	eg2_2 := topo.VnicByVnetNum(2, 2)
 	eg1_1 := topo.VnicByVnetNum(1, 1)
 
-	if !doTransaction(types.Action_POST, eg2_2, 1, t, true) {
+	if !doTransaction(common.POST, eg2_2, 1, t, true) {
 		return
 	}
 
-	if !doTransaction(types.Action_POST, eg2_2, 2, t, true) {
+	if !doTransaction(common.POST, eg2_2, 2, t, true) {
 		return
 	}
 
-	if !doTransaction(types.Action_POST, eg1_1, 3, t, true) {
+	if !doTransaction(common.POST, eg1_1, 3, t, true) {
 		return
 	}
 
@@ -43,7 +42,7 @@ func TestTransactionPut(t *testing.T) {
 
 	eg3_2 := topo.VnicByVnetNum(3, 2)
 
-	if !doTransaction(types.Action_PUT, eg3_2, 1, t, true) {
+	if !doTransaction(common.PUT, eg3_2, 1, t, true) {
 		return
 	}
 	handler := topo.HandlerByVnetNum(1, 3)
@@ -58,7 +57,7 @@ func TestTransactionGet(t *testing.T) {
 
 	pb := &testtypes.TestProto{}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	resp := eg3_1.SingleRequest(ServiceName, 0, types.Action_GET, pb)
+	resp := eg3_1.SingleRequest(ServiceName, 0, common.GET, pb)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return
@@ -82,7 +81,7 @@ func TestTransactionPutRollback(t *testing.T) {
 	handler.SetErrorMode(true)
 
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	if !doTransaction(types.Action_PUT, eg3_1, 1, t, false) {
+	if !doTransaction(common.PUT, eg3_1, 1, t, false) {
 		return
 	}
 
@@ -111,8 +110,8 @@ func TestParallel(t *testing.T) {
 	get := 0
 
 	for _, result := range results {
-		tr, ok := result.(*types.Transaction)
-		if ok && tr.State == types.TransactionState_Commited {
+		tr, ok := result.(common.ITransaction)
+		if ok && tr.State() == common.Commited {
 			post++
 		}
 		_, ok = result.(*testtypes.TestProto)
@@ -135,15 +134,15 @@ func TestTransactionRollback(t *testing.T) {
 	setTransactionMode(0)
 	topo.HandlerByVnetNum(1, 3).SetErrorMode(true)
 	eg1_2 := topo.VnicByVnetNum(1, 2)
-	if !doTransaction(types.Action_POST, eg1_2, 1, t, false) {
+	if !doTransaction(common.POST, eg1_2, 1, t, false) {
 		return
 	}
 
-	if !doTransaction(types.Action_POST, eg1_2, 2, t, false) {
+	if !doTransaction(common.POST, eg1_2, 2, t, false) {
 		return
 	}
 
-	if !doTransaction(types.Action_POST, eg1_2, 3, t, false) {
+	if !doTransaction(common.POST, eg1_2, 3, t, false) {
 		return
 	}
 
