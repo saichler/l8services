@@ -7,7 +7,6 @@ import (
 	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/shared/go/share/queues"
 	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
 	"strconv"
 	"sync"
 )
@@ -17,7 +16,7 @@ type ServiceTransactions struct {
 	trVnicMap       *maps.SyncMap
 	trCondsMap      *maps.SyncMap
 	trQueue         *queues.Queue
-	locked          *types.Message
+	locked          common.IMessage
 	preCommitObject common.IElements
 	trCond          *sync.Cond
 }
@@ -33,8 +32,8 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, vnic common.IVirtualNetworkInterface) (common.IElements, bool) {
-	if msg.Action == types.Action_GET {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, vnic common.IVirtualNetworkInterface) (common.IElements, bool) {
+	if msg.Action() == common.GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()
 		for this.locked != nil {
@@ -45,23 +44,23 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *types.Message, v
 		if err != nil {
 			return object.NewError(err.Error()), false
 		}
-		resp := servicePoints.Handle(pb, msg.Action, vnic, msg, true)
+		resp := servicePoints.Handle(pb, msg.Action(), vnic, msg, true)
 		return resp, false
 	}
 	return nil, true
 }
 
-func (this *ServiceTransactions) addTransaction(msg *types.Message) {
-	msg.Tr.State = types.TransactionState_Create
-	this.trMap.Put(msg.Tr.Id, msg)
+func (this *ServiceTransactions) addTransaction(msg common.IMessage) {
+	msg.Tr().SetState(common.Create)
+	this.trMap.Put(msg.Tr().Id(), msg)
 }
 
-func (this *ServiceTransactions) delTransaction(msg *types.Message) {
-	msg.Tr.State = types.TransactionState_Errored
-	this.trMap.Delete(msg.Tr.Id)
+func (this *ServiceTransactions) delTransaction(msg common.IMessage) {
+	msg.Tr().SetState(common.Errored)
+	this.trMap.Delete(msg.Tr().Id())
 }
 
-func (this *ServiceTransactions) finish(msg *types.Message) {
+func (this *ServiceTransactions) finish(msg common.IMessage) {
 	this.trCond.L.Lock()
 	defer func() {
 		this.trCond.Broadcast()
@@ -73,32 +72,32 @@ func (this *ServiceTransactions) finish(msg *types.Message) {
 		return
 	}
 
-	if this.locked.Tr.Id == msg.Tr.Id {
+	if this.locked.Tr().Id() == msg.Tr().Id() {
 		this.locked = nil
 		this.preCommitObject = nil
 	}
-	this.trMap.Delete(msg.Tr.Id)
-	this.trVnicMap.Delete(msg.Tr.Id)
-	msg.Tr.State = types.TransactionState_Finished
+	this.trMap.Delete(msg.Tr().Id())
+	this.trVnicMap.Delete(msg.Tr().Id())
+	msg.Tr().SetState(common.Finished)
 }
 
-func (this *ServiceTransactions) start(msg *types.Message, vnic common.IVirtualNetworkInterface) {
-	this.trVnicMap.Put(msg.Tr.Id, vnic)
+func (this *ServiceTransactions) start(msg common.IMessage, vnic common.IVirtualNetworkInterface) {
+	this.trVnicMap.Put(msg.Tr().Id(), vnic)
 	trCond := sync.NewCond(&sync.Mutex{})
-	this.trCondsMap.Put(msg.Tr.Id, trCond)
+	this.trCondsMap.Put(msg.Tr().Id(), trCond)
 
-	m, ok := this.trMap.Get(msg.Tr.Id)
+	m, ok := this.trMap.Get(msg.Tr().Id())
 	if !ok {
 		panic("error")
 	}
-	message := m.(*types.Message)
-	message.Tr.State = msg.Tr.State
+	message := m.(common.IMessage)
+	message.Tr().SetState(msg.Tr().State())
 
 	trCond.L.Lock()
 	defer trCond.L.Unlock()
-	this.trQueue.Add(msg.Tr.Id)
+	this.trQueue.Add(msg.Tr().Id())
 	trCond.Wait()
-	msg.Tr = message.Tr
+	msg.SetTr(message.Tr())
 }
 
 func (this *ServiceTransactions) processTransactions() {
@@ -117,13 +116,13 @@ func (this *ServiceTransactions) processTransactions() {
 			panic("Cannot find cond for tr " + trId)
 		}
 		vnic := v.(common.IVirtualNetworkInterface)
-		msg := m.(*types.Message)
+		msg := m.(common.IMessage)
 		cond := c.(*sync.Cond)
 		this.run(msg, vnic, cond)
 	}
 }
 
-func ServiceKey(serviceName string, serviceArea int32) string {
+func ServiceKey(serviceName string, serviceArea uint16) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))

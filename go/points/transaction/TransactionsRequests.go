@@ -3,7 +3,6 @@ package transaction
 import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
 	"sync"
 )
 
@@ -20,7 +19,7 @@ func newRequest() *Requests {
 	return rq
 }
 
-func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg *types.Message, target string) {
+func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg common.IMessage, target string) {
 	this.cond.L.Lock()
 	this.pending[target] = ""
 	this.count++
@@ -35,13 +34,13 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 		return
 	}
 
-	tr := resp.Element().(*types.Transaction)
+	tr := resp.Element().(common.ITransaction)
 
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
 
-	if tr.State == types.TransactionState_Errored {
-		this.pending[target] = tr.Error
+	if tr.State() == common.Errored {
+		this.pending[target] = tr.ErrorMessage()
 	}
 
 	this.count--
@@ -51,7 +50,7 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 	}
 }
 
-func requestFromPeers(msg *types.Message, vnic common.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
+func requestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
 
 	this := newRequest()
 
@@ -74,15 +73,15 @@ func requestFromPeers(msg *types.Message, vnic common.IVirtualNetworkInterface, 
 	}
 
 	if !ok {
-		msg.Tr.State = types.TransactionState_Errored
+		msg.Tr().SetState(common.Errored)
 		return false, this.pending
 	}
 
 	return true, this.pending
 }
 
-func IsLeader(resourcs common.IResources, localUuid, topic string, vlan int32) (bool, string) {
+func IsLeader(resourcs common.IResources, localUuid, topic string, serviceArea uint16) (bool, string) {
 	hc := health.Health(resourcs)
-	leader := hc.Leader(topic, vlan)
+	leader := hc.Leader(topic, serviceArea)
 	return leader == localUuid, leader
 }

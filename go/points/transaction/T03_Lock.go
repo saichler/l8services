@@ -1,34 +1,34 @@
 package transaction
 
 import (
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/types/go/common"
 	"strconv"
 )
 
-func (this *ServiceTransactions) lock(msg *types.Message) bool {
-	if msg.Tr.State != types.TransactionState_Lock {
-		panic("lock: Unexpected transaction state " + msg.Tr.State.String())
+func (this *ServiceTransactions) lock(msg common.IMessage) bool {
+	if msg.Tr().State() != common.Lock {
+		panic("lock: Unexpected transaction state " + msg.Tr().State().String())
 	}
 
-	m, ok := this.trMap.Get(msg.Tr.Id)
+	m, ok := this.trMap.Get(msg.Tr().Id())
 	if !ok {
-		msg.Tr.State = types.TransactionState_LockFailed
-		msg.Tr.Error = "Did not find transaction in pending transactions"
+		msg.Tr().SetState(common.LockFailed)
+		msg.Tr().SetErrorMessage("Did not find transaction in pending transactions")
 		return false
 	}
-	message := m.(*types.Message)
+	message := m.(common.IMessage)
 
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 
 	if this.locked == nil {
 		this.locked = message
-		msg.Tr.State = types.TransactionState_Locked
-		message.Tr.State = msg.Tr.State
+		msg.Tr().SetState(common.Locked)
+		message.Tr().SetState(msg.Tr().State())
 		return true
 	}
 
-	msg.Tr.State = types.TransactionState_LockFailed
-	msg.Tr.Error = "Failed to lock : " + msg.ServiceName + ":" + strconv.Itoa(int(msg.ServiceArea))
+	msg.Tr().SetState(common.LockFailed)
+	msg.Tr().SetErrorMessage("Failed to lock : " + msg.ServiceName() + ":" + strconv.Itoa(int(msg.ServiceArea())))
 	return false
 }

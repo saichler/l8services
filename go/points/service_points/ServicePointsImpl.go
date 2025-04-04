@@ -31,7 +31,7 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePointHandler, serviceArea int32) error {
+func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePointHandler, serviceArea uint16) error {
 	if handler == nil {
 		return errors.New("cannot register a nil handler")
 	}
@@ -46,11 +46,11 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 		}
 	}
 	this.services.Put(handler.ServiceName(), serviceArea, handler)
-	common.AddService(this.config, handler.ServiceName(), serviceArea)
+	common.AddService(this.config, handler.ServiceName(), int32(serviceArea))
 	return nil
 }
 
-func (this *ServicePointsImpl) Handle(pb common.IElements, action types.Action, vnic common.IVirtualNetworkInterface, msg *types.Message, insideTransaction bool) common.IElements {
+func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage, insideTransaction bool) common.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
@@ -62,13 +62,13 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action types.Action, 
 		return object.NewError(err.Error())
 	}
 
-	h, ok := this.services.Get(msg.ServiceName, msg.ServiceArea)
+	h, ok := this.services.Get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
-		return object.NewError("Cannot find handler for service " + msg.ServiceName +
-			" area " + strconv.Itoa(int(msg.ServiceArea)))
+		return object.NewError("Cannot find handler for service " + msg.ServiceName() +
+			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
 
-	if msg.FailMsg != "" {
+	if msg.FailMessage() != "" {
 		return h.Failed(pb, vnic.Resources(), msg)
 	}
 
@@ -82,12 +82,12 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action types.Action, 
 		}
 	}
 
-	return this.doAction(h, action, msg.ServiceArea, pb, vnic)
+	return this.doAction(h, action, msg.ServiceArea(), pb, vnic)
 
 }
 
-func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action types.Action,
-	serviceArea int32, pb common.IElements, vnic common.IVirtualNetworkInterface) common.IElements {
+func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action common.Action,
+	serviceArea uint16, pb common.IElements, vnic common.IVirtualNetworkInterface) common.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
@@ -100,38 +100,38 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action ty
 	}
 
 	switch action {
-	case types.Action_POST:
+	case common.POST:
 		if h.ReplicationCount() > 0 {
 			healthCenter := health.Health(vnic.Resources())
 			healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, h.ServiceName(), serviceArea, vnic)
 		}
 		return h.Post(pb, resourcs)
-	case types.Action_PUT:
+	case common.PUT:
 		return h.Put(pb, resourcs)
-	case types.Action_PATCH:
+	case common.PATCH:
 		return h.Patch(pb, resourcs)
-	case types.Action_DELETE:
+	case common.DELETE:
 		return h.Delete(pb, resourcs)
-	case types.Action_GET:
+	case common.GET:
 		return h.Get(pb, resourcs)
 	default:
 		return object.NewError("invalid action, ignoring")
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualNetworkInterface, msg *types.Message, isTransaction bool) common.IElements {
+func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualNetworkInterface, msg common.IMessage, isTransaction bool) common.IElements {
 	notification := pb.Element().(*types.NotificationSet)
-	h, ok := this.services.Get(notification.ServiceName, notification.ServiceArea)
+	h, ok := this.services.Get(notification.ServiceName, uint16(notification.ServiceArea))
 	if !ok {
-		return object.NewError("Cannot find handler for service " + msg.ServiceName +
-			" area " + strconv.Itoa(int(msg.ServiceArea)))
+		return object.NewError("Cannot find handler for service " + msg.ServiceName() +
+			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
 	var resourcs common.IResources
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
 
-	if msg != nil && msg.FailMsg != "" {
+	if msg != nil && msg.FailMessage() != "" {
 		return h.Failed(pb, resourcs, msg)
 	}
 	item, err := cache.ItemOf(notification, this.introspector)
@@ -154,6 +154,6 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea int32) (common.IServicePointHandler, bool) {
+func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
 	return this.services.Get(serviceName, serviceArea)
 }

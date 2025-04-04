@@ -2,61 +2,60 @@ package transaction
 
 import (
 	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
 )
 
-func (this *ServiceTransactions) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface) bool {
+func (this *ServiceTransactions) rollback(msg common.IMessage, vnic common.IVirtualNetworkInterface) bool {
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 
-	if msg.Tr.State != types.TransactionState_Rollback {
-		panic("commit: Unexpected transaction state " + msg.Tr.State.String())
+	if msg.Tr().State() != common.Rollback {
+		panic("commit: Unexpected transaction state " + msg.Tr().State().String())
 	}
 
 	if this.locked == nil {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Rollback: No committed transaction"
+		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetErrorMessage("Rollback: No committed transaction")
 		return false
 	}
 
-	if this.locked.Tr.Id != msg.Tr.Id {
-		msg.Tr.State = types.TransactionState_Errored
-		msg.Tr.Error = "Rollback: commit was for another transaction"
+	if this.locked.Tr().Id() != msg.Tr().Id() {
+		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetErrorMessage("Rollback: commit was for another transaction")
 		return false
 	}
 
-	if this.locked.Tr.State != types.TransactionState_Commited {
-		msg.Tr.Error = "Rollback: Transaction is not in committed state " + msg.Tr.State.String()
-		msg.Tr.State = types.TransactionState_Errored
+	if this.locked.Tr().State() != common.Commited {
+		msg.Tr().SetErrorMessage("Rollback: Transaction is not in committed state " + msg.Tr().State().String())
+		msg.Tr().SetState(common.Errored)
 		return false
 	}
 
 	servicePoints := vnic.Resources().ServicePoints()
-	if msg.Action == types.Action_Notify {
+	if msg.Action() == common.Notify {
 		//_, err := servicePoints.Notify()
 	} else {
 		this.setRollbackAction(msg)
-		resp := servicePoints.Handle(this.preCommitObject, this.locked.Action, vnic, this.locked, true)
+		resp := servicePoints.Handle(this.preCommitObject, this.locked.Action(), vnic, this.locked, true)
 		if resp != nil && resp.Error() != nil {
-			msg.Tr.State = types.TransactionState_Errored
-			msg.Tr.Error = "Rollback: Handle Error: " + resp.Error().Error()
+			msg.Tr().SetState(common.Errored)
+			msg.Tr().SetErrorMessage("Rollback: Handle Error: " + resp.Error().Error())
 			return false
 		}
 	}
 
-	msg.Tr.State = types.TransactionState_Rollbacked
+	msg.Tr().SetState(common.Rollbacked)
 	return true
 }
 
-func (this *ServiceTransactions) setRollbackAction(msg *types.Message) {
-	switch msg.Action {
-	case types.Action_POST:
-		this.locked.Action = types.Action_DELETE
-	case types.Action_DELETE:
-		this.locked.Action = types.Action_POST
-	case types.Action_PUT:
-		this.locked.Action = types.Action_PUT
-	case types.Action_PATCH:
-		this.locked.Action = types.Action_PUT
+func (this *ServiceTransactions) setRollbackAction(msg common.IMessage) {
+	switch msg.Action() {
+	case common.POST:
+		this.locked.SetAction(common.DELETE)
+	case common.DELETE:
+		this.locked.SetAction(common.POST)
+	case common.PUT:
+		this.locked.SetAction(common.PUT)
+	case common.PATCH:
+		this.locked.SetAction(common.PUT)
 	}
 }

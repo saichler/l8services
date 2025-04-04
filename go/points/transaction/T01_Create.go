@@ -3,23 +3,17 @@ package transaction
 import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"github.com/saichler/reflect/go/reflect/cloning"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
-	"time"
 )
 
-func createTransaction(msg *types.Message) {
-	if msg.Tr == nil {
-		msg.Tr = &types.Transaction{}
-		msg.Tr.Id = common.NewUuid()
-		msg.Tr.StartTime = time.Now().Unix()
-		msg.Tr.State = types.TransactionState_Create
+func createTransaction(msg common.IMessage) {
+	if msg.Tr() == nil {
+		msg.SetTr(protocol.NewTransaction())
 	}
 }
 
-func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IElements {
+func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtualNetworkInterface) common.IElements {
 	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction
@@ -36,7 +30,7 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 
 	//Compile a list of this service peers, takeaway this instance
 	healthCenter := health.Health(vnic.Resources())
-	targets := healthCenter.Uuids(msg.ServiceName, msg.ServiceArea, true)
+	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea(), true)
 	delete(targets, vnic.Resources().SysConfig().LocalUuid)
 
 	//Send the new transaction message to all the peers.
@@ -44,23 +38,24 @@ func (this *TransactionManager) Create(msg *types.Message, vnic common.IVirtualN
 	if !ok {
 		//One or more peers did not accept/created the transaction
 		//in its map, so cleanup
-		msg.Tr.State = types.TransactionState_Finish
+		msg.Tr().SetState(common.Finish)
 		requestFromPeers(msg, vnic, targets)
 		st.delTransaction(msg)
-		msg.Tr.Error = "Failed to create transaction"
+		msg.Tr().SetErrorMessage("Failed to create transaction")
 		return object.New(nil, msg.Tr)
 	}
 
 	//Move the transaction state to start and find the leader
-	msg.Tr.State = types.TransactionState_Start
-	leader := healthCenter.Leader(msg.ServiceName, msg.ServiceArea)
+	msg.Tr().SetState(common.Start)
+	leader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := leader == vnic.Resources().SysConfig().LocalUuid
 
 	//from this point onwards, we are going to use a clone
 	//As we only need the message attributes, without the data
-	msgClone := cloning.NewCloner().Clone(msg).(*types.Message)
-	o := object.New(nil, &types.Transaction{})
-	msgClone.Data, _ = protocol.DataFor(o, vnic.Resources().Security())
+	msgClone := msg.(*protocol.Message).Clone()
+	o := object.New(nil, &protocol.Transaction{})
+	data, _ := protocol.DataFor(o, vnic.Resources().Security())
+	msgClone.SetData(data)
 
 	//If this is not the leader, forward to the leader
 	if !isLeader {

@@ -17,12 +17,12 @@ func NewServicesMap() *ServicesMap {
 	return newMap
 }
 
-func (mp *ServicesMap) Put(serviceName string, serviceArea int32, value common.IServicePointHandler) bool {
+func (mp *ServicesMap) Put(serviceName string, serviceArea uint16, value common.IServicePointHandler) bool {
 	key := ServiceKey(serviceName, serviceArea)
 	return mp.impl.Put(key, value)
 }
 
-func (mp *ServicesMap) Get(serviceName string, serviceArea int32) (common.IServicePointHandler, bool) {
+func (mp *ServicesMap) Get(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
 	key := ServiceKey(serviceName, serviceArea)
 	value, ok := mp.impl.Get(key)
 	if value != nil {
@@ -31,7 +31,7 @@ func (mp *ServicesMap) Get(serviceName string, serviceArea int32) (common.IServi
 	return nil, ok
 }
 
-func (mp *ServicesMap) Contains(serviceName string, serviceArea int32) bool {
+func (mp *ServicesMap) Contains(serviceName string, serviceArea uint16) bool {
 	key := ServiceKey(serviceName, serviceArea)
 	return mp.impl.Contains(key)
 }
@@ -46,7 +46,7 @@ func (mp *ServicesMap) Topics() map[string]bool {
 	return result
 }*/
 
-func ServiceKey(serviceName string, serviceArea int32) string {
+func ServiceKey(serviceName string, serviceArea uint16) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))

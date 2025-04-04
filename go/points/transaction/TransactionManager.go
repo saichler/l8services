@@ -3,7 +3,6 @@ package transaction
 import (
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
 	"sync"
 )
 
@@ -19,10 +18,10 @@ func NewTransactionManager() *TransactionManager {
 	return tm
 }
 
-func (this *TransactionManager) transactionsOf(msg *types.Message) *ServiceTransactions {
+func (this *TransactionManager) transactionsOf(msg common.IMessage) *ServiceTransactions {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
-	serviceKey := ServiceKey(msg.ServiceName, msg.ServiceArea)
+	serviceKey := ServiceKey(msg.ServiceName(), msg.ServiceArea())
 	st, ok := this.serviceTransactions[serviceKey]
 	if !ok {
 		this.serviceTransactions[serviceKey] = newServiceTransactions(serviceKey)
@@ -31,58 +30,58 @@ func (this *TransactionManager) transactionsOf(msg *types.Message) *ServiceTrans
 	return st
 }
 
-func (this *TransactionManager) Run(msg *types.Message, vnic common.IVirtualNetworkInterface) common.IElements {
-	switch msg.Tr.State {
-	case types.TransactionState_Create:
+func (this *TransactionManager) Run(msg common.IMessage, vnic common.IVirtualNetworkInterface) common.IElements {
+	switch msg.Tr().State() {
+	case common.Create:
 		this.create(msg)
-	case types.TransactionState_Start:
+	case common.Start:
 		this.start(msg, vnic)
-	case types.TransactionState_Lock:
+	case common.Lock:
 		this.lock(msg)
-	case types.TransactionState_Commit:
+	case common.Commit:
 		this.commit(msg, vnic)
-	case types.TransactionState_Finish:
+	case common.Finish:
 		this.finish(msg)
-	case types.TransactionState_Rollback:
+	case common.Rollback:
 		this.rollback(msg, vnic)
-	case types.TransactionState_Errored:
+	case common.Errored:
 	default:
-		panic("Unexpected transaction state " + msg.Tr.State.String() + ":" + msg.Tr.Error)
+		panic("Unexpected transaction state " + msg.Tr().State().String() + ":" + msg.Tr().ErrorMessage())
 	}
 	return object.New(nil, msg.Tr)
 }
 
-func (this *TransactionManager) create(msg *types.Message) {
-	if msg.Tr.State != types.TransactionState_Create {
-		panic("create: Unexpected transaction state " + msg.Tr.State.String())
+func (this *TransactionManager) create(msg common.IMessage) {
+	if msg.Tr().State() != common.Create {
+		panic("create: Unexpected transaction state " + msg.Tr().State().String())
 	}
 	createTransaction(msg)
 	st := this.transactionsOf(msg)
 	st.addTransaction(msg)
-	msg.Tr.State = types.TransactionState_Created
+	msg.Tr().SetState(common.Created)
 }
 
-func (this *TransactionManager) lock(msg *types.Message) {
+func (this *TransactionManager) lock(msg common.IMessage) {
 	st := this.transactionsOf(msg)
 	st.lock(msg)
 }
 
-func (this *TransactionManager) commit(msg *types.Message, vnic common.IVirtualNetworkInterface) {
+func (this *TransactionManager) commit(msg common.IMessage, vnic common.IVirtualNetworkInterface) {
 	st := this.transactionsOf(msg)
 	st.commit(msg, vnic)
 }
 
-func (this *TransactionManager) rollback(msg *types.Message, vnic common.IVirtualNetworkInterface) {
+func (this *TransactionManager) rollback(msg common.IMessage, vnic common.IVirtualNetworkInterface) {
 	st := this.transactionsOf(msg)
 	st.rollback(msg, vnic)
 }
 
-func (this *TransactionManager) finish(msg *types.Message) {
+func (this *TransactionManager) finish(msg common.IMessage) {
 	st := this.transactionsOf(msg)
 	st.finish(msg)
 }
 
-func (this *TransactionManager) start(msg *types.Message, vnic common.IVirtualNetworkInterface) {
+func (this *TransactionManager) start(msg common.IMessage, vnic common.IVirtualNetworkInterface) {
 	st := this.transactionsOf(msg)
 	st.start(msg, vnic)
 }
