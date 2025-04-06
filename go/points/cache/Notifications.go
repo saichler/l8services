@@ -121,16 +121,15 @@ func (this *Cache) createUpdateNotification(changes []*updating.Change) (*types.
 }
 
 func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, error) {
-	location := 0
 	switch n.Type {
 	case types.NotificationType_Replace:
 		fallthrough
 	case types.NotificationType_Add:
-		obj := object.NewDecode(&n.NotificationList[0].NewValue, &location, i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, i.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Delete:
-		obj := object.NewDecode(&n.NotificationList[0].OldValue, &location, i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, i.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Update:
@@ -147,7 +146,7 @@ func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, erro
 			if e != nil {
 				panic(e)
 			}
-			obj := object.NewDecode(&notif.NewValue, &location, i.Registry())
+			obj := object.NewDecode(notif.NewValue, 0, i.Registry())
 			v, e := obj.Get()
 			if e != nil {
 				return nil, e
