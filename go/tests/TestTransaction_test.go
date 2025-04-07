@@ -55,7 +55,7 @@ func TestTransactionGet(t *testing.T) {
 	defer reset("TestTransactionGet")
 	setTransactionMode(0)
 
-	pb := &testtypes.TestProto{}
+	pb := &testtypes.TestProto{MyString: "test"}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
 	resp := eg3_1.SingleRequest(ServiceName, 0, common.GET, pb)
 	if resp.Error() != nil {
