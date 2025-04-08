@@ -88,7 +88,7 @@ func (this *ServiceTransactions) start(msg common.IMessage, vnic common.IVirtual
 
 	m, ok := this.trMap.Get(msg.Tr().Id())
 	if !ok {
-		panic("error")
+		panic("Can't find transaction")
 	}
 	message := m.(common.IMessage)
 	message.Tr().SetState(msg.Tr().State())

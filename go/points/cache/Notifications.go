@@ -9,11 +9,11 @@ import (
 	"github.com/saichler/types/go/types"
 )
 
-func CreateNotificationSet(t types.NotificationType, serviceName string, serviceArea int32, modelType, source string,
+func CreateNotificationSet(t types.NotificationType, serviceName string, serviceArea uint16, modelType, source string,
 	changeCount int, sequence uint32) *types.NotificationSet {
 	notificationSet := &types.NotificationSet{}
 	notificationSet.ServiceName = serviceName
-	notificationSet.ServiceArea = serviceArea
+	notificationSet.ServiceArea = int32(serviceArea)
 	notificationSet.ModelType = modelType
 	notificationSet.Source = source
 	notificationSet.Type = t
@@ -27,7 +27,7 @@ func (this *Cache) createNotificationSet(t types.NotificationType, changeCount i
 	return CreateNotificationSet(t, this.serviceName, this.serviceArea, this.modelType, this.source, changeCount, this.sequence)
 }
 
-func CreateAddNotification(any interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateAddNotification(any interface{}, serviceName string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Add, serviceName, serviceArea, modelType, source, changeCount, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
@@ -45,7 +45,7 @@ func (this *Cache) createAddNotification(any interface{}) (*types.NotificationSe
 	return CreateAddNotification(any, this.serviceName, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateReplaceNotification(old, new interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateReplaceNotification(old, new interface{}, serviceName string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Replace, serviceName, serviceArea, modelType, source, 1, sequence)
 	oldObj := object.NewEncode()
 	err := oldObj.Add(old)
@@ -71,7 +71,7 @@ func (this *Cache) createReplaceNotification(old, new interface{}) (*types.Notif
 	return CreateReplaceNotification(old, new, this.serviceName, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateDeleteNotification(any interface{}, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateDeleteNotification(any interface{}, serviceName string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Delete, serviceName, serviceArea, modelType, source, 1, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
@@ -89,7 +89,7 @@ func (this *Cache) createDeleteNotification(any interface{}) (*types.Notificatio
 	return CreateDeleteNotification(any, this.serviceName, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateUpdateNotification(changes []*updating.Change, serviceName string, serviceArea int32, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateUpdateNotification(changes []*updating.Change, serviceName string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Update, serviceName, serviceArea, modelType, source, changeCount, sequence)
 	for i, change := range changes {
 		n := &types.Notification{}

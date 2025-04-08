@@ -18,7 +18,7 @@ type Cache struct {
 	introspector common.IIntrospector
 	source       string
 	serviceName  string
-	serviceArea  int32
+	serviceArea  uint16
 	modelType    string
 	sequence     uint32
 }
@@ -27,7 +27,7 @@ type ICacheListener interface {
 	PropertyChangeNotification(*types.NotificationSet)
 }
 
-func NewModelCache(serviceName string, serviceArea int32, modelType, source string,
+func NewModelCache(serviceName string, serviceArea uint16, modelType, source string,
 	listener ICacheListener, introspector common.IIntrospector) *Cache {
 	this := &Cache{}
 	this.cache = make(map[string]interface{})
