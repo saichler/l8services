@@ -62,7 +62,9 @@ func requestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface,
 	}
 
 	//@TODO - implement timeout
-	this.cond.Wait()
+	if len(targets) > 0 {
+		this.cond.Wait()
+	}
 
 	ok := true
 	for _, e := range this.pending {
