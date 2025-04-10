@@ -3,7 +3,6 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_topology"
-	"github.com/saichler/layer8/go/overlay/protocol"
 	. "github.com/saichler/types/go/common"
 )
 
@@ -12,7 +11,6 @@ var globals, alias = CreateResources(50000, 1)
 
 func init() {
 	Log.SetLogLevel(Trace_Level)
-	protocol.UsingContainers = false
 }
 
 func setup() {
