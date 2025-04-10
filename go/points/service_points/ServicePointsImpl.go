@@ -31,7 +31,7 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePointHandler, serviceArea uint16) error {
+func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePointHandler) error {
 	if handler == nil {
 		return errors.New("cannot register a nil handler")
 	}
@@ -45,9 +45,17 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 			return err
 		}
 	}
-	this.services.Put(handler.ServiceName(), serviceArea, handler)
-	common.AddService(this.config, handler.ServiceName(), int32(serviceArea))
+	this.services.put(handler.ServiceName(), handler)
 	return nil
+}
+
+func (this *ServicePointsImpl) Activate(serviceName string, serviceArea uint16, vnic common.IVirtualNetworkInterface) error {
+	err := this.services.activate(serviceName, serviceArea)
+	if err != nil {
+		return err
+	}
+	common.AddService(this.config, serviceName, int32(serviceArea))
+	return err
 }
 
 func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage, insideTransaction bool) common.IElements {
@@ -62,9 +70,9 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		return object.NewError(err.Error())
 	}
 
-	h, ok := this.services.Get(msg.ServiceName(), msg.ServiceArea())
+	h, ok := this.services.getActiveService(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
-		return object.NewError("Cannot find handler for service " + msg.ServiceName() +
+		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
 
@@ -121,9 +129,9 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action co
 
 func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualNetworkInterface, msg common.IMessage, isTransaction bool) common.IElements {
 	notification := pb.Element().(*types.NotificationSet)
-	h, ok := this.services.Get(notification.ServiceName, uint16(notification.ServiceArea))
+	h, ok := this.services.getActiveService(notification.ServiceName, uint16(notification.ServiceArea))
 	if !ok {
-		return object.NewError("Cannot find handler for service " + msg.ServiceName() +
+		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
 	var resourcs common.IResources
@@ -154,6 +162,6 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
-	return this.services.Get(serviceName, serviceArea)
+func (this *ServicePointsImpl) ActiveServicePointHandler(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
+	return this.services.getActiveService(serviceName, serviceArea)
 }

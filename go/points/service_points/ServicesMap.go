@@ -2,51 +2,64 @@ package service_points
 
 import (
 	"bytes"
+	"errors"
 	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/types/go/common"
 	"strconv"
 )
 
 type ServicesMap struct {
-	impl *maps.SyncMap
+	services *maps.SyncMap
+	active   *maps.SyncMap
+}
+
+type ServicePointEntry struct {
+	servicePoint common.IServicePointHandler
 }
 
 func NewServicesMap() *ServicesMap {
 	newMap := &ServicesMap{}
-	newMap.impl = maps.NewSyncMap()
+	newMap.services = maps.NewSyncMap()
+	newMap.active = maps.NewSyncMap()
 	return newMap
 }
 
-func (mp *ServicesMap) Put(serviceName string, serviceArea uint16, value common.IServicePointHandler) bool {
-	key := ServiceKey(serviceName, serviceArea)
-	return mp.impl.Put(key, value)
+func (mp *ServicesMap) put(serviceName string, value common.IServicePointHandler) bool {
+	return mp.services.Put(serviceName, value)
 }
 
-func (mp *ServicesMap) Get(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
-	key := ServiceKey(serviceName, serviceArea)
-	value, ok := mp.impl.Get(key)
+func (mp *ServicesMap) activate(serviceName string, serviceArea uint16) error {
+	service, ok := mp.getService(serviceName)
+	if !ok {
+		return errors.New("No such service " + serviceName)
+	}
+	key := serviceActiveKey(serviceName, serviceArea)
+	mp.active.Put(key, service)
+	return nil
+}
+
+func (mp *ServicesMap) getService(serviceName string) (common.IServicePointHandler, bool) {
+	value, ok := mp.services.Get(serviceName)
 	if value != nil {
 		return value.(common.IServicePointHandler), ok
 	}
 	return nil, ok
 }
 
-func (mp *ServicesMap) Contains(serviceName string, serviceArea uint16) bool {
-	key := ServiceKey(serviceName, serviceArea)
-	return mp.impl.Contains(key)
+func (mp *ServicesMap) getActiveService(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
+	key := serviceActiveKey(serviceName, serviceArea)
+	value, ok := mp.active.Get(key)
+	if value != nil {
+		return value.(common.IServicePointHandler), ok
+	}
+	return nil, ok
 }
 
-/*
-func (mp *ServicesMap) Topics() map[string]bool {
-	tops := mp.impl.KeysAsList(reflect.TypeOf(""), nil).([]string)
-	result := make(map[string]bool)
-	for _, topic := range tops {
-		result[topic] = true
-	}
-	return result
-}*/
+func (mp *ServicesMap) containsService(serviceName string) bool {
+	return mp.services.Contains(serviceName)
+}
 
-func ServiceKey(serviceName string, serviceArea uint16) string {
+func serviceActiveKey(serviceName string, serviceArea uint16) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))
