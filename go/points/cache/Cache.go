@@ -13,7 +13,7 @@ type Cache struct {
 	cache        map[string]interface{}
 	mtx          *sync.RWMutex
 	cond         *sync.Cond
-	listener     ICacheListener
+	listener     common.IServicePointCacheListener
 	cloner       *cloning.Cloner
 	introspector common.IIntrospector
 	source       string
@@ -23,12 +23,8 @@ type Cache struct {
 	sequence     uint32
 }
 
-type ICacheListener interface {
-	PropertyChangeNotification(*types.NotificationSet)
-}
-
 func NewModelCache(serviceName string, serviceArea uint16, modelType, source string,
-	listener ICacheListener, introspector common.IIntrospector) *Cache {
+	listener common.IServicePointCacheListener, introspector common.IIntrospector) *Cache {
 	this := &Cache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}

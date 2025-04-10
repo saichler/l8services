@@ -49,7 +49,7 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	return nil
 }
 
-func (this *ServicePointsImpl) Activate(serviceName string, serviceArea uint16, vnic common.IVirtualNetworkInterface) error {
+func (this *ServicePointsImpl) Activate(serviceName string, serviceArea uint16, cacheListener common.IServicePointCacheListener) error {
 	err := this.services.activate(serviceName, serviceArea)
 	if err != nil {
 		return err
