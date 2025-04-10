@@ -28,7 +28,12 @@ func (mp *ServicesMap) put(serviceName string, value common.IServicePointHandler
 	return mp.services.Put(serviceName, value)
 }
 
-func (mp *ServicesMap) activate(serviceName string, serviceArea uint16) error {
+func (mp *ServicesMap) activate(serviceName string, serviceArea uint16, handler common.IServicePointHandler) error {
+	if handler != nil {
+		key := serviceActiveKey(serviceName, serviceArea)
+		mp.active.Put(key, handler)
+		return nil
+	}
 	service, ok := mp.getService(serviceName)
 	if !ok {
 		return errors.New("No such service " + serviceName)
