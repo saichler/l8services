@@ -12,22 +12,22 @@ import (
 func TestServicePoints(t *testing.T) {
 	testsp := NewTestServicePointHandler("TestProto")
 	pb := object.New(nil, &testtypes.TestProto{})
-	err := globals.ServicePoints().RegisterServicePoint(testsp)
+	err := globals.ServicePoints().RegisterServicePoint(testsp, 0, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(nil)
+	err = globals.ServicePoints().RegisterServicePoint(nil, 0, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(testsp)
+	err = globals.ServicePoints().RegisterServicePoint(testsp, 0, nil)
 	if err != nil {
 		Log.Fail(t, err)
 		return
 	}
-	sp, ok := globals.ServicePoints().ActiveServicePointHandler(ServiceName, 0)
+	sp, ok := globals.ServicePoints().ServicePointHandler(ServiceName, 0)
 	if !ok {
 		Log.Fail(t, "Service Point Not Found")
 		return
