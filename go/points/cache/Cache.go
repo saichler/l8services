@@ -94,7 +94,7 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	}
 
 	for _, chg := range changes {
-		fmt.Println("Changed:" + chg.PropertyId())
+		fmt.Println("Changed:", chg.PropertyId(), " old:", chg.OldValue(), " new:", chg.NewValue())
 	}
 
 	if this.listener != nil {
