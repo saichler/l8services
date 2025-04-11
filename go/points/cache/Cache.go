@@ -85,8 +85,12 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	}
 	//if there are changes, then nothing to do
 	changes := putUpdater.Changes()
-	if changes == nil {
+	if changes == nil || len(changes) == 0 {
 		return nil, nil
+	}
+
+	for _, chg := range changes {
+		fmt.Println("Changed:" + chg.PropertyId())
 	}
 
 	if this.listener != nil {
