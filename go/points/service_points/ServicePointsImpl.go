@@ -9,6 +9,7 @@ import (
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"strconv"
+	"time"
 )
 
 type ServicePointsImpl struct {
@@ -49,6 +50,7 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	common.AddService(this.config, handler.ServiceName(), int32(serviceArea))
 	if vnic != nil {
 		vnic.NotifyServiceAdded()
+		time.Sleep(time.Second)
 	}
 	return nil
 }
