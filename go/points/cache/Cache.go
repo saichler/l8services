@@ -2,7 +2,6 @@ package cache
 
 import (
 	"errors"
-	"fmt"
 	"github.com/saichler/reflect/go/reflect/cloning"
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/types/go/common"
@@ -93,10 +92,6 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 		return nil, nil
 	}
 
-	for _, chg := range changes {
-		fmt.Println("Changed:", chg.PropertyId(), " old:", chg.OldValue(), " new:", chg.NewValue())
-	}
-
 	if this.listener != nil {
 		n, e = this.createReplaceNotification(item, v)
 		if e != nil {
@@ -137,7 +132,6 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 
 	//Apply the changes to the existing item
 	for _, change := range changes {
-		fmt.Println(change.PropertyId())
 		change.Apply(item)
 	}
 
