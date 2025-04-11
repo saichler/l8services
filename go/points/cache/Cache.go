@@ -74,6 +74,9 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 		}
 		return n, e
 	}
+	//Place the value in the cache
+	this.cache[k] = v
+
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
@@ -83,6 +86,7 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	if e != nil {
 		return n, e
 	}
+
 	//if there are changes, then nothing to do
 	changes := putUpdater.Changes()
 	if changes == nil || len(changes) == 0 {
@@ -94,16 +98,11 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	}
 
 	if this.listener != nil {
-		n, e = this.createReplaceNotification(item, itemClone)
+		n, e = this.createReplaceNotification(item, v)
 		if e != nil {
 			return n, e
 		}
 		go this.listener.PropertyChangeNotification(n)
-	}
-
-	//Apply the changes to the existing item
-	for _, change := range changes {
-		change.Apply(item)
 	}
 
 	return n, e
