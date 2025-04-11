@@ -47,6 +47,9 @@ func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePoint
 	}
 	this.services.put(handler.ServiceName(), serviceArea, handler)
 	common.AddService(this.config, handler.ServiceName(), int32(serviceArea))
+	if vnic != nil {
+		vnic.NotifyServiceAdded()
+	}
 	return nil
 }
 
