@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"fmt"
 	"github.com/saichler/reflect/go/reflect/cloning"
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/types/go/common"
@@ -133,6 +134,7 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 
 	//Apply the changes to the existing item
 	for _, change := range changes {
+		fmt.Println(change.PropertyId())
 		change.Apply(item)
 	}
 
