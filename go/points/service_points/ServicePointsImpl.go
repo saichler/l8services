@@ -32,23 +32,38 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServicePoint(handler common.IServicePointHandler, serviceArea uint16, vnic common.IVirtualNetworkInterface) error {
-	if handler == nil {
-		return errors.New("cannot register a nil handler")
-	}
-	if handler.ServiceName() == "" {
-		return errors.New("cannot register handler with blank Service Name")
+func (this *ServicePointsImpl) AddServicePointType(handler common.IServicePointHandler) {
+	this.introspector.Registry().Register(handler)
+}
+
+func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
+	r common.IResources, l common.IServicePointCacheListener) error {
+
+	if typeName == "" {
+		return errors.New("typeName is empty")
 	}
 
-	if handler.ServiceModel() != nil {
-		_, err := this.introspector.Registry().Register(handler.ServiceModel().Element())
-		if err != nil {
-			return err
-		}
+	if serviceName == "" {
+		return errors.New("Service name is empty")
 	}
-	this.services.put(handler.ServiceName(), serviceArea, handler)
-	common.AddService(this.config, handler.ServiceName(), int32(serviceArea))
-	if vnic != nil {
+
+	info, err := this.introspector.Registry().Info(typeName)
+	if err != nil {
+		return errors.New("Activate: " + err.Error())
+	}
+	h, err := info.NewInstance()
+	if err != nil {
+		return errors.New("Activate: " + err.Error())
+	}
+	handler := h.(common.IServicePointHandler)
+	err = handler.Activate(serviceName, serviceArea, r, l)
+	if err != nil {
+		return errors.New("Activate: " + err.Error())
+	}
+	this.services.put(serviceName, serviceArea, handler)
+	common.AddService(this.config, serviceName, int32(serviceArea))
+	vnic, ok := l.(common.IVirtualNetworkInterface)
+	if ok {
 		vnic.NotifyServiceAdded()
 		time.Sleep(time.Second)
 	}
@@ -69,7 +84,6 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 
 	h, ok := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
-		panic(msg.ServiceName())
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
@@ -88,12 +102,12 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		}
 	}
 
-	return this.doAction(h, action, msg.ServiceArea(), pb, vnic)
+	return this.doAction(h, action, msg.ServiceName(), msg.ServiceArea(), pb, vnic)
 
 }
 
 func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action common.Action,
-	serviceArea uint16, pb common.IElements, vnic common.IVirtualNetworkInterface) common.IElements {
+	serviceName string, serviceArea uint16, pb common.IElements, vnic common.IVirtualNetworkInterface) common.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
@@ -109,7 +123,7 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action co
 	case common.POST:
 		if h.ReplicationCount() > 0 {
 			healthCenter := health.Health(vnic.Resources())
-			healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, h.ServiceName(), serviceArea, vnic)
+			healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, serviceName, serviceArea, vnic)
 		}
 		return h.Post(pb, resourcs)
 	case common.PUT:

@@ -11,10 +11,6 @@ type ServicesMap struct {
 	services *maps.SyncMap
 }
 
-type ServicePointEntry struct {
-	servicePoint common.IServicePointHandler
-}
-
 func NewServicesMap() *ServicesMap {
 	newMap := &ServicesMap{}
 	newMap.services = maps.NewSyncMap()
