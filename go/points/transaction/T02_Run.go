@@ -100,7 +100,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 func Targets(msg common.IMessage, vnic common.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
 	healthCenter := health.Health(vnic.Resources())
 	isLeader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea()) == vnic.Resources().SysConfig().LocalUuid
-	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea(), true)
+	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea())
 	replicas := make(map[string]bool)
 	for target, _ := range targets {
 		replicas[target] = true

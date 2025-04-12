@@ -69,6 +69,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 
 	h, ok := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
+		panic(msg.ServiceName())
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}

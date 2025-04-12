@@ -30,7 +30,7 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 
 	//Compile a list of this service peers, takeaway this instance
 	healthCenter := health.Health(vnic.Resources())
-	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea(), true)
+	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea())
 	delete(targets, vnic.Resources().SysConfig().LocalUuid)
 
 	//Send the new transaction message to all the peers.
