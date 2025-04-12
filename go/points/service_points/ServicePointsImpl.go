@@ -37,28 +37,28 @@ func (this *ServicePointsImpl) AddServicePointType(handler common.IServicePointH
 }
 
 func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
-	r common.IResources, l common.IServicePointCacheListener, args ...string) error {
+	r common.IResources, l common.IServicePointCacheListener, args ...string) (common.IServicePointHandler, error) {
 
 	if typeName == "" {
-		return errors.New("typeName is empty")
+		return nil, errors.New("typeName is empty")
 	}
 
 	if serviceName == "" {
-		return errors.New("Service name is empty")
+		return nil, errors.New("Service name is empty")
 	}
 
 	info, err := this.introspector.Registry().Info(typeName)
 	if err != nil {
-		return errors.New("Activate: " + err.Error())
+		return nil, errors.New("Activate: " + err.Error())
 	}
 	h, err := info.NewInstance()
 	if err != nil {
-		return errors.New("Activate: " + err.Error())
+		return nil, errors.New("Activate: " + err.Error())
 	}
 	handler := h.(common.IServicePointHandler)
 	err = handler.Activate(serviceName, serviceArea, r, l, args...)
 	if err != nil {
-		return errors.New("Activate: " + err.Error())
+		return nil, errors.New("Activate: " + err.Error())
 	}
 	this.services.put(serviceName, serviceArea, handler)
 	common.AddService(this.config, serviceName, int32(serviceArea))
@@ -67,7 +67,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 		vnic.NotifyServiceAdded()
 		time.Sleep(time.Second)
 	}
-	return nil
+	return handler, nil
 }
 
 func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage, insideTransaction bool) common.IElements {
