@@ -10,19 +10,20 @@ import (
 )
 
 func TestServicePoints(t *testing.T) {
-	testsp := NewTestServicePointHandler("TestProto")
+	testsp := &TestServicePointHandler{}
 	pb := object.New(nil, &testtypes.TestProto{})
-	err := globals.ServicePoints().RegisterServicePoint(testsp, 0, nil)
+	globals.ServicePoints().AddServicePointType(testsp)
+	_, err := globals.ServicePoints().Activate("", "", 0, nil, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(nil, 0, nil)
+	_, err = globals.ServicePoints().Activate("TestServicePointHandler", "", 0, nil, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	err = globals.ServicePoints().RegisterServicePoint(testsp, 0, nil)
+	_, err = globals.ServicePoints().Activate(ServicePointType, ServiceName, 0, nil, nil, "")
 	if err != nil {
 		Log.Fail(t, err)
 		return
@@ -32,7 +33,7 @@ func TestServicePoints(t *testing.T) {
 		Log.Fail(t, "Service Point Not Found")
 		return
 	}
-	sp.ServiceName()
+	sp.Transactional()
 
 	globals.ServicePoints().Handle(pb, common.POST, nil, nil, false)
 	globals.ServicePoints().Handle(pb, common.PUT, nil, nil, false)
