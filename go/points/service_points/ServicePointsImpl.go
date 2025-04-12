@@ -37,7 +37,7 @@ func (this *ServicePointsImpl) AddServicePointType(handler common.IServicePointH
 }
 
 func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
-	r common.IResources, l common.IServicePointCacheListener, args ...string) (common.IServicePointHandler, error) {
+	r common.IResources, l common.IServicePointCacheListener, args ...interface{}) (common.IServicePointHandler, error) {
 
 	if typeName == "" {
 		return nil, errors.New("typeName is empty")
