@@ -81,7 +81,7 @@ func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16
 		return errors.New("Can't find service " + serviceName)
 	}
 
-	handler.DeActivate()
+	defer handler.DeActivate()
 
 	common.RemoveService(this.config.Services, serviceName, int32(serviceArea))
 	vnic, ok := l.(common.IVirtualNetworkInterface)
