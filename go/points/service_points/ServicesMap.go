@@ -31,6 +31,15 @@ func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (common.IServ
 	return nil, ok
 }
 
+func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
+	key := serviceKey(serviceName, serviceArea)
+	value, ok := mp.services.Delete(key)
+	if value != nil {
+		return value.(common.IServicePointHandler), ok
+	}
+	return nil, ok
+}
+
 func (mp *ServicesMap) contains(serviceName string, serviceArea uint16) bool {
 	key := serviceKey(serviceName, serviceArea)
 	return mp.services.Contains(key)

@@ -70,6 +70,27 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	return handler, nil
 }
 
+func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16, r common.IResources, l common.IServicePointCacheListener) error {
+
+	if serviceName == "" {
+		return errors.New("Service name is empty")
+	}
+
+	handler, ok := this.services.del(serviceName, serviceArea)
+	if !ok {
+		return errors.New("Can't find service " + serviceName)
+	}
+
+	handler.DeActivate()
+
+	common.RemoveService(this.config.Services, serviceName, int32(serviceArea))
+	vnic, ok := l.(common.IVirtualNetworkInterface)
+	if ok {
+		vnic.NotifyServiceRemoved(serviceName, serviceArea)
+	}
+	return nil
+}
+
 func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage, insideTransaction bool) common.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
