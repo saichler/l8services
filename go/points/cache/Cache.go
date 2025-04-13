@@ -117,7 +117,19 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
 	if !ok {
-		return n, errors.New("Key " + k + " not found")
+		//First clone the value so we can use it in the notification.
+		itemClone := this.cloner.Clone(v)
+		//Place the value in the cache
+		this.cache[k] = v
+		//Send the notification using the clone outside the current go routine
+		if this.listener != nil {
+			n, e = this.createAddNotification(itemClone)
+			if e != nil {
+				return n, e
+			}
+			go this.listener.PropertyChangeNotification(n)
+		}
+		return n, e
 	}
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
