@@ -159,6 +159,9 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action co
 }
 
 func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualNetworkInterface, msg common.IMessage, isTransaction bool) common.IElements {
+	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
+		return object.New(nil, nil)
+	}
 	notification := pb.Element().(*types.NotificationSet)
 	h, ok := this.services.get(notification.ServiceName, uint16(notification.ServiceArea))
 	if !ok {
