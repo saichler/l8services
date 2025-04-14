@@ -9,7 +9,6 @@ import (
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"strconv"
-	"time"
 )
 
 type ServicePointsImpl struct {
@@ -65,7 +64,6 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	vnic, ok := l.(common.IVirtualNetworkInterface)
 	if ok {
 		vnic.NotifyServiceAdded()
-		time.Sleep(time.Second)
 	}
 	return handler, nil
 }
