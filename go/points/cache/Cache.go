@@ -65,7 +65,7 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
 		if this.listener != nil {
-			n, e = this.createAddNotification(itemClone)
+			n, e = this.createAddNotification(itemClone, k)
 			if e != nil {
 				return n, e
 			}
@@ -93,7 +93,7 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	}
 
 	if this.listener != nil {
-		n, e = this.createReplaceNotification(item, v)
+		n, e = this.createReplaceNotification(item, v, k)
 		if e != nil {
 			return n, e
 		}
@@ -118,7 +118,7 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
 		if this.listener != nil {
-			n, e = this.createAddNotification(itemClone)
+			n, e = this.createAddNotification(itemClone, k)
 			if e != nil {
 				return n, e
 			}
@@ -147,7 +147,7 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 		change.Apply(item)
 	}
 
-	n, e = this.createUpdateNotification(changes)
+	n, e = this.createUpdateNotification(changes, k)
 	if e != nil {
 		return n, e
 	}
@@ -167,7 +167,7 @@ func (this *Cache) Delete(k string) error {
 	}
 	delete(this.cache, k)
 	if this.listener != nil {
-		n, e := this.createDeleteNotification(item)
+		n, e := this.createDeleteNotification(item, k)
 		if e != nil {
 			return e
 		}
