@@ -110,8 +110,8 @@ func CreateUpdateNotification(changes []*updating.Change, serviceName, key strin
 				return nil, err
 			}
 			n.NewValue = obj.Data()
-			notificationSet.NotificationList[i] = n
 		}
+		notificationSet.NotificationList[i] = n
 	}
 	return notificationSet, nil
 }
@@ -144,15 +144,16 @@ func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, erro
 		}
 		for _, notif := range n.NotificationList {
 			p, e := properties.PropertyOf(notif.PropertyId, i)
-			if e != nil {
-				panic(e)
+			var value interface{}
+			if notif.NewValue != nil {
+				obj := object.NewDecode(notif.NewValue, 0, i.Registry())
+				v, e1 := obj.Get()
+				if e1 != nil {
+					return nil, e1
+				}
+				value = v
 			}
-			obj := object.NewDecode(notif.NewValue, 0, i.Registry())
-			v, e := obj.Get()
-			if e != nil {
-				return nil, e
-			}
-			_, _, e = p.Set(root, v)
+			_, _, e = p.Set(root, value)
 			if e != nil {
 				return nil, e
 			}

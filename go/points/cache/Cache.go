@@ -155,6 +155,7 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 	if this.listener != nil {
 		go this.listener.PropertyChangeNotification(n)
 	}
+
 	return n, e
 }
 
