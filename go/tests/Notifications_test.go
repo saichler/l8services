@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/reflect/go/reflect/updating"
@@ -45,7 +44,13 @@ func TestSubStructProperty(t *testing.T) {
 			Log.Fail(t, "failed with inspect: ", err.Error())
 		}
 		v := newval.(*testtypes.TestProtoSub)
-		fmt.Println("newval=", v)
+		if v.MyInt64 != zside.MySingle.MyInt64 {
+			Log.Fail(t, "failed with inspect: myString != zside.MyString")
+			return
+		}
+		if yside.MyString != zside.MyString {
+			Log.Fail(t, "failed with inspect: myString != zside.MyString")
+			return
+		}
 	}
-	fmt.Println(yside)
 }

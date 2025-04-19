@@ -8,7 +8,6 @@ import (
 	"github.com/saichler/servicepoints/go/points/cache"
 	"github.com/saichler/types/go/testtypes"
 	"testing"
-	"time"
 )
 
 func TestCacheListener(t *testing.T) {
@@ -28,5 +27,4 @@ func TestCacheListener(t *testing.T) {
 		Log.Fail(t, err.Error())
 		return
 	}
-	time.Sleep(time.Second)
 }
