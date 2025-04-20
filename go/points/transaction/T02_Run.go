@@ -11,6 +11,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	isLeader, isLeaderATarget, targets, replicas := Targets(msg, vnic)
 	cond.L.Lock()
 	defer func() {
+		vnic.Resources().Logger().Debug("Tr Leader Cleanup")
 		//Cleanup
 		oldState := msg.Tr().State()
 		msg.Tr().SetState(common.Finish)
@@ -19,6 +20,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		msg.Tr().SetState(oldState)
 		cond.Broadcast()
 		cond.L.Unlock()
+		vnic.Resources().Logger().Debug("Tr Leader Cleanup finished")
 	}()
 
 	//If the state isn't Start, this means there is a major bug so panic
@@ -34,6 +36,8 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		return msg.Tr()
 	}
 
+	vnic.Resources().Logger().Debug("Tr Leader Lock followers")
+
 	//Try to lock on all the followers
 	msg.Tr().SetState(common.Lock)
 	ok, _ := requests.RequestFromPeers(msg, vnic, targets)
@@ -42,6 +46,8 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		msg.Tr().SetErrorMessage("Failed to lock followers")
 		return msg.Tr()
 	}
+
+	vnic.Resources().Logger().Debug("Tr Leader Lock leader")
 
 	//now try to lock on the leader
 	msg.Tr().SetState(common.Lock)
@@ -52,6 +58,8 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		msg.Tr().SetErrorMessage("Failed to lock leader")
 		return msg.Tr()
 	}
+
+	vnic.Resources().Logger().Debug("Tr Leader Commit followers")
 
 	//At this point we are ready to commit
 	//Try to commit on the followers
@@ -75,6 +83,8 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		return msg.Tr()
 	}
 
+	vnic.Resources().Logger().Debug("Tr Leader Commit leader")
+
 	//Try to commit on the leader, if you need to
 	if isLeaderATarget {
 		msg.Tr().SetState(common.Commit)
@@ -93,6 +103,9 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 			return msg.Tr()
 		}
 	}
+
+	vnic.Resources().Logger().Debug("Tr Leader Commited")
+
 	//Cleanup and release the lock
 	msg.Tr().SetState(common.Commited)
 	return msg.Tr()

@@ -114,8 +114,10 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 	if !insideTransaction {
 		if h.Transactional() {
 			if common.IsNil(msg.Tr()) {
+				vnic.Resources().Logger().Debug("Starting transaction")
 				return this.trManager.Create(msg, vnic)
 			} else {
+				vnic.Resources().Logger().Debug("Running transaction")
 				return this.trManager.Run(msg, vnic)
 			}
 		}
