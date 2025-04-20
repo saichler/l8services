@@ -94,6 +94,7 @@ func TestTransactionPutRollback(t *testing.T) {
 }
 
 func TestParallel(t *testing.T) {
+	topo.SetLogLevel(common.Error_Level)
 	Log.SetLogLevel(common.Error_Level)
 	defer reset("TestTransaction")
 	setTransactionMode(0)

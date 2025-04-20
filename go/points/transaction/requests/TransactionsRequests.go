@@ -1,4 +1,4 @@
-package transaction
+package requests
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
@@ -12,47 +12,58 @@ type Requests struct {
 	count   int
 }
 
-func newRequest() *Requests {
+func NewRequest() *Requests {
 	rq := &Requests{}
 	rq.pending = make(map[string]string)
 	rq.cond = sync.NewCond(&sync.Mutex{})
 	return rq
 }
 
-func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg common.IMessage, target string) {
-	this.cond.L.Lock()
-	this.pending[target] = ""
-	this.count++
-	this.cond.L.Unlock()
-
-	resp := vnic.Forward(msg, target)
-	if resp != nil && resp.Error() != nil {
-		this.cond.L.Lock()
-		defer this.cond.L.Unlock()
-		this.pending[target] = resp.Error().Error()
-		this.cond.Broadcast()
-		return
-	}
-
-	tr := resp.Element().(common.ITransaction)
-
+func (this *Requests) addOne(target string) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
+	this.pending[target] = ""
+	this.count++
+}
 
-	if tr.State() == common.Errored {
-		this.pending[target] = tr.ErrorMessage()
-	}
-
+func (this *Requests) reportError(target string, err error) {
+	this.cond.L.Lock()
+	defer this.cond.L.Unlock()
+	this.pending[target] = err.Error()
 	this.count--
-
 	if this.count == 0 {
 		this.cond.Broadcast()
 	}
 }
 
-func requestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
+func (this *Requests) reportResult(target string, tr common.ITransaction) {
+	this.cond.L.Lock()
+	defer this.cond.L.Unlock()
+	if tr.State() == common.Errored {
+		this.pending[target] = tr.ErrorMessage()
+	}
+	this.count--
+	if this.count == 0 {
+		this.cond.Broadcast()
+	}
+}
 
-	this := newRequest()
+func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg common.IMessage, target string) {
+	this.addOne(target)
+
+	resp := vnic.Forward(msg, target)
+	if resp != nil && resp.Error() != nil {
+		this.reportError(target, resp.Error())
+		return
+	}
+
+	tr := resp.Element().(common.ITransaction)
+	this.reportResult(target, tr)
+}
+
+func RequestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
+
+	this := NewRequest()
 
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
@@ -61,7 +72,6 @@ func requestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface,
 		go this.requestFromPeer(vnic, msg, target)
 	}
 
-	//@TODO - implement timeout
 	if len(targets) > 0 {
 		this.cond.Wait()
 	}

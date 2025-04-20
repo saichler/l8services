@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/servicepoints/go/points/transaction/requests"
 	"github.com/saichler/types/go/common"
 	"sync"
 )
@@ -13,7 +14,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		//Cleanup
 		oldState := msg.Tr().State()
 		msg.Tr().SetState(common.Finish)
-		requestFromPeers(msg, vnic, targets)
+		requests.RequestFromPeers(msg, vnic, targets)
 		this.finish(msg)
 		msg.Tr().SetState(oldState)
 		cond.Broadcast()
@@ -35,7 +36,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 
 	//Try to lock on all the followers
 	msg.Tr().SetState(common.Lock)
-	ok, _ := requestFromPeers(msg, vnic, targets)
+	ok, _ := requests.RequestFromPeers(msg, vnic, targets)
 	if !ok {
 		msg.Tr().SetState(common.Errored)
 		msg.Tr().SetErrorMessage("Failed to lock followers")
@@ -57,7 +58,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	//Note we do it on the replicas and not on targets as if this is a replication
 	//count commit, we want to commit only on the replicas
 	msg.Tr().SetState(common.Commit)
-	ok, peers := requestFromPeers(msg, vnic, replicas)
+	ok, peers := requests.RequestFromPeers(msg, vnic, replicas)
 	if !ok {
 		//Request a rollback only from those peers that commited
 		msg.Tr().SetState(common.Rollback)
@@ -67,7 +68,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 				rollTarget[target] = true
 			}
 		}
-		requestFromPeers(msg, vnic, rollTarget)
+		requests.RequestFromPeers(msg, vnic, rollTarget)
 
 		msg.Tr().SetState(common.Errored)
 		msg.Tr().SetErrorMessage("Followers failed to commit")
@@ -81,7 +82,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		if !ok {
 			//Request a rollback from the followers
 			msg.Tr().SetState(common.Rollback)
-			requestFromPeers(msg, vnic, replicas)
+			requests.RequestFromPeers(msg, vnic, replicas)
 
 			errorMsg := "Leader failed to commit"
 			if !ok {

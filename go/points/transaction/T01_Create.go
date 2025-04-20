@@ -4,6 +4,7 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/serializer/go/serialize/object"
+	"github.com/saichler/servicepoints/go/points/transaction/requests"
 	"github.com/saichler/types/go/common"
 )
 
@@ -34,12 +35,12 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 	delete(targets, vnic.Resources().SysConfig().LocalUuid)
 
 	//Send the new transaction message to all the peers.
-	ok, _ = requestFromPeers(msg, vnic, targets)
+	ok, _ = requests.RequestFromPeers(msg, vnic, targets)
 	if !ok {
 		//One or more peers did not accept/created the transaction
 		//in its map, so cleanup
 		msg.Tr().SetState(common.Finish)
-		requestFromPeers(msg, vnic, targets)
+		requests.RequestFromPeers(msg, vnic, targets)
 		st.delTransaction(msg)
 		msg.Tr().SetErrorMessage("Failed to create transaction")
 		return object.New(nil, msg.Tr)
