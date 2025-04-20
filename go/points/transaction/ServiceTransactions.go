@@ -44,6 +44,7 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, 
 		if err != nil {
 			return object.NewError(err.Error()), false
 		}
+
 		resp := servicePoints.Handle(pb, msg.Action(), vnic, msg, true)
 		return resp, false
 	}
