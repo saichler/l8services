@@ -118,6 +118,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 				return this.trManager.Create(msg, vnic)
 			} else {
 				vnic.Resources().Logger().Debug("Running transaction")
+				defer vnic.Resources().Logger().Debug("Defer Transactiomn Ended")
 				return this.trManager.Run(msg, vnic)
 			}
 		}

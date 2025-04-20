@@ -60,9 +60,13 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 
 	//If this is not the leader, forward to the leader
 	if !isLeader {
+		vnic.Resources().Logger().Debug("Forwarding transaction to leader")
 		response := vnic.Forward(msgClone, leader)
+		vnic.Resources().Logger().Debug("Received response from leader")
 		return response
 	}
+
+	vnic.Resources().Logger().Debug("Transaction start from leader")
 
 	this.start(msgClone, vnic)
 	return object.New(nil, msgClone.Tr())

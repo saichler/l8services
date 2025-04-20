@@ -96,7 +96,9 @@ func (this *ServiceTransactions) start(msg common.IMessage, vnic common.IVirtual
 	trCond.L.Lock()
 	defer trCond.L.Unlock()
 	this.trQueue.Add(msg.Tr().Id())
+	vnic.Resources().Logger().Debug("Before waiting for transaction to finish")
 	trCond.Wait()
+	vnic.Resources().Logger().Debug("Transaction ended")
 	msg.SetTr(message.Tr())
 }
 

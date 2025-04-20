@@ -11,6 +11,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	isLeader, isLeaderATarget, targets, replicas := Targets(msg, vnic)
 	cond.L.Lock()
 	defer func() {
+		defer cond.L.Unlock()
 		vnic.Resources().Logger().Debug("Tr Leader Cleanup")
 		//Cleanup
 		oldState := msg.Tr().State()
@@ -19,7 +20,6 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		this.finish(msg)
 		msg.Tr().SetState(oldState)
 		cond.Broadcast()
-		cond.L.Unlock()
 		vnic.Resources().Logger().Debug("Tr Leader Cleanup finished")
 	}()
 
