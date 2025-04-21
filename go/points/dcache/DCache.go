@@ -1,4 +1,4 @@
-package cache
+package dcache
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type Cache struct {
+type DCache struct {
 	cache        map[string]interface{}
 	mtx          *sync.RWMutex
 	cond         *sync.Cond
@@ -23,9 +23,9 @@ type Cache struct {
 	sequence     uint32
 }
 
-func NewModelCache(serviceName string, serviceArea uint16, modelType, source string,
-	listener common.IServicePointCacheListener, introspector common.IIntrospector) *Cache {
-	this := &Cache{}
+func NewDistributedCache(serviceName string, serviceArea uint16, modelType, source string,
+	listener common.IServicePointCacheListener, introspector common.IIntrospector) common.IDistributedCache {
+	this := &DCache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}
 	this.cond = sync.NewCond(this.mtx)
@@ -39,7 +39,7 @@ func NewModelCache(serviceName string, serviceArea uint16, modelType, source str
 	return this
 }
 
-func (this *Cache) Get(k string) interface{} {
+func (this *DCache) Get(k string) interface{} {
 	this.mtx.RLock()
 	defer this.mtx.RUnlock()
 	item, ok := this.cache[k]
@@ -50,11 +50,12 @@ func (this *Cache) Get(k string) interface{} {
 	return nil
 }
 
-func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) {
+func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
 	var e error
+	isNotification := sourceNotification != nil
 
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
@@ -64,7 +65,7 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 		//Place the value in the cache
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
-		if this.listener != nil {
+		if this.listener != nil && !isNotification {
 			n, e = this.createAddNotification(itemClone, k)
 			if e != nil {
 				return n, e
@@ -76,10 +77,17 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	//Place the value in the cache
 	this.cache[k] = v
 
+	//if the source is a notification, don't send notification
+	if isNotification {
+		return n, e
+	}
+
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
+
 	//Create a new updater
 	putUpdater := updating.NewUpdater(this.introspector, true)
+
 	//update the item clone with the new element where nil is valid
 	e = putUpdater.Update(itemClone, v)
 	if e != nil {
@@ -103,11 +111,12 @@ func (this *Cache) Put(k string, v interface{}) (*types.NotificationSet, error) 
 	return n, e
 }
 
-func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, error) {
+func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
 	var e error
+	isNotification := sourceNotification != nil
 
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
@@ -117,7 +126,7 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 		//Place the value in the cache
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
-		if this.listener != nil {
+		if this.listener != nil && !isNotification {
 			n, e = this.createAddNotification(itemClone, k)
 			if e != nil {
 				return n, e
@@ -147,6 +156,11 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 		change.Apply(item)
 	}
 
+	//if the source is notification, don't send notification
+	if isNotification {
+		return n, e
+	}
+
 	n, e = this.createUpdateNotification(changes, k)
 	if e != nil {
 		return n, e
@@ -159,25 +173,32 @@ func (this *Cache) Update(k string, v interface{}) (*types.NotificationSet, erro
 	return n, e
 }
 
-func (this *Cache) Delete(k string) error {
+func (this *DCache) Delete(k string, sourceNotification ...bool) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
+
+	var n *types.NotificationSet
+	var e error
+	isNotification := sourceNotification != nil
+
 	item, ok := this.cache[k]
+
 	if !ok {
-		return errors.New("Key " + k + " not found")
+		return nil, errors.New("Key " + k + " not found")
 	}
 	delete(this.cache, k)
-	if this.listener != nil {
-		n, e := this.createDeleteNotification(item, k)
+
+	if this.listener != nil && !isNotification {
+		n, e = this.createDeleteNotification(item, k)
 		if e != nil {
-			return e
+			return n, e
 		}
 		go this.listener.PropertyChangeNotification(n)
 	}
-	return nil
+	return n, nil
 }
 
-func (this *Cache) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
+func (this *DCache) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
 	result := map[string]interface{}{}
 	this.mtx.RLock()
 	defer this.mtx.RUnlock()

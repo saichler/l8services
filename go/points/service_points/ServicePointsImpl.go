@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/servicepoints/go/points/cache"
+	"github.com/saichler/servicepoints/go/points/dcache"
 	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
@@ -180,11 +180,11 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 	if msg != nil && msg.FailMessage() != "" {
 		return h.Failed(pb, resourcs, msg)
 	}
-	item, err := cache.ItemOf(notification, this.introspector)
+	item, err := dcache.ItemOf(notification, this.introspector)
 	if err != nil {
 		return object.NewError(err.Error())
 	}
-	npb := object.New(nil, item)
+	npb := object.NewNotify(item)
 
 	switch notification.Type {
 	case types.NotificationType_Add:

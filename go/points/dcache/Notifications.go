@@ -1,4 +1,4 @@
-package cache
+package dcache
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ func CreateNotificationSet(t types.NotificationType, serviceName, key string, se
 	return notificationSet
 }
 
-func (this *Cache) createNotificationSet(t types.NotificationType, key string, changeCount int) *types.NotificationSet {
+func (this *DCache) createNotificationSet(t types.NotificationType, key string, changeCount int) *types.NotificationSet {
 	defer func() { this.sequence++ }()
 	return CreateNotificationSet(t, this.serviceName, key, this.serviceArea, this.modelType, this.source, changeCount, this.sequence)
 }
@@ -41,7 +41,7 @@ func CreateAddNotification(any interface{}, serviceName, key string, serviceArea
 	return notificationSet, nil
 }
 
-func (this *Cache) createAddNotification(any interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createAddNotification(any interface{}, key string) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateAddNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
@@ -67,7 +67,7 @@ func CreateReplaceNotification(old, new interface{}, serviceName, key string, se
 	return notificationSet, nil
 }
 
-func (this *Cache) createReplaceNotification(old, new interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createReplaceNotification(old, new interface{}, key string) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateReplaceNotification(old, new, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
@@ -85,7 +85,7 @@ func CreateDeleteNotification(any interface{}, serviceName, key string, serviceA
 	return notificationSet, nil
 }
 
-func (this *Cache) createDeleteNotification(any interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createDeleteNotification(any interface{}, key string) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateDeleteNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
@@ -116,7 +116,7 @@ func CreateUpdateNotification(changes []*updating.Change, serviceName, key strin
 	return notificationSet, nil
 }
 
-func (this *Cache) createUpdateNotification(changes []*updating.Change, key string) (*types.NotificationSet, error) {
+func (this *DCache) createUpdateNotification(changes []*updating.Change, key string) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateUpdateNotification(changes, this.serviceName, key, this.serviceArea, this.modelType, this.source, len(changes), this.sequence)
 }
