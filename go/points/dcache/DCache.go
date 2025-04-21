@@ -55,7 +55,7 @@ func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*t
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
 	var e error
-	isNotification := sourceNotification != nil
+	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
@@ -116,7 +116,7 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
 	var e error
-	isNotification := sourceNotification != nil
+	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	item, ok := this.cache[k]
 	//If the item does not exist in the cache
@@ -179,7 +179,7 @@ func (this *DCache) Delete(k string, sourceNotification ...bool) (*types.Notific
 
 	var n *types.NotificationSet
 	var e error
-	isNotification := sourceNotification != nil
+	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	item, ok := this.cache[k]
 
