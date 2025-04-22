@@ -2,7 +2,6 @@ package service_points
 
 import (
 	"errors"
-	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/dcache"
 	"github.com/saichler/servicepoints/go/points/transaction"
@@ -112,7 +111,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 	}
 
 	if !insideTransaction {
-		if h.Transactional() {
+		if h.TransactionMethod() != nil {
 			if common.IsNil(msg.Tr()) {
 				vnic.Resources().Logger().Debug("Starting transaction")
 				defer vnic.Resources().Logger().Debug("Defer Starting transaction")
@@ -144,10 +143,11 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action co
 
 	switch action {
 	case common.POST:
-		if h.ReplicationCount() > 0 {
-			healthCenter := health.Health(vnic.Resources())
-			healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, serviceName, serviceArea, vnic)
-		}
+		/*
+			if h.ReplicationCount() > 0 {
+				healthCenter := health.Health(vnic.Resources())
+				healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, serviceName, serviceArea, vnic)
+			}*/
 		return h.Post(pb, resourcs)
 	case common.PUT:
 		return h.Put(pb, resourcs)
