@@ -33,7 +33,7 @@ func TestServicePoints(t *testing.T) {
 		Log.Fail(t, "Service Point Not Found")
 		return
 	}
-	sp.Transactional()
+	sp.TransactionMethod()
 
 	globals.ServicePoints().Handle(pb, common.POST, nil, nil, false)
 	globals.ServicePoints().Handle(pb, common.PUT, nil, nil, false)

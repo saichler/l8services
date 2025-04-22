@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/dcache"
+	"github.com/saichler/servicepoints/go/points/replication"
 	"github.com/saichler/servicepoints/go/points/transaction"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
@@ -11,10 +12,11 @@ import (
 )
 
 type ServicePointsImpl struct {
-	services     *ServicesMap
-	introspector common.IIntrospector
-	config       *types.SysConfig
-	trManager    *transaction.TransactionManager
+	services          *ServicesMap
+	introspector      common.IIntrospector
+	config            *types.SysConfig
+	trManager         *transaction.TransactionManager
+	replicationCaches map[string]common.IDistributedCache
 }
 
 func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig) common.IServicePoints {
@@ -22,6 +24,7 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
 	sp.config = config
+	sp.replicationCaches = make(map[string]common.IDistributedCache)
 	sp.trManager = transaction.NewTransactionManager()
 	_, err := introspector.Registry().Register(&types.NotificationSet{})
 	if err != nil {
@@ -61,6 +64,12 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	this.services.put(serviceName, serviceArea, handler)
 	common.AddService(this.config, serviceName, int32(serviceArea))
 	vnic, ok := l.(common.IVirtualNetworkInterface)
+
+	if handler.TransactionMethod() != nil && handler.TransactionMethod().Replication() {
+		this.AddServicePointType(&replication.ReplicationServicePoint{})
+		this.Activate(replication.ServicePointType, serviceName, serviceArea, r, l)
+	}
+
 	if ok {
 		vnic.NotifyServiceAdded()
 	}

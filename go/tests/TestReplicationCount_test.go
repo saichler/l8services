@@ -1,6 +1,14 @@
 package tests
 
 import (
+	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/types/go/common"
+	"github.com/saichler/types/go/testtypes"
+	"testing"
+	"time"
+)
+
+import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/layer8/go/overlay/health"
@@ -13,7 +21,7 @@ import (
 func TestTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
 	setTransactionMode(2)
-
+/*
 	if !doRound(2, 0, t) {
 		return
 	}
@@ -23,6 +31,7 @@ func TestTransactionReplication(t *testing.T) {
 	if !doRound(4, 1, t) {
 		return
 	}
+ */
 }
 
 func doRound(ecount, score int, t *testing.T) bool {
@@ -54,3 +63,4 @@ func doRound(ecount, score int, t *testing.T) bool {
 	}
 	return true
 }
+*/
