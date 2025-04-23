@@ -6,7 +6,6 @@ import (
 	"github.com/saichler/servicepoints/go/points/dcache"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
-	"time"
 )
 
 const (
@@ -20,31 +19,26 @@ type ReplicationServicePoint struct {
 
 func (this *ReplicationServicePoint) Activate(serviceName string, serviceArea uint16,
 	resources common.IResources, listener common.IServicePointCacheListener, args ...interface{}) error {
-	serviceName = nameOf(serviceName)
 	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
 	uuid := resources.SysConfig().LocalUuid
 	this.cache = dcache.NewDistributedCache(serviceName, serviceArea, "ReplicationIndex",
-		uuid, listener, resources.Introspector())
+		uuid, listener, resources)
 	index := &types.ReplicationIndex{}
 	index.ServiceName = serviceName
 	index.ServiceArea = int32(serviceArea)
 	index.Keys = make(map[string]*types.ReplicationKey)
 	index.EndPoints = make(map[string]*types.ReplicationEndPoint)
 	index.EndPoints[uuid] = &types.ReplicationEndPoint{Score: 1}
+	this.cache.Put(serviceName, index, true)
 	return nil
 }
 
-func nameOf(serviceName string) string {
+func NameOf(serviceName string) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(Prefix)
 	buff.WriteString(serviceName)
 	return buff.String()
-}
-
-func (this *ReplicationServicePoint) addEndPoint(index *types.ReplicationIndex) {
-	time.Sleep(time.Second)
-	this.cache.Put(index.ServiceName, index)
 }
 
 func (this *ReplicationServicePoint) DeActivate() error {
@@ -52,12 +46,84 @@ func (this *ReplicationServicePoint) DeActivate() error {
 }
 
 func (this *ReplicationServicePoint) Post(pb common.IElements, resourcs common.IResources) common.IElements {
+	incoming := pb.Element().(*types.ReplicationIndex)
+	exist := this.cache.Get(incoming.ServiceName).(*types.ReplicationIndex)
+	if pb.IsNotification() {
+		notifyChange := false
+		for k, v := range incoming.Keys {
+			_, ok := exist.Keys[k]
+			if !ok {
+				notifyChange = true
+			}
+			exist.Keys[k] = v
+		}
+		for k, v := range incoming.EndPoints {
+			_, ok := exist.EndPoints[k]
+			if !ok {
+				notifyChange = true
+			}
+			exist.EndPoints[k] = v
+		}
+		if notifyChange {
+			this.cache.Update(exist.ServiceName, exist, false)
+		} else {
+			this.cache.Update(exist.ServiceName, exist, true)
+		}
+	}
 	return nil
 }
 func (this *ReplicationServicePoint) Put(pb common.IElements, resourcs common.IResources) common.IElements {
+	incoming := pb.Element().(*types.ReplicationIndex)
+	exist := this.cache.Get(incoming.ServiceName).(*types.ReplicationIndex)
+	if pb.IsNotification() {
+		notifyChange := false
+		for k, v := range incoming.Keys {
+			_, ok := exist.Keys[k]
+			if !ok {
+				notifyChange = true
+			}
+			exist.Keys[k] = v
+		}
+		for k, v := range incoming.EndPoints {
+			_, ok := exist.EndPoints[k]
+			if !ok {
+				notifyChange = true
+			}
+			exist.EndPoints[k] = v
+		}
+		if notifyChange {
+			this.cache.Update(exist.ServiceName, exist, false)
+		} else {
+			this.cache.Update(exist.ServiceName, exist, true)
+		}
+	}
 	return nil
 }
 func (this *ReplicationServicePoint) Patch(pb common.IElements, resourcs common.IResources) common.IElements {
+	incoming := pb.Element().(*types.ReplicationIndex)
+	exist := this.cache.Get(incoming.ServiceName).(*types.ReplicationIndex)
+	if pb.IsNotification() {
+		notifyChange := false
+		for k, v := range incoming.Keys {
+			_, ok := exist.Keys[k]
+			if !ok {
+				notifyChange = true
+			}
+			exist.Keys[k] = v
+		}
+		for k, v := range incoming.EndPoints {
+			_, ok := exist.EndPoints[k]
+			if !ok {
+				notifyChange = true
+			}
+			exist.EndPoints[k] = v
+		}
+		if notifyChange {
+			this.cache.Update(exist.ServiceName, exist, false)
+		} else {
+			this.cache.Update(exist.ServiceName, exist, true)
+		}
+	}
 	return nil
 }
 func (this *ReplicationServicePoint) Delete(pb common.IElements, resourcs common.IResources) common.IElements {
@@ -75,4 +141,18 @@ func (this *ReplicationServicePoint) Failed(pb common.IElements, resourcs common
 
 func (this *ReplicationServicePoint) TransactionMethod() common.ITransactionMethod {
 	return nil
+}
+
+func ReplicationIndex(serviceName string, serviceArea uint16, resources common.IResources) (*types.ReplicationIndex, common.IServicePointHandler) {
+	serviceName = NameOf(serviceName)
+	rp, ok := resources.ServicePoints().ServicePointHandler(serviceName, serviceArea)
+	if ok {
+		rsp := rp.(*ReplicationServicePoint)
+		return rsp.cache.Get(serviceName).(*types.ReplicationIndex), rsp
+	}
+	return nil, nil
+}
+
+func UpdateIndex(sp common.IServicePointHandler, index *types.ReplicationIndex) {
+	sp.(*ReplicationServicePoint).cache.Update(index.ServiceName, index, false)
 }

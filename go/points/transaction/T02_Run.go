@@ -121,19 +121,11 @@ func Targets(msg common.IMessage, vnic common.IVirtualNetworkInterface) (bool, b
 	}
 	isLeaderATarget := true
 
-	//If this is a replication count transaction and the action type is POST,
-	//Find out which of the targets need to be included in the commit.
-	/*
-		servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
-		if servicePoint.ReplicationCount() > 0 && msg.Action() == common.POST {
-			reps := healthCenter.ReplicasFor(msg.ServiceName(), msg.ServiceArea(), servicePoint.ReplicationCount())
-			replicas = make(map[string]bool)
-			for target, _ := range reps {
-				replicas[target] = true
-			}
-			// Is the leader elected to be part of this commit
-			_, isLeaderATarget = replicas[vnic.Resources().SysConfig().LocalUuid]
-		}*/
+	isReplication, leaderATarget, reps := replicationTargets(vnic, msg)
+	if isReplication {
+		isLeaderATarget = leaderATarget
+		replicas = reps
+	}
 
 	//Remove the leader from the targets & the replicas
 	delete(targets, vnic.Resources().SysConfig().LocalUuid)

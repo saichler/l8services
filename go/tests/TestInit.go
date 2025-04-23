@@ -34,11 +34,3 @@ func setupTopology() {
 func shutdownTopology() {
 	topo.Shutdown()
 }
-
-func setTransactionMode(replicationCount int) {
-	handlers := topo.AllHandlers()
-	for _, ts := range handlers {
-		ts.SetTr(true)
-		ts.SetReplicationCount(replicationCount)
-	}
-}

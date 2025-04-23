@@ -7,7 +7,8 @@ import (
 	"testing"
 )
 
-func TestServicePointDeactivate(t *testing.T) {
+// Until i find the deactivate bug, run this test at the end
+func TestZServicePointDeactivate(t *testing.T) {
 	nic := topo.VnicByVnetNum(2, 2)
 	nic2 := topo.VnicByVnetNum(1, 3)
 	WaitForCondition(func() bool {

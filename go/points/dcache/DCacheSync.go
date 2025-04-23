@@ -1,0 +1,13 @@
+package dcache
+
+func (this *DCache) Sync() {
+	this.mtx.Lock()
+	defer this.mtx.Unlock()
+	if this.listener == nil {
+		return
+	}
+	for key, item := range this.cache {
+		n, _ := this.createAddNotification(item, key)
+		this.listener.PropertyChangeNotification(n)
+	}
+}

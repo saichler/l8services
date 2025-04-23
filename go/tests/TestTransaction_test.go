@@ -17,7 +17,6 @@ func TestMain(m *testing.M) {
 
 func TestTransaction(t *testing.T) {
 	defer reset("TestTransaction")
-	setTransactionMode(0)
 
 	eg2_2 := topo.VnicByVnetNum(2, 2)
 	eg1_1 := topo.VnicByVnetNum(1, 1)
@@ -38,14 +37,13 @@ func TestTransaction(t *testing.T) {
 
 func TestTransactionPut(t *testing.T) {
 	defer reset("TestTransactionPut")
-	setTransactionMode(0)
 
 	eg3_2 := topo.VnicByVnetNum(3, 2)
 
 	if !doTransaction(common.PUT, eg3_2, 1, t, true) {
 		return
 	}
-	handler := topo.HandlerByVnetNum(1, 3)
+	handler := topo.TrHandlerByVnetNum(1, 3)
 	if handler.PutN() != 1 {
 		Log.Fail(t, "Expected 1 put")
 	}
@@ -53,17 +51,16 @@ func TestTransactionPut(t *testing.T) {
 
 func TestTransactionGet(t *testing.T) {
 	defer reset("TestTransactionGet")
-	setTransactionMode(0)
 
 	pb := &testtypes.TestProto{MyString: "test"}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	resp := eg3_1.SingleRequest(ServiceName, 0, common.GET, pb)
+	resp := eg3_1.SingleRequest(ServiceName, 1, common.GET, pb)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return
 	}
 
-	handlers := topo.AllHandlers()
+	handlers := topo.AllTrHandlers()
 	gets := 0
 	for _, ts := range handlers {
 		gets += ts.GetN()
@@ -76,8 +73,7 @@ func TestTransactionGet(t *testing.T) {
 
 func TestTransactionPutRollback(t *testing.T) {
 	defer reset("TestTransactionPutRollback")
-	setTransactionMode(0)
-	handler := topo.HandlerByVnetNum(2, 1)
+	handler := topo.TrHandlerByVnetNum(2, 1)
 	handler.SetErrorMode(true)
 
 	eg3_1 := topo.VnicByVnetNum(3, 1)
@@ -86,7 +82,7 @@ func TestTransactionPutRollback(t *testing.T) {
 	}
 
 	//2 put, one for the commit and 1 for the rollback
-	handler = topo.HandlerByVnetNum(1, 2)
+	handler = topo.TrHandlerByVnetNum(1, 2)
 	if handler.PutN() != 2 {
 		Log.Fail(t, "Expected 2 put ", handler.PutN())
 		return
@@ -97,7 +93,6 @@ func TestParallel(t *testing.T) {
 	topo.SetLogLevel(common.Error_Level)
 	Log.SetLogLevel(common.Error_Level)
 	defer reset("TestTransaction")
-	setTransactionMode(0)
 
 	multi := workers.NewMultiTask()
 	add50Transactions(multi, topo.VnicByVnetNum(3, 3))
@@ -132,8 +127,7 @@ func TestParallel(t *testing.T) {
 
 func TestTransactionRollback(t *testing.T) {
 	defer reset("TestTransactionRollback")
-	setTransactionMode(0)
-	topo.HandlerByVnetNum(1, 3).SetErrorMode(true)
+	topo.TrHandlerByVnetNum(1, 3).SetErrorMode(true)
 	eg1_2 := topo.VnicByVnetNum(1, 2)
 	if !doTransaction(common.POST, eg1_2, 1, t, false) {
 		return
@@ -148,7 +142,7 @@ func TestTransactionRollback(t *testing.T) {
 	}
 
 	dels := 0
-	handlers := topo.AllHandlers()
+	handlers := topo.AllTrHandlers()
 	for _, ts := range handlers {
 		dels += ts.DeleteN()
 	}

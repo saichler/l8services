@@ -1,0 +1,54 @@
+package service_points
+
+import (
+	"errors"
+	"github.com/saichler/servicepoints/go/points/replication"
+	"github.com/saichler/types/go/common"
+)
+
+func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
+	r common.IResources, l common.IServicePointCacheListener, args ...interface{}) (common.IServicePointHandler, error) {
+
+	if typeName == "" {
+		return nil, errors.New("typeName is empty")
+	}
+
+	if serviceName == "" {
+		return nil, errors.New("Service name is empty")
+	}
+
+	info, err := this.introspector.Registry().Info(typeName)
+	if err != nil {
+		return nil, errors.New("Activate: " + err.Error())
+	}
+	h, err := info.NewInstance()
+	if err != nil {
+		return nil, errors.New("Activate: " + err.Error())
+	}
+	handler := h.(common.IServicePointHandler)
+	err = handler.Activate(serviceName, serviceArea, r, l, args...)
+	if err != nil {
+		return nil, errors.New("Activate: " + err.Error())
+	}
+	this.services.put(serviceName, serviceArea, handler)
+	common.AddService(this.config, serviceName, int32(serviceArea))
+	vnic, ok := l.(common.IVirtualNetworkInterface)
+
+	if handler.TransactionMethod() != nil && handler.TransactionMethod().Replication() {
+		if handler.TransactionMethod().ReplicationCount() == 0 {
+			r.Logger().Error("Service point ", typeName, " has replication set to true with 0 replication count!")
+		} else {
+			repServiceName := replication.NameOf(serviceName)
+			this.AddServicePointType(&replication.ReplicationServicePoint{})
+			_, err = this.Activate(replication.ServicePointType, repServiceName, serviceArea, r, l)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if ok {
+		vnic.NotifyServiceAdded()
+	}
+	return handler, nil
+}

@@ -1,11 +1,11 @@
 package service_points
 
 import (
-	"errors"
+	"bytes"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/dcache"
-	"github.com/saichler/servicepoints/go/points/replication"
 	"github.com/saichler/servicepoints/go/points/transaction"
+	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/types/go/common"
 	"github.com/saichler/types/go/types"
 	"strconv"
@@ -16,7 +16,7 @@ type ServicePointsImpl struct {
 	introspector      common.IIntrospector
 	config            *types.SysConfig
 	trManager         *transaction.TransactionManager
-	replicationCaches map[string]common.IDistributedCache
+	distributedCaches *maps.SyncMap
 }
 
 func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig) common.IServicePoints {
@@ -24,8 +24,8 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
 	sp.config = config
-	sp.replicationCaches = make(map[string]common.IDistributedCache)
 	sp.trManager = transaction.NewTransactionManager()
+	sp.distributedCaches = maps.NewSyncMap()
 	_, err := introspector.Registry().Register(&types.NotificationSet{})
 	if err != nil {
 		panic(err)
@@ -35,66 +35,6 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 
 func (this *ServicePointsImpl) AddServicePointType(handler common.IServicePointHandler) {
 	this.introspector.Registry().Register(handler)
-}
-
-func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
-	r common.IResources, l common.IServicePointCacheListener, args ...interface{}) (common.IServicePointHandler, error) {
-
-	if typeName == "" {
-		return nil, errors.New("typeName is empty")
-	}
-
-	if serviceName == "" {
-		return nil, errors.New("Service name is empty")
-	}
-
-	info, err := this.introspector.Registry().Info(typeName)
-	if err != nil {
-		return nil, errors.New("Activate: " + err.Error())
-	}
-	h, err := info.NewInstance()
-	if err != nil {
-		return nil, errors.New("Activate: " + err.Error())
-	}
-	handler := h.(common.IServicePointHandler)
-	err = handler.Activate(serviceName, serviceArea, r, l, args...)
-	if err != nil {
-		return nil, errors.New("Activate: " + err.Error())
-	}
-	this.services.put(serviceName, serviceArea, handler)
-	common.AddService(this.config, serviceName, int32(serviceArea))
-	vnic, ok := l.(common.IVirtualNetworkInterface)
-
-	if handler.TransactionMethod() != nil && handler.TransactionMethod().Replication() {
-		this.AddServicePointType(&replication.ReplicationServicePoint{})
-		this.Activate(replication.ServicePointType, serviceName, serviceArea, r, l)
-	}
-
-	if ok {
-		vnic.NotifyServiceAdded()
-	}
-	return handler, nil
-}
-
-func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16, r common.IResources, l common.IServicePointCacheListener) error {
-
-	if serviceName == "" {
-		return errors.New("Service name is empty")
-	}
-
-	handler, ok := this.services.del(serviceName, serviceArea)
-	if !ok {
-		return errors.New("Can't find service " + serviceName)
-	}
-
-	defer handler.DeActivate()
-
-	common.RemoveService(this.config.Services, serviceName, int32(serviceArea))
-	vnic, ok := l.(common.IVirtualNetworkInterface)
-	if ok {
-		vnic.NotifyServiceRemoved(serviceName, serviceArea)
-	}
-	return nil
 }
 
 func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage, insideTransaction bool) common.IElements {
@@ -211,4 +151,22 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 
 func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
+}
+
+func (this *ServicePointsImpl) RegisterDistributedCache(cache common.IDistributedCache) {
+	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
+	this.distributedCaches.Put(key, cache)
+}
+
+func (this *ServicePointsImpl) SyncDistributedCaches() {
+	this.distributedCaches.Iterate(func(k, v interface{}) {
+		v.(common.IDistributedCache).Sync()
+	})
+}
+
+func cacheKey(serviceName string, serviceArea uint16) string {
+	buff := bytes.Buffer{}
+	buff.WriteString(serviceName)
+	buff.WriteString(strconv.Itoa(int(serviceArea)))
+	return buff.String()
 }
