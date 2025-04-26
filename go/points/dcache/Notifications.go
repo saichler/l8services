@@ -41,9 +41,27 @@ func CreateAddNotification(any interface{}, serviceName, key string, serviceArea
 	return notificationSet, nil
 }
 
+func CreateSyncNotification(any interface{}, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+	notificationSet := CreateNotificationSet(types.NotificationType_Sync, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
+	obj := object.NewEncode()
+	err := obj.Add(any)
+	if err != nil {
+		return nil, err
+	}
+	n := &types.Notification{}
+	n.NewValue = obj.Data()
+	notificationSet.NotificationList[0] = n
+	return notificationSet, nil
+}
+
 func (this *DCache) createAddNotification(any interface{}, key string) (*types.NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateAddNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
+}
+
+func (this *DCache) createSyncNotification(any interface{}, key string) (*types.NotificationSet, error) {
+	defer func() { this.sequence++ }()
+	return CreateSyncNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
 func CreateReplaceNotification(old, new interface{}, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
@@ -124,6 +142,8 @@ func (this *DCache) createUpdateNotification(changes []*updating.Change, key str
 func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, error) {
 	switch n.Type {
 	case types.NotificationType_Replace:
+		fallthrough
+	case types.NotificationType_Sync:
 		fallthrough
 	case types.NotificationType_Add:
 		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, i.Registry())

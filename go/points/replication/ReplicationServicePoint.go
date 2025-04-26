@@ -46,84 +46,14 @@ func (this *ReplicationServicePoint) DeActivate() error {
 }
 
 func (this *ReplicationServicePoint) Post(pb common.IElements, resourcs common.IResources) common.IElements {
-	incoming := pb.Element().(*types.ReplicationIndex)
-	exist := this.cache.Get(incoming.ServiceName).(*types.ReplicationIndex)
-	if pb.IsNotification() {
-		notifyChange := false
-		for k, v := range incoming.Keys {
-			_, ok := exist.Keys[k]
-			if !ok {
-				notifyChange = true
-			}
-			exist.Keys[k] = v
-		}
-		for k, v := range incoming.EndPoints {
-			_, ok := exist.EndPoints[k]
-			if !ok {
-				notifyChange = true
-			}
-			exist.EndPoints[k] = v
-		}
-		if notifyChange {
-			this.cache.Update(exist.ServiceName, exist, false)
-		} else {
-			this.cache.Update(exist.ServiceName, exist, true)
-		}
-	}
 	return nil
 }
 func (this *ReplicationServicePoint) Put(pb common.IElements, resourcs common.IResources) common.IElements {
-	incoming := pb.Element().(*types.ReplicationIndex)
-	exist := this.cache.Get(incoming.ServiceName).(*types.ReplicationIndex)
-	if pb.IsNotification() {
-		notifyChange := false
-		for k, v := range incoming.Keys {
-			_, ok := exist.Keys[k]
-			if !ok {
-				notifyChange = true
-			}
-			exist.Keys[k] = v
-		}
-		for k, v := range incoming.EndPoints {
-			_, ok := exist.EndPoints[k]
-			if !ok {
-				notifyChange = true
-			}
-			exist.EndPoints[k] = v
-		}
-		if notifyChange {
-			this.cache.Update(exist.ServiceName, exist, false)
-		} else {
-			this.cache.Update(exist.ServiceName, exist, true)
-		}
-	}
 	return nil
 }
 func (this *ReplicationServicePoint) Patch(pb common.IElements, resourcs common.IResources) common.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
-	exist := this.cache.Get(incoming.ServiceName).(*types.ReplicationIndex)
-	if pb.IsNotification() {
-		notifyChange := false
-		for k, v := range incoming.Keys {
-			_, ok := exist.Keys[k]
-			if !ok {
-				notifyChange = true
-			}
-			exist.Keys[k] = v
-		}
-		for k, v := range incoming.EndPoints {
-			_, ok := exist.EndPoints[k]
-			if !ok {
-				notifyChange = true
-			}
-			exist.EndPoints[k] = v
-		}
-		if notifyChange {
-			this.cache.Update(exist.ServiceName, exist, false)
-		} else {
-			this.cache.Update(exist.ServiceName, exist, true)
-		}
-	}
+	this.cache.Update(incoming.ServiceName, incoming)
 	return nil
 }
 func (this *ReplicationServicePoint) Delete(pb common.IElements, resourcs common.IResources) common.IElements {

@@ -13,11 +13,12 @@ import (
 	"time"
 )
 
-func testTransactionReplication(t *testing.T) {
+func TestTransactionReplication(t *testing.T) {
+	topo.SetLogLevel(common.Trace_Level)
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 3)
 	index, _ := replication.ReplicationIndex("Tests", 2, nic.Resources())
 	if len(index.EndPoints) != 9 {
 		Log.Fail(t, "Expected 9 end points, got ", len(index.EndPoints))

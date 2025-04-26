@@ -49,6 +49,11 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		return object.NewError(err.Error())
 	}
 
+	if msg.Action() == common.Sync {
+		this.SyncDistributedCaches()
+		return nil
+	}
+
 	h, ok := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
@@ -140,6 +145,8 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 		return h.Post(npb, resourcs)
 	case types.NotificationType_Replace:
 		return h.Put(npb, resourcs)
+	case types.NotificationType_Sync:
+		fallthrough
 	case types.NotificationType_Update:
 		return h.Patch(npb, resourcs)
 	case types.NotificationType_Delete:

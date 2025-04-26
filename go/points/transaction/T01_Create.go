@@ -43,7 +43,7 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 		requests.RequestFromPeers(msg, vnic, targets)
 		st.delTransaction(msg)
 		msg.Tr().SetErrorMessage("Failed to create transaction")
-		return object.New(nil, msg.Tr)
+		return object.New(nil, msg.Tr())
 	}
 
 	//Move the transaction state to start and find the leader

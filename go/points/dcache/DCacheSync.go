@@ -7,7 +7,7 @@ func (this *DCache) Sync() {
 		return
 	}
 	for key, item := range this.cache {
-		n, _ := this.createAddNotification(item, key)
+		n, _ := this.createSyncNotification(item, key)
 		this.listener.PropertyChangeNotification(n)
 	}
 }
