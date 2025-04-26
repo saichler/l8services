@@ -14,7 +14,7 @@ import (
 )
 
 func TestTransactionReplication(t *testing.T) {
-	topo.SetLogLevel(common.Trace_Level)
+	topo.SetLogLevel(common.Info_Level)
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
 
@@ -55,7 +55,7 @@ func doRound(ecount, score int, t *testing.T) bool {
 		count += ts.PostN()
 	}
 	if count != ecount {
-		Log.Fail(t, "Expected count to be ", ecount, "got ", count)
+		Log.Fail(t, "Expected count to be ", ecount, " got ", count)
 		return false
 	}
 	return true

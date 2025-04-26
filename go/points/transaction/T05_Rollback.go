@@ -35,7 +35,7 @@ func (this *ServiceTransactions) rollback(msg common.IMessage, vnic common.IVirt
 		//_, err := servicePoints.Notify()
 	} else {
 		this.setRollbackAction(msg)
-		resp := servicePoints.Handle(this.preCommitObject, this.locked.Action(), vnic, this.locked, true)
+		resp := servicePoints.TransactionHandle(this.preCommitObject, this.locked.Action(), vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.Tr().SetState(common.Errored)
 			msg.Tr().SetErrorMessage("Rollback: Handle Error: " + resp.Error().Error())

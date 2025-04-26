@@ -55,7 +55,8 @@ func (this *ServiceTransactions) commit(msg common.IMessage, vnic common.IVirtua
 			msg.Tr().SetErrorMessage("Commit: Could not set pre-commit object")
 			return false
 		}
-		resp := servicePoints.Handle(pb, this.locked.Action(), vnic, this.locked, true)
+
+		resp := servicePoints.TransactionHandle(pb, this.locked.Action(), vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.Tr().SetState(common.Errored)
 			msg.Tr().SetErrorMessage("Commit: Handle Error: " + resp.Error().Error())
@@ -83,7 +84,7 @@ func (this *ServiceTransactions) setPreCommitObject(msg common.IMessage, vnic co
 		servicePoints := vnic.Resources().ServicePoints()
 		//Get the object before performing the action so we could rollback
 		//if necessary.
-		resp := servicePoints.Handle(pb, common.GET, vnic, this.locked, true)
+		resp := servicePoints.TransactionHandle(pb, common.GET, vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.Tr().SetState(common.Errored)
 			msg.Tr().SetErrorMessage("Pre Commit Object Fetch: Service Point: " + resp.Error().Error())

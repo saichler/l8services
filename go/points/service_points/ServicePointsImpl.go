@@ -37,7 +37,7 @@ func (this *ServicePointsImpl) AddServicePointType(handler common.IServicePointH
 	this.introspector.Registry().Register(handler)
 }
 
-func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage, insideTransaction bool) common.IElements {
+func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage) common.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
@@ -64,26 +64,27 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		return h.Failed(pb, vnic.Resources(), msg)
 	}
 
-	if !insideTransaction {
-		if h.TransactionMethod() != nil {
-			if common.IsNil(msg.Tr()) {
-				vnic.Resources().Logger().Debug("Starting transaction")
-				defer vnic.Resources().Logger().Debug("Defer Starting transaction")
-				return this.trManager.Create(msg, vnic)
-			} else {
-				vnic.Resources().Logger().Debug("Running transaction")
-				defer vnic.Resources().Logger().Debug("Defer Running transaction")
-				return this.trManager.Run(msg, vnic)
-			}
+	if h.TransactionMethod() != nil && msg.Action() != common.GET {
+		if common.IsNil(msg.Tr()) {
+			vnic.Resources().Logger().Debug("Starting transaction")
+			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
+			return this.trManager.Create(msg, vnic)
 		}
+		vnic.Resources().Logger().Debug("Running transaction")
+		defer vnic.Resources().Logger().Debug("Defer Running transaction")
+		return this.trManager.Run(msg, vnic)
 	}
 
-	return this.doAction(h, action, msg.ServiceName(), msg.ServiceArea(), pb, vnic)
-
+	return this.transactionHandle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action common.Action,
-	serviceName string, serviceArea uint16, pb common.IElements, vnic common.IVirtualNetworkInterface) common.IElements {
+func (this *ServicePointsImpl) TransactionHandle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage) common.IElements {
+	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
+	return this.transactionHandle(h, pb, action, vnic)
+}
+
+func (this *ServicePointsImpl) transactionHandle(h common.IServicePointHandler, pb common.IElements,
+	action common.Action, vnic common.IVirtualNetworkInterface) common.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
@@ -97,11 +98,6 @@ func (this *ServicePointsImpl) doAction(h common.IServicePointHandler, action co
 
 	switch action {
 	case common.POST:
-		/*
-			if h.ReplicationCount() > 0 {
-				healthCenter := health.Health(vnic.Resources())
-				healthCenter.AddScore(vnic.Resources().SysConfig().LocalUuid, serviceName, serviceArea, vnic)
-			}*/
 		return h.Post(pb, resourcs)
 	case common.PUT:
 		return h.Put(pb, resourcs)

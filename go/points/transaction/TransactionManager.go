@@ -52,11 +52,11 @@ func (this *TransactionManager) Run(msg common.IMessage, vnic common.IVirtualNet
 }
 
 func (this *TransactionManager) create(msg common.IMessage, log common.ILogger) {
-	log.Debug("Tr Create...")
 	if msg.Tr().State() != common.Create {
 		panic("create: Unexpected transaction state " + msg.Tr().State().String())
 	}
 	createTransaction(msg)
+	log.Info("Tr ", msg.Tr().Id(), " created!")
 	st := this.transactionsOf(msg)
 	st.addTransaction(msg)
 	msg.Tr().SetState(common.Created)

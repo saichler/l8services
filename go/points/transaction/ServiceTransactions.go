@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/shared/go/share/maps"
@@ -9,6 +10,7 @@ import (
 	"github.com/saichler/types/go/common"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type ServiceTransactions struct {
@@ -44,8 +46,7 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, 
 		if err != nil {
 			return object.NewError(err.Error()), false
 		}
-
-		resp := servicePoints.Handle(pb, msg.Action(), vnic, msg, true)
+		resp := servicePoints.Handle(pb, msg.Action(), vnic, msg)
 		return resp, false
 	}
 	return nil, true
@@ -83,14 +84,25 @@ func (this *ServiceTransactions) finish(msg common.IMessage) {
 }
 
 func (this *ServiceTransactions) start(msg common.IMessage, vnic common.IVirtualNetworkInterface) {
+	m, ok := this.trMap.Get(msg.Tr().Id())
+	if !ok {
+		time.Sleep(time.Second)
+		m, ok = this.trMap.Get(msg.Tr().Id())
+		hc := health.Health(vnic.Resources())
+		from := hc.HealthPoint(msg.Source())
+		to := hc.HealthPoint(vnic.Resources().SysConfig().LocalUuid)
+		okStr := "NO"
+		if ok {
+			okStr = "YES"
+		}
+		panic("Can't find transaction ID: " + msg.Tr().Id() + " from " +
+			from.Alias + " to " + to.Alias + " ok " + okStr)
+	}
+
 	this.trVnicMap.Put(msg.Tr().Id(), vnic)
 	trCond := sync.NewCond(&sync.Mutex{})
 	this.trCondsMap.Put(msg.Tr().Id(), trCond)
 
-	m, ok := this.trMap.Get(msg.Tr().Id())
-	if !ok {
-		panic("Can't find transaction")
-	}
 	message := m.(common.IMessage)
 	message.Tr().SetState(msg.Tr().State())
 

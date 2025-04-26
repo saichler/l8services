@@ -25,6 +25,7 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 
 	//Create the new transaction inside the message
 	createTransaction(msg)
+	vnic.Resources().Logger().Info("Created Transaction: ", msg.Tr().Id(), " in ", vnic.Resources().SysConfig().LocalUuid)
 
 	//Add transaction to the local service transaction map
 	st.addTransaction(msg)
@@ -33,6 +34,10 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 	healthCenter := health.Health(vnic.Resources())
 	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea())
 	delete(targets, vnic.Resources().SysConfig().LocalUuid)
+
+	for target, _ := range targets {
+		vnic.Resources().Logger().Info("--- Sent Create Tr ", target)
+	}
 
 	//Send the new transaction message to all the peers.
 	ok, _ = requests.RequestFromPeers(msg, vnic, targets)

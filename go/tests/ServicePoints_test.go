@@ -35,11 +35,11 @@ func TestServicePoints(t *testing.T) {
 	}
 	sp.TransactionMethod()
 
-	globals.ServicePoints().Handle(pb, common.POST, nil, nil, false)
-	globals.ServicePoints().Handle(pb, common.PUT, nil, nil, false)
-	globals.ServicePoints().Handle(pb, common.DELETE, nil, nil, false)
-	globals.ServicePoints().Handle(pb, common.GET, nil, nil, false)
-	globals.ServicePoints().Handle(pb, common.PATCH, nil, nil, false)
+	globals.ServicePoints().Handle(pb, common.POST, nil, nil)
+	globals.ServicePoints().Handle(pb, common.PUT, nil, nil)
+	globals.ServicePoints().Handle(pb, common.DELETE, nil, nil)
+	globals.ServicePoints().Handle(pb, common.GET, nil, nil)
+	globals.ServicePoints().Handle(pb, common.PATCH, nil, nil)
 
 	/*
 		msg := &protocol.Message{}
