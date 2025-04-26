@@ -41,7 +41,7 @@ func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*t
 	itemClone := this.cloner.Clone(item)
 
 	//Create a new updater
-	putUpdater := updating.NewUpdater(this.resources.Introspector(), true)
+	putUpdater := updating.NewUpdater(this.resources.Introspector(), true, true)
 
 	//update the item clone with the new element where nil is valid
 	e = putUpdater.Update(itemClone, v)

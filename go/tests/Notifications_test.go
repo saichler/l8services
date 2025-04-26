@@ -25,7 +25,7 @@ func TestSubStructProperty(t *testing.T) {
 	yside := &testtypes.TestProto{MyString: "Hello"}
 	zside.MySingle = &testtypes.TestProtoSub{MyInt64: time.Now().Unix()}
 
-	putUpdater := updating.NewUpdater(_introspect, false)
+	putUpdater := updating.NewUpdater(_introspect, false, false)
 
 	putUpdater.Update(aside, zside)
 

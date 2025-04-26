@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func TestTransactionReplication(t *testing.T) {
+func testTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
 

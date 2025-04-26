@@ -32,7 +32,7 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
-	patchUpdater := updating.NewUpdater(this.resources.Introspector(), false)
+	patchUpdater := updating.NewUpdater(this.resources.Introspector(), false, false)
 	//update the item clone with the new element where nil is valid
 	e = patchUpdater.Update(itemClone, v)
 	if e != nil {
