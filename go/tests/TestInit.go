@@ -7,7 +7,7 @@ import (
 )
 
 var topo *TestTopology
-var globals, alias = CreateResources(50000, 1)
+var globals, alias = CreateResources(50000, 1, Trace_Level)
 
 func init() {
 	Log.SetLogLevel(Trace_Level)
@@ -28,7 +28,7 @@ func reset(name string) {
 }
 
 func setupTopology() {
-	topo = NewTestTopology(4, 20000, 30000, 40000)
+	topo = NewTestTopology(4, []int{20000, 30000, 40000}, Trace_Level)
 }
 
 func shutdownTopology() {
