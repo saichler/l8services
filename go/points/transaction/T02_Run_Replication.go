@@ -13,8 +13,17 @@ func replicationTargets(vnic common.IVirtualNetworkInterface, msg common.IMessag
 	replicas := make(map[string]bool)
 	isLeaderATarget := false
 	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
-	if servicePoint.TransactionMethod().Replication() && servicePoint.TransactionMethod().ReplicationCount() > 0 {
-		index, rsp := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
+	isReplicationEnabled := servicePoint.TransactionMethod().Replication()
+	replicationCount := servicePoint.TransactionMethod().ReplicationCount()
+	if isReplicationEnabled && replicationCount > 0 {
+		index, replicationServicePoint := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
+		// if the replication count is larger than available replicas
+		// warn and disable replication
+		if len(index.EndPoints) < replicationCount {
+			vnic.Resources().Logger().Warning("Number of endpoint is smaller than replication count for service ",
+				msg.ServiceArea(), " area ", msg.ServiceArea())
+			return false, false, replicas
+		}
 		elems, err := protocol.ElementsOf(msg, vnic.Resources())
 		if err != nil {
 			panic(err)
@@ -38,7 +47,7 @@ func replicationTargets(vnic common.IVirtualNetworkInterface, msg common.IMessag
 			// Is the leader elected to be part of this commit
 			_, isLeaderATarget = replicas[vnic.Resources().SysConfig().LocalUuid]
 		}
-		replication.UpdateIndex(rsp, index)
+		replication.UpdateIndex(replicationServicePoint, index)
 		return true, isLeaderATarget, replicas
 	}
 	return false, false, replicas
