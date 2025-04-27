@@ -28,7 +28,7 @@ func replicationTargets(vnic common.IVirtualNetworkInterface, msg common.IMessag
 		if err != nil {
 			panic(err)
 		}
-		key := servicePoint.TransactionMethod().KeyOf(elems)
+		key := servicePoint.TransactionMethod().KeyOf(elems, vnic.Resources())
 		uuids, ok := index.Keys[key]
 		if ok {
 			for uuid, _ := range uuids.Location {
