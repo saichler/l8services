@@ -75,15 +75,15 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		return this.trManager.Run(msg, vnic)
 	}
 
-	return this.transactionHandle(h, pb, action, vnic)
+	return this.handle(h, pb, action, vnic)
 }
 
 func (this *ServicePointsImpl) TransactionHandle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage) common.IElements {
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
-	return this.transactionHandle(h, pb, action, vnic)
+	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) transactionHandle(h common.IServicePointHandler, pb common.IElements,
+func (this *ServicePointsImpl) handle(h common.IServicePointHandler, pb common.IElements,
 	action common.Action, vnic common.IVirtualNetworkInterface) common.IElements {
 
 	if h == nil {
