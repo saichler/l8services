@@ -64,7 +64,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		return h.Failed(pb, vnic.Resources(), msg)
 	}
 
-	if h.TransactionMethod() != nil && msg.Action() != common.GET {
+	if h.TransactionMethod() != nil {
 		if common.IsNil(msg.Tr()) {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")

@@ -49,10 +49,11 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, 
 		}
 
 		servicePoints := vnic.Resources().ServicePoints()
-		index, repServicePoint := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
+		index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 		if index != nil {
+			servicePoint, _ := servicePoints.ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
 			// This is a replication service, we need to check if the key is not here
-			key := repServicePoint.TransactionMethod().KeyOf(pb, vnic.Resources())
+			key := servicePoint.TransactionMethod().KeyOf(pb, vnic.Resources())
 			if key == "" {
 				return object.NewError("No Key for element"), false
 			}
