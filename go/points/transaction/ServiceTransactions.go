@@ -5,7 +5,6 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/servicepoints/go/points/replication"
 	"github.com/saichler/shared/go/share/maps"
 	"github.com/saichler/shared/go/share/queues"
 	"github.com/saichler/types/go/common"
@@ -49,32 +48,11 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, 
 		}
 
 		servicePoints := vnic.Resources().ServicePoints()
-		index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
-		if index != nil {
-			servicePoint, _ := servicePoints.ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
-			// This is a replication service, we need to check if the key is not here
-			key := servicePoint.TransactionMethod().KeyOf(pb, vnic.Resources())
-			if key == "" {
-				return object.NewError("No Key for element"), false
-			}
-			endpoints, ok := index.Keys[key]
-			if !ok {
-				return object.NewError("No Replica was found with key " + key), false
-			}
-			_, here := endpoints.Location[vnic.Resources().SysConfig().LocalUuid]
-			//The key is somewhere else, so forward the message there
-			if !here {
-				destination := ""
-				for k, _ := range endpoints.Location {
-					destination = k
-					break
-				}
-				r := vnic.Forward(msg, destination)
-				return r, false
-			}
+		resp := replicationGet(pb, servicePoints, msg, vnic)
+		if resp != nil {
+			return resp, false
 		}
-
-		resp := servicePoints.TransactionHandle(pb, msg.Action(), vnic, msg)
+		resp = servicePoints.TransactionHandle(pb, msg.Action(), vnic, msg)
 		return resp, false
 	}
 	return nil, true
