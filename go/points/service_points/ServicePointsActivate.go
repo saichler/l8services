@@ -17,6 +17,11 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 		return nil, errors.New("Service name is empty")
 	}
 
+	handler, ok := this.services.get(serviceName, serviceArea)
+	if ok {
+		return handler, nil
+	}
+
 	info, err := this.introspector.Registry().Info(typeName)
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
@@ -25,7 +30,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
 	}
-	handler := h.(common.IServicePointHandler)
+	handler = h.(common.IServicePointHandler)
 	err = handler.Activate(serviceName, serviceArea, r, l, args...)
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
