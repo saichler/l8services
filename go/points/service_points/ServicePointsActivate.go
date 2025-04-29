@@ -52,7 +52,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 		}
 	}
 
-	if ok {
+	if ok && typeName != replication.ServicePointType {
 		vnic.NotifyServiceAdded()
 	}
 	return handler, nil
