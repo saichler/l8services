@@ -20,8 +20,12 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 		//Place the value in the cache
 		this.cache[k] = v
 		//Send the notification using the clone outside the current go routine
-		if this.listener != nil && !isNotification {
-			n, e = this.createAddNotification(itemClone, k)
+		if this.listener != nil {
+			if isNotification {
+				n, e = this.createSyncNotification(itemClone, k)
+			} else {
+				n, e = this.createAddNotification(itemClone, k)
+			}
 			if e != nil {
 				return n, e
 			}
