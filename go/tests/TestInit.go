@@ -3,6 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_topology"
+	"github.com/saichler/layer8/go/overlay/protocol"
 	. "github.com/saichler/types/go/common"
 )
 
@@ -28,6 +29,7 @@ func reset(name string) {
 }
 
 func setupTopology() {
+	protocol.CountMessages = true
 	topo = NewTestTopology(4, []int{20000, 30000, 40000}, Info_Level)
 }
 

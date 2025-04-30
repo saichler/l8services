@@ -53,7 +53,11 @@ func (this *ReplicationServicePoint) Put(pb common.IElements, resourcs common.IR
 }
 func (this *ReplicationServicePoint) Patch(pb common.IElements, resourcs common.IResources) common.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
-	this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
+	resourcs.Logger().Info("Updating index on ", resourcs.SysConfig().LocalAlias)
+	_, e := this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
+	if e != nil {
+		panic(e)
+	}
 	return nil
 }
 func (this *ReplicationServicePoint) Delete(pb common.IElements, resourcs common.IResources) common.IElements {

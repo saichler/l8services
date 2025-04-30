@@ -1,13 +1,23 @@
 package dcache
 
 func (this *DCache) Sync() {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
 	if this.listener == nil {
 		return
 	}
-	for key, item := range this.cache {
+	allItems := this.GetAll()
+	for key, item := range allItems {
 		n, _ := this.createSyncNotification(item, key)
-		go this.listener.PropertyChangeNotification(n)
+		this.listener.PropertyChangeNotification(n)
 	}
+}
+
+func (this *DCache) GetAll() map[string]interface{} {
+	this.mtx.Lock()
+	defer this.mtx.Unlock()
+	result := make(map[string]interface{})
+	for key, item := range this.cache {
+		itemClone := this.cloner.Clone(item)
+		result[key] = itemClone
+	}
+	return result
 }

@@ -50,7 +50,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 	}
 
 	if msg.Action() == common.Sync {
-		this.SyncDistributedCaches()
+		go this.SyncDistributedCaches()
 		return nil
 	}
 
