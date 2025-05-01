@@ -50,7 +50,11 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 	}
 
 	if msg.Action() == common.Sync {
-		go this.SyncDistributedCaches()
+		key := cacheKey(msg.ServiceName(), msg.ServiceArea())
+		cache, ok := this.distributedCaches.Get(key)
+		if ok {
+			go cache.(common.IDistributedCache).Sync()
+		}
 		return nil
 	}
 
@@ -159,12 +163,6 @@ func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceAr
 func (this *ServicePointsImpl) RegisterDistributedCache(cache common.IDistributedCache) {
 	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
 	this.distributedCaches.Put(key, cache)
-}
-
-func (this *ServicePointsImpl) SyncDistributedCaches() {
-	this.distributedCaches.Iterate(func(k, v interface{}) {
-		v.(common.IDistributedCache).Sync()
-	})
 }
 
 func cacheKey(serviceName string, serviceArea uint16) string {

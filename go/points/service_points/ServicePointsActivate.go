@@ -39,11 +39,14 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	common.AddService(this.config, serviceName, int32(serviceArea))
 	vnic, ok := l.(common.IVirtualNetworkInterface)
 
+	serviceNames := []string{serviceName}
+
 	if handler.TransactionMethod() != nil && handler.TransactionMethod().Replication() {
 		if handler.TransactionMethod().ReplicationCount() == 0 {
 			r.Logger().Error("Service point ", typeName, " has replication set to true with 0 replication count!")
 		} else {
 			repServiceName := replication.NameOf(serviceName)
+			serviceNames = append(serviceNames, repServiceName)
 			this.AddServicePointType(&replication.ReplicationServicePoint{})
 			_, err = this.Activate(replication.ServicePointType, repServiceName, serviceArea, r, l)
 			if err != nil {
@@ -53,7 +56,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	}
 
 	if ok && typeName != replication.ServicePointType {
-		vnic.NotifyServiceAdded()
+		err = vnic.NotifyServiceAdded(serviceNames, serviceArea)
 	}
-	return handler, nil
+	return handler, err
 }

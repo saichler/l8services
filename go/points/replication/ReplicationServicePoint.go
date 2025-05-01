@@ -53,7 +53,7 @@ func (this *ReplicationServicePoint) Put(pb common.IElements, resourcs common.IR
 }
 func (this *ReplicationServicePoint) Patch(pb common.IElements, resourcs common.IResources) common.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
-	resourcs.Logger().Info("Updating index on ", resourcs.SysConfig().LocalAlias)
+	resourcs.Logger().Trace("Updating index on ", resourcs.SysConfig().LocalAlias)
 	_, e := this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
 	if e != nil {
 		panic(e)

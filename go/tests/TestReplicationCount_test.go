@@ -12,7 +12,6 @@ import (
 )
 
 func TestTransactionReplication(t *testing.T) {
-	time.Sleep(time.Second * 2)
 	topo.SetLogLevel(common.Info_Level)
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
