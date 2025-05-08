@@ -3,11 +3,11 @@ package service_points
 import (
 	"errors"
 	"github.com/saichler/servicepoints/go/points/replication"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 )
 
 func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
-	r common.IResources, l common.IServicePointCacheListener, args ...interface{}) (common.IServicePointHandler, error) {
+	r ifs.IResources, l ifs.IServicePointCacheListener, args ...interface{}) (ifs.IServicePointHandler, error) {
 
 	if typeName == "" {
 		return nil, errors.New("typeName is empty")
@@ -30,14 +30,14 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
 	}
-	handler = h.(common.IServicePointHandler)
+	handler = h.(ifs.IServicePointHandler)
 	err = handler.Activate(serviceName, serviceArea, r, l, args...)
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
 	}
 	this.services.put(serviceName, serviceArea, handler)
-	common.AddService(this.config, serviceName, int32(serviceArea))
-	vnic, ok := l.(common.IVirtualNetworkInterface)
+	ifs.AddService(this.config, serviceName, int32(serviceArea))
+	vnic, ok := l.(ifs.IVirtualNetworkInterface)
 
 	serviceNames := []string{serviceName}
 

@@ -3,13 +3,13 @@ package transaction
 import (
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/servicepoints/go/points/replication"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 	"sort"
 	"time"
 )
 
-func replicationTargets(vnic common.IVirtualNetworkInterface, msg common.IMessage) (bool, bool, map[string]bool) {
+func replicationTargets(vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) (bool, bool, map[string]bool) {
 	replicas := make(map[string]bool)
 	isLeaderATarget := false
 	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.ServiceName(), msg.ServiceArea())

@@ -5,8 +5,8 @@ import (
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/shared/go/share/registry"
-	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/l8utils/go/utils/registry"
+	"github.com/saichler/l8types/go/testtypes"
 	"testing"
 	"time"
 )

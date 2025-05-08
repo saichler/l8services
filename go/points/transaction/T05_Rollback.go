@@ -1,61 +1,61 @@
 package transaction
 
 import (
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServiceTransactions) rollback(msg common.IMessage, vnic common.IVirtualNetworkInterface) bool {
+func (this *ServiceTransactions) rollback(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) bool {
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 
-	if msg.Tr().State() != common.Rollback {
+	if msg.Tr().State() != ifs.Rollback {
 		panic("commit: Unexpected transaction state " + msg.Tr().State().String())
 	}
 
 	if this.locked == nil {
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		msg.Tr().SetErrorMessage("Rollback: No committed transaction")
 		return false
 	}
 
 	if this.locked.Tr().Id() != msg.Tr().Id() {
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		msg.Tr().SetErrorMessage("Rollback: commit was for another transaction")
 		return false
 	}
 
-	if this.locked.Tr().State() != common.Commited {
+	if this.locked.Tr().State() != ifs.Commited {
 		msg.Tr().SetErrorMessage("Rollback: Transaction is not in committed state " + msg.Tr().State().String())
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		return false
 	}
 
 	servicePoints := vnic.Resources().ServicePoints()
-	if msg.Action() == common.Notify {
+	if msg.Action() == ifs.Notify {
 		//_, err := servicePoints.Notify()
 	} else {
 		this.setRollbackAction(msg)
 		resp := servicePoints.TransactionHandle(this.preCommitObject, this.locked.Action(), vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
-			msg.Tr().SetState(common.Errored)
+			msg.Tr().SetState(ifs.Errored)
 			msg.Tr().SetErrorMessage("Rollback: Handle Error: " + resp.Error().Error())
 			return false
 		}
 	}
 
-	msg.Tr().SetState(common.Rollbacked)
+	msg.Tr().SetState(ifs.Rollbacked)
 	return true
 }
 
-func (this *ServiceTransactions) setRollbackAction(msg common.IMessage) {
+func (this *ServiceTransactions) setRollbackAction(msg ifs.IMessage) {
 	switch msg.Action() {
-	case common.POST:
-		this.locked.SetAction(common.DELETE)
-	case common.DELETE:
-		this.locked.SetAction(common.POST)
-	case common.PUT:
-		this.locked.SetAction(common.PUT)
-	case common.PATCH:
-		this.locked.SetAction(common.PUT)
+	case ifs.POST:
+		this.locked.SetAction(ifs.DELETE)
+	case ifs.DELETE:
+		this.locked.SetAction(ifs.POST)
+	case ifs.PUT:
+		this.locked.SetAction(ifs.PUT)
+	case ifs.PATCH:
+		this.locked.SetAction(ifs.PUT)
 	}
 }

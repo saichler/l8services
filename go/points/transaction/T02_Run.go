@@ -3,11 +3,11 @@ package transaction
 import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/servicepoints/go/points/transaction/requests"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 	"sync"
 )
 
-func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNetworkInterface, cond *sync.Cond) common.ITransaction {
+func (this *ServiceTransactions) run(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface, cond *sync.Cond) ifs.ITransaction {
 	isLeader, isLeaderATarget, targets, replicas := Targets(msg, vnic)
 	cond.L.Lock()
 	defer func() {
@@ -15,7 +15,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		vnic.Resources().Logger().Debug("Tr Leader Cleanup")
 		//Cleanup
 		oldState := msg.Tr().State()
-		msg.Tr().SetState(common.Finish)
+		msg.Tr().SetState(ifs.Finish)
 		requests.RequestFromPeers(msg, vnic, targets)
 		this.finish(msg)
 		msg.Tr().SetState(oldState)
@@ -24,14 +24,14 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	}()
 
 	//If the state isn't Start, this means there is a major bug so panic
-	if msg.Tr().State() != common.Start {
+	if msg.Tr().State() != ifs.Start {
 		panic("start: Unexpected transaction state " + msg.Tr().State().String())
 	}
 
 	//There is a race condition, if the leader has changed during this transaction
 	//Fail it
 	if !isLeader {
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		msg.Tr().SetErrorMessage("Start transaction invoked on a follower")
 		return msg.Tr()
 	}
@@ -39,10 +39,10 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	vnic.Resources().Logger().Debug("Tr Leader Lock followers")
 
 	//Try to lock on all the followers
-	msg.Tr().SetState(common.Lock)
+	msg.Tr().SetState(ifs.Lock)
 	ok, _ := requests.RequestFromPeers(msg, vnic, targets)
 	if !ok {
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		msg.Tr().SetErrorMessage("Failed to lock followers")
 		return msg.Tr()
 	}
@@ -50,11 +50,11 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	vnic.Resources().Logger().Debug("Tr Leader Lock leader")
 
 	//now try to lock on the leader
-	msg.Tr().SetState(common.Lock)
+	msg.Tr().SetState(ifs.Lock)
 	ok = this.lock(msg)
 	//We were not able to lock on the leader
 	if !ok {
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		msg.Tr().SetErrorMessage("Failed to lock leader")
 		return msg.Tr()
 	}
@@ -65,11 +65,11 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	//Try to commit on the followers
 	//Note we do it on the replicas and not on targets as if this is a replication
 	//count commit, we want to commit only on the replicas
-	msg.Tr().SetState(common.Commit)
+	msg.Tr().SetState(ifs.Commit)
 	ok, peers := requests.RequestFromPeers(msg, vnic, replicas)
 	if !ok {
 		//Request a rollback only from those peers that commited
-		msg.Tr().SetState(common.Rollback)
+		msg.Tr().SetState(ifs.Rollback)
 		rollTarget := make(map[string]bool)
 		for target, e := range peers {
 			if e == "" {
@@ -78,7 +78,7 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 		}
 		requests.RequestFromPeers(msg, vnic, rollTarget)
 
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		msg.Tr().SetErrorMessage("Followers failed to commit")
 		return msg.Tr()
 	}
@@ -87,18 +87,18 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 
 	//Try to commit on the leader, if you need to
 	if isLeaderATarget {
-		msg.Tr().SetState(common.Commit)
+		msg.Tr().SetState(ifs.Commit)
 		ok = this.commit(msg, vnic)
 		if !ok {
 			//Request a rollback from the followers
-			msg.Tr().SetState(common.Rollback)
+			msg.Tr().SetState(ifs.Rollback)
 			requests.RequestFromPeers(msg, vnic, replicas)
 
 			errorMsg := "Leader failed to commit"
 			if !ok {
 				errorMsg = "Leader failed to commit and failed to clean up"
 			}
-			msg.Tr().SetState(common.Errored)
+			msg.Tr().SetState(ifs.Errored)
 			msg.Tr().SetErrorMessage(errorMsg)
 			return msg.Tr()
 		}
@@ -107,11 +107,11 @@ func (this *ServiceTransactions) run(msg common.IMessage, vnic common.IVirtualNe
 	vnic.Resources().Logger().Debug("Tr Leader Commited")
 
 	//Cleanup and release the lock
-	msg.Tr().SetState(common.Commited)
+	msg.Tr().SetState(ifs.Commited)
 	return msg.Tr()
 }
 
-func Targets(msg common.IMessage, vnic common.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
+func Targets(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
 	healthCenter := health.Health(vnic.Resources())
 	isLeader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea()) == vnic.Resources().SysConfig().LocalUuid
 	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea())

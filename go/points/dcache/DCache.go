@@ -2,7 +2,7 @@ package dcache
 
 import (
 	"github.com/saichler/reflect/go/reflect/cloning"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 	"sync"
 )
 
@@ -10,9 +10,9 @@ type DCache struct {
 	cache       map[string]interface{}
 	mtx         *sync.RWMutex
 	cond        *sync.Cond
-	listener    common.IServicePointCacheListener
+	listener    ifs.IServicePointCacheListener
 	cloner      *cloning.Cloner
-	resources   common.IResources
+	resources   ifs.IResources
 	source      string
 	serviceName string
 	serviceArea uint16
@@ -21,7 +21,7 @@ type DCache struct {
 }
 
 func NewDistributedCache(serviceName string, serviceArea uint16, modelType, source string,
-	listener common.IServicePointCacheListener, resources common.IResources) common.IDistributedCache {
+	listener ifs.IServicePointCacheListener, resources ifs.IResources) ifs.IDistributedCache {
 	this := &DCache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}

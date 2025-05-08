@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/servicepoints/go/points/dcache"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 )
 
 const (
@@ -14,11 +14,11 @@ const (
 )
 
 type ReplicationServicePoint struct {
-	cache common.IDistributedCache
+	cache ifs.IDistributedCache
 }
 
 func (this *ReplicationServicePoint) Activate(serviceName string, serviceArea uint16,
-	resources common.IResources, listener common.IServicePointCacheListener, args ...interface{}) error {
+	resources ifs.IResources, listener ifs.IServicePointCacheListener, args ...interface{}) error {
 	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
 	uuid := resources.SysConfig().LocalUuid
@@ -45,13 +45,13 @@ func (this *ReplicationServicePoint) DeActivate() error {
 	return nil
 }
 
-func (this *ReplicationServicePoint) Post(pb common.IElements, resourcs common.IResources) common.IElements {
+func (this *ReplicationServicePoint) Post(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Put(pb common.IElements, resourcs common.IResources) common.IElements {
+func (this *ReplicationServicePoint) Put(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Patch(pb common.IElements, resourcs common.IResources) common.IElements {
+func (this *ReplicationServicePoint) Patch(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
 	resourcs.Logger().Trace("Updating index on ", resourcs.SysConfig().LocalAlias)
 	_, e := this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
@@ -60,24 +60,24 @@ func (this *ReplicationServicePoint) Patch(pb common.IElements, resourcs common.
 	}
 	return nil
 }
-func (this *ReplicationServicePoint) Delete(pb common.IElements, resourcs common.IResources) common.IElements {
+func (this *ReplicationServicePoint) Delete(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) GetCopy(pb common.IElements, resourcs common.IResources) common.IElements {
+func (this *ReplicationServicePoint) GetCopy(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Get(pb common.IElements, resourcs common.IResources) common.IElements {
+func (this *ReplicationServicePoint) Get(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Failed(pb common.IElements, resourcs common.IResources, msg common.IMessage) common.IElements {
-	return nil
-}
-
-func (this *ReplicationServicePoint) TransactionMethod() common.ITransactionMethod {
+func (this *ReplicationServicePoint) Failed(pb ifs.IElements, resourcs ifs.IResources, msg ifs.IMessage) ifs.IElements {
 	return nil
 }
 
-func ReplicationIndex(serviceName string, serviceArea uint16, resources common.IResources) (*types.ReplicationIndex, common.IServicePointHandler) {
+func (this *ReplicationServicePoint) TransactionMethod() ifs.ITransactionMethod {
+	return nil
+}
+
+func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServicePointHandler) {
 	serviceName = NameOf(serviceName)
 	rp, ok := resources.ServicePoints().ServicePointHandler(serviceName, serviceArea)
 	if ok {
@@ -87,6 +87,6 @@ func ReplicationIndex(serviceName string, serviceArea uint16, resources common.I
 	return nil, nil
 }
 
-func UpdateIndex(sp common.IServicePointHandler, index *types.ReplicationIndex) {
+func UpdateIndex(sp ifs.IServicePointHandler, index *types.ReplicationIndex) {
 	sp.(*ReplicationServicePoint).cache.Update(index.ServiceName, index, false)
 }

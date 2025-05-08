@@ -5,16 +5,16 @@ import (
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/transaction/requests"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 )
 
-func createTransaction(msg common.IMessage) {
-	if common.IsNil(msg.Tr()) {
+func createTransaction(msg ifs.IMessage) {
+	if ifs.IsNil(msg.Tr()) {
 		msg.SetTr(protocol.NewTransaction())
 	}
 }
 
-func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtualNetworkInterface) common.IElements {
+func (this *TransactionManager) Create(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) ifs.IElements {
 	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction
@@ -44,7 +44,7 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 	if !ok {
 		//One or more peers did not accept/created the transaction
 		//in its map, so cleanup
-		msg.Tr().SetState(common.Finish)
+		msg.Tr().SetState(ifs.Finish)
 		requests.RequestFromPeers(msg, vnic, targets)
 		st.delTransaction(msg)
 		msg.Tr().SetErrorMessage("Failed to create transaction")
@@ -52,7 +52,7 @@ func (this *TransactionManager) Create(msg common.IMessage, vnic common.IVirtual
 	}
 
 	//Move the transaction state to start and find the leader
-	msg.Tr().SetState(common.Start)
+	msg.Tr().SetState(ifs.Start)
 	leader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := leader == vnic.Resources().SysConfig().LocalUuid
 

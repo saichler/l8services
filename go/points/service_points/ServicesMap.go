@@ -2,8 +2,8 @@ package service_points
 
 import (
 	"bytes"
-	"github.com/saichler/shared/go/share/maps"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/l8types/go/ifs"
 	"strconv"
 )
 
@@ -17,25 +17,25 @@ func NewServicesMap() *ServicesMap {
 	return newMap
 }
 
-func (mp *ServicesMap) put(serviceName string, serviceArea uint16, handler common.IServicePointHandler) {
+func (mp *ServicesMap) put(serviceName string, serviceArea uint16, handler ifs.IServicePointHandler) {
 	key := serviceKey(serviceName, serviceArea)
 	mp.services.Put(key, handler)
 }
 
-func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
+func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (ifs.IServicePointHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Get(key)
 	if value != nil {
-		return value.(common.IServicePointHandler), ok
+		return value.(ifs.IServicePointHandler), ok
 	}
 	return nil, ok
 }
 
-func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
+func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (ifs.IServicePointHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Delete(key)
 	if value != nil {
-		return value.(common.IServicePointHandler), ok
+		return value.(ifs.IServicePointHandler), ok
 	}
 	return nil, ok
 }

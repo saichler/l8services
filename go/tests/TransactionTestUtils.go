@@ -3,13 +3,13 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
-	"github.com/saichler/shared/go/share/workers"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/l8utils/go/utils/workers"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/testtypes"
 	"testing"
 )
 
-func doTransaction(action common.Action, vnic common.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
+func doTransaction(action ifs.Action, vnic ifs.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp := vnic.SingleRequest(ServiceName, 1, action, pb)
 	if resp != nil && resp.Error() != nil {
@@ -17,13 +17,13 @@ func doTransaction(action common.Action, vnic common.IVirtualNetworkInterface, e
 		return false
 	}
 
-	tr := resp.Element().(common.ITransaction)
-	if tr.State() != common.Commited && failure {
+	tr := resp.Element().(ifs.ITransaction)
+	if tr.State() != ifs.Commited && failure {
 		Log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State().String(), " ", tr.ErrorMessage())
 		return false
 	}
 
-	if action == common.POST {
+	if action == ifs.POST {
 		handlers := topo.AllTrHandlers()
 		for _, handler := range handlers {
 			if handler.PostN() != expected && failure {
@@ -35,13 +35,13 @@ func doTransaction(action common.Action, vnic common.IVirtualNetworkInterface, e
 	return true
 }
 
-func add50GetTasks(multiTask *workers.MultiTask, vnic common.IVirtualNetworkInterface) {
+func add50GetTasks(multiTask *workers.MultiTask, vnic ifs.IVirtualNetworkInterface) {
 	for i := 0; i < 50; i++ {
 		multiTask.AddTask(&GetTask{Vnic: vnic})
 	}
 }
 
-func add50Transactions(multiTask *workers.MultiTask, vnic common.IVirtualNetworkInterface) bool {
+func add50Transactions(multiTask *workers.MultiTask, vnic ifs.IVirtualNetworkInterface) bool {
 	for i := 0; i < 50; i++ {
 		multiTask.AddTask(&PostTask{Vnic: vnic})
 	}
@@ -49,12 +49,12 @@ func add50Transactions(multiTask *workers.MultiTask, vnic common.IVirtualNetwork
 }
 
 type PostTask struct {
-	Vnic common.IVirtualNetworkInterface
+	Vnic ifs.IVirtualNetworkInterface
 }
 
 func (this *PostTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := this.Vnic.SingleRequest(ServiceName, 1, common.POST, pb)
+	resp := this.Vnic.SingleRequest(ServiceName, 1, ifs.POST, pb)
 	if resp != nil && resp.Error() != nil {
 		return Log.Error(resp.Error().Error())
 	}
@@ -62,12 +62,12 @@ func (this *PostTask) Run() interface{} {
 }
 
 type GetTask struct {
-	Vnic common.IVirtualNetworkInterface
+	Vnic ifs.IVirtualNetworkInterface
 }
 
 func (this *GetTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := this.Vnic.SingleRequest(ServiceName, 1, common.GET, pb)
+	resp := this.Vnic.SingleRequest(ServiceName, 1, ifs.GET, pb)
 	if resp != nil && resp.Error() != nil {
 		return Log.Error(resp.Error().Error())
 	}

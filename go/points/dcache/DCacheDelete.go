@@ -2,7 +2,7 @@ package dcache
 
 import (
 	"errors"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8types/go/types"
 )
 
 func (this *DCache) Delete(k string, sourceNotification ...bool) (*types.NotificationSet, error) {

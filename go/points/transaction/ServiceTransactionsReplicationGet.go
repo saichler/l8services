@@ -4,12 +4,12 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/replication"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 )
 
-func replicationGet(elements common.IElements, servicePoints common.IServicePoints, msg common.IMessage,
-	vnic common.IVirtualNetworkInterface) common.IElements {
+func replicationGet(elements ifs.IElements, servicePoints ifs.IServicePoints, msg ifs.IMessage,
+	vnic ifs.IVirtualNetworkInterface) ifs.IElements {
 	index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 	if index != nil {
 		servicePoint, _ := servicePoints.ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
@@ -37,8 +37,8 @@ func replicationGet(elements common.IElements, servicePoints common.IServicePoin
 	return nil
 }
 
-func getAll(elements common.IElements, vnic common.IVirtualNetworkInterface,
-	msg common.IMessage, index *types.ReplicationIndex) common.IElements {
+func getAll(elements ifs.IElements, vnic ifs.IVirtualNetworkInterface,
+	msg ifs.IMessage, index *types.ReplicationIndex) ifs.IElements {
 	myUuid := vnic.Resources().SysConfig().LocalUuid
 	leader := health.Health(vnic.Resources()).Leader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := myUuid == leader

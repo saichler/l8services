@@ -3,9 +3,9 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
-	"github.com/saichler/shared/go/share/workers"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/l8utils/go/utils/workers"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/testtypes"
 	"testing"
 )
 
@@ -21,15 +21,15 @@ func TestTransaction(t *testing.T) {
 	eg2_2 := topo.VnicByVnetNum(2, 2)
 	eg1_1 := topo.VnicByVnetNum(1, 1)
 
-	if !doTransaction(common.POST, eg2_2, 1, t, true) {
+	if !doTransaction(ifs.POST, eg2_2, 1, t, true) {
 		return
 	}
 
-	if !doTransaction(common.POST, eg2_2, 2, t, true) {
+	if !doTransaction(ifs.POST, eg2_2, 2, t, true) {
 		return
 	}
 
-	if !doTransaction(common.POST, eg1_1, 3, t, true) {
+	if !doTransaction(ifs.POST, eg1_1, 3, t, true) {
 		return
 	}
 
@@ -40,7 +40,7 @@ func TestTransactionPut(t *testing.T) {
 
 	eg3_2 := topo.VnicByVnetNum(3, 2)
 
-	if !doTransaction(common.PUT, eg3_2, 1, t, true) {
+	if !doTransaction(ifs.PUT, eg3_2, 1, t, true) {
 		return
 	}
 	handler := topo.TrHandlerByVnetNum(1, 3)
@@ -54,7 +54,7 @@ func TestTransactionGet(t *testing.T) {
 
 	pb := &testtypes.TestProto{MyString: "test"}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	resp := eg3_1.SingleRequest(ServiceName, 1, common.GET, pb)
+	resp := eg3_1.SingleRequest(ServiceName, 1, ifs.GET, pb)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return
@@ -77,7 +77,7 @@ func TestTransactionPutRollback(t *testing.T) {
 	handler.SetErrorMode(true)
 
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	if !doTransaction(common.PUT, eg3_1, 1, t, false) {
+	if !doTransaction(ifs.PUT, eg3_1, 1, t, false) {
 		return
 	}
 
@@ -90,8 +90,8 @@ func TestTransactionPutRollback(t *testing.T) {
 }
 
 func TestParallel(t *testing.T) {
-	topo.SetLogLevel(common.Error_Level)
-	Log.SetLogLevel(common.Error_Level)
+	topo.SetLogLevel(ifs.Error_Level)
+	Log.SetLogLevel(ifs.Error_Level)
 	defer reset("TestTransaction")
 
 	multi := workers.NewMultiTask()
@@ -106,8 +106,8 @@ func TestParallel(t *testing.T) {
 	get := 0
 
 	for _, result := range results {
-		tr, ok := result.(common.ITransaction)
-		if ok && tr.State() == common.Commited {
+		tr, ok := result.(ifs.ITransaction)
+		if ok && tr.State() == ifs.Commited {
 			post++
 		}
 		_, ok = result.(*testtypes.TestProto)
@@ -129,15 +129,15 @@ func TestTransactionRollback(t *testing.T) {
 	defer reset("TestTransactionRollback")
 	topo.TrHandlerByVnetNum(1, 3).SetErrorMode(true)
 	eg1_2 := topo.VnicByVnetNum(1, 2)
-	if !doTransaction(common.POST, eg1_2, 1, t, false) {
+	if !doTransaction(ifs.POST, eg1_2, 1, t, false) {
 		return
 	}
 
-	if !doTransaction(common.POST, eg1_2, 2, t, false) {
+	if !doTransaction(ifs.POST, eg1_2, 2, t, false) {
 		return
 	}
 
-	if !doTransaction(common.POST, eg1_2, 3, t, false) {
+	if !doTransaction(ifs.POST, eg1_2, 3, t, false) {
 		return
 	}
 

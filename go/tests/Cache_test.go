@@ -5,7 +5,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/reflect/go/tests/utils"
 	"github.com/saichler/servicepoints/go/points/dcache"
-	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/l8types/go/testtypes"
 	"testing"
 )
 

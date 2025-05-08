@@ -2,7 +2,7 @@ package requests
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 	"sync"
 )
 
@@ -36,10 +36,10 @@ func (this *Requests) reportError(target string, err error) {
 	}
 }
 
-func (this *Requests) reportResult(target string, tr common.ITransaction) {
+func (this *Requests) reportResult(target string, tr ifs.ITransaction) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
-	if tr.State() == common.Errored {
+	if tr.State() == ifs.Errored {
 		this.pending[target] = tr.ErrorMessage()
 	}
 	this.count--
@@ -48,7 +48,7 @@ func (this *Requests) reportResult(target string, tr common.ITransaction) {
 	}
 }
 
-func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg common.IMessage, target string) {
+func (this *Requests) requestFromPeer(vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage, target string) {
 	this.addOne(target)
 
 	resp := vnic.Forward(msg, target)
@@ -57,11 +57,11 @@ func (this *Requests) requestFromPeer(vnic common.IVirtualNetworkInterface, msg 
 		return
 	}
 
-	tr := resp.Element().(common.ITransaction)
+	tr := resp.Element().(ifs.ITransaction)
 	this.reportResult(target, tr)
 }
 
-func RequestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
+func RequestFromPeers(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
 
 	this := NewRequest()
 
@@ -85,14 +85,14 @@ func RequestFromPeers(msg common.IMessage, vnic common.IVirtualNetworkInterface,
 	}
 
 	if !ok {
-		msg.Tr().SetState(common.Errored)
+		msg.Tr().SetState(ifs.Errored)
 		return false, this.pending
 	}
 
 	return true, this.pending
 }
 
-func IsLeader(resourcs common.IResources, localUuid, topic string, serviceArea uint16) (bool, string) {
+func IsLeader(resourcs ifs.IResources, localUuid, topic string, serviceArea uint16) (bool, string) {
 	hc := health.Health(resourcs)
 	leader := hc.Leader(topic, serviceArea)
 	return leader == localUuid, leader

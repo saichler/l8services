@@ -4,8 +4,8 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/testtypes"
 	"testing"
 )
 
@@ -35,17 +35,17 @@ func TestServicePoints(t *testing.T) {
 	}
 	sp.TransactionMethod()
 
-	globals.ServicePoints().Handle(pb, common.POST, nil, nil)
-	globals.ServicePoints().Handle(pb, common.PUT, nil, nil)
-	globals.ServicePoints().Handle(pb, common.DELETE, nil, nil)
-	globals.ServicePoints().Handle(pb, common.GET, nil, nil)
-	globals.ServicePoints().Handle(pb, common.PATCH, nil, nil)
+	globals.ServicePoints().Handle(pb, ifs.POST, nil, nil)
+	globals.ServicePoints().Handle(pb, ifs.PUT, nil, nil)
+	globals.ServicePoints().Handle(pb, ifs.DELETE, nil, nil)
+	globals.ServicePoints().Handle(pb, ifs.GET, nil, nil)
+	globals.ServicePoints().Handle(pb, ifs.PATCH, nil, nil)
 
 	/*
 		msg := &protocol.Message{}
 		msg.Set "The failed message"
 		msg.Source = "The source uuid"
-		globals.ServicePoints().Handle(pb, common.POST, nil, msg, false)
+		globals.ServicePoints().Handle(pb, ifs.POST, nil, msg, false)
 		if testsp.PostN() != 1 {
 			Log.Fail(t, "Post is not 1")
 		}

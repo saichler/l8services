@@ -5,9 +5,9 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/shared/go/share/maps"
-	"github.com/saichler/shared/go/share/queues"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/l8utils/go/utils/queues"
+	"github.com/saichler/l8types/go/ifs"
 	"strconv"
 	"sync"
 	"time"
@@ -18,8 +18,8 @@ type ServiceTransactions struct {
 	trVnicMap       *maps.SyncMap
 	trCondsMap      *maps.SyncMap
 	trQueue         *queues.Queue
-	locked          common.IMessage
-	preCommitObject common.IElements
+	locked          ifs.IMessage
+	preCommitObject ifs.IElements
 	trCond          *sync.Cond
 }
 
@@ -34,8 +34,8 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, vnic common.IVirtualNetworkInterface) (common.IElements, bool) {
-	if msg.Action() == common.GET {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) (ifs.IElements, bool) {
+	if msg.Action() == ifs.GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()
 		for this.locked != nil {
@@ -58,17 +58,17 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg common.IMessage, 
 	return nil, true
 }
 
-func (this *ServiceTransactions) addTransaction(msg common.IMessage) {
-	msg.Tr().SetState(common.Create)
+func (this *ServiceTransactions) addTransaction(msg ifs.IMessage) {
+	msg.Tr().SetState(ifs.Create)
 	this.trMap.Put(msg.Tr().Id(), msg)
 }
 
-func (this *ServiceTransactions) delTransaction(msg common.IMessage) {
-	msg.Tr().SetState(common.Errored)
+func (this *ServiceTransactions) delTransaction(msg ifs.IMessage) {
+	msg.Tr().SetState(ifs.Errored)
 	this.trMap.Delete(msg.Tr().Id())
 }
 
-func (this *ServiceTransactions) finish(msg common.IMessage) {
+func (this *ServiceTransactions) finish(msg ifs.IMessage) {
 	this.trCond.L.Lock()
 	defer func() {
 		this.trCond.Broadcast()
@@ -86,10 +86,10 @@ func (this *ServiceTransactions) finish(msg common.IMessage) {
 	}
 	this.trMap.Delete(msg.Tr().Id())
 	this.trVnicMap.Delete(msg.Tr().Id())
-	msg.Tr().SetState(common.Finished)
+	msg.Tr().SetState(ifs.Finished)
 }
 
-func (this *ServiceTransactions) start(msg common.IMessage, vnic common.IVirtualNetworkInterface) {
+func (this *ServiceTransactions) start(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) {
 	m, ok := this.trMap.Get(msg.Tr().Id())
 	if !ok {
 		time.Sleep(time.Second)
@@ -109,7 +109,7 @@ func (this *ServiceTransactions) start(msg common.IMessage, vnic common.IVirtual
 	trCond := sync.NewCond(&sync.Mutex{})
 	this.trCondsMap.Put(msg.Tr().Id(), trCond)
 
-	message := m.(common.IMessage)
+	message := m.(ifs.IMessage)
 	message.Tr().SetState(msg.Tr().State())
 
 	trCond.L.Lock()
@@ -136,8 +136,8 @@ func (this *ServiceTransactions) processTransactions() {
 		if !ok {
 			panic("Cannot find cond for tr " + trId)
 		}
-		vnic := v.(common.IVirtualNetworkInterface)
-		msg := m.(common.IMessage)
+		vnic := v.(ifs.IVirtualNetworkInterface)
+		msg := m.(ifs.IMessage)
 		cond := c.(*sync.Cond)
 		this.run(msg, vnic, cond)
 	}

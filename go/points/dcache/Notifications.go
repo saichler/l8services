@@ -5,8 +5,8 @@ import (
 	"github.com/saichler/reflect/go/reflect/properties"
 	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 )
 
 func CreateNotificationSet(t types.NotificationType, serviceName, key string, serviceArea uint16, modelType, source string,
@@ -139,7 +139,7 @@ func (this *DCache) createUpdateNotification(changes []*updating.Change, key str
 	return CreateUpdateNotification(changes, this.serviceName, key, this.serviceArea, this.modelType, this.source, len(changes), this.sequence)
 }
 
-func ItemOf(n *types.NotificationSet, i common.IIntrospector) (interface{}, error) {
+func ItemOf(n *types.NotificationSet, i ifs.IIntrospector) (interface{}, error) {
 	switch n.Type {
 	case types.NotificationType_Replace:
 		fallthrough

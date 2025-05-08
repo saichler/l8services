@@ -4,15 +4,15 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/servicepoints/go/points/replication"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/testtypes"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/testtypes"
 	"strconv"
 	"testing"
 	"time"
 )
 
 func TestTransactionReplication(t *testing.T) {
-	topo.SetLogLevel(common.Info_Level)
+	topo.SetLogLevel(ifs.Info_Level)
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
 
@@ -37,7 +37,7 @@ func TestTransactionReplication(t *testing.T) {
 func doRound(ecount, score int, t *testing.T) bool {
 	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(score)}
 	eg := topo.VnicByVnetNum(2, 1)
-	resp := eg.SingleRequest(ServiceName, 2, common.POST, pb)
+	resp := eg.SingleRequest(ServiceName, 2, ifs.POST, pb)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false

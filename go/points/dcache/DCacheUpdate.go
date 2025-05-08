@@ -2,7 +2,7 @@ package dcache
 
 import (
 	"github.com/saichler/reflect/go/reflect/updating"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8types/go/types"
 )
 
 func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {

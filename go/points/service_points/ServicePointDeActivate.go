@@ -2,10 +2,10 @@ package service_points
 
 import (
 	"errors"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16, r common.IResources, l common.IServicePointCacheListener) error {
+func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16, r ifs.IResources, l ifs.IServicePointCacheListener) error {
 
 	if serviceName == "" {
 		return errors.New("Service name is empty")
@@ -18,8 +18,8 @@ func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16
 
 	defer handler.DeActivate()
 
-	common.RemoveService(this.config.Services, serviceName, int32(serviceArea))
-	vnic, ok := l.(common.IVirtualNetworkInterface)
+	ifs.RemoveService(this.config.Services, serviceName, int32(serviceArea))
+	vnic, ok := l.(ifs.IVirtualNetworkInterface)
 	if ok {
 		vnic.NotifyServiceRemoved(serviceName, serviceArea)
 	}

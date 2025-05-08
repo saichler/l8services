@@ -5,21 +5,21 @@ import (
 	"github.com/saichler/serializer/go/serialize/object"
 	"github.com/saichler/servicepoints/go/points/dcache"
 	"github.com/saichler/servicepoints/go/points/transaction"
-	"github.com/saichler/shared/go/share/maps"
-	"github.com/saichler/types/go/common"
-	"github.com/saichler/types/go/types"
+	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 	"strconv"
 )
 
 type ServicePointsImpl struct {
 	services          *ServicesMap
-	introspector      common.IIntrospector
+	introspector      ifs.IIntrospector
 	config            *types.SysConfig
 	trManager         *transaction.TransactionManager
 	distributedCaches *maps.SyncMap
 }
 
-func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig) common.IServicePoints {
+func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServicePoints {
 	sp := &ServicePointsImpl{}
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
@@ -33,11 +33,11 @@ func NewServicePoints(introspector common.IIntrospector, config *types.SysConfig
 	return sp
 }
 
-func (this *ServicePointsImpl) AddServicePointType(handler common.IServicePointHandler) {
+func (this *ServicePointsImpl) AddServicePointType(handler ifs.IServicePointHandler) {
 	this.introspector.Registry().Register(handler)
 }
 
-func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage) common.IElements {
+func (this *ServicePointsImpl) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) ifs.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
@@ -49,11 +49,11 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 		return object.NewError(err.Error())
 	}
 
-	if msg.Action() == common.Sync {
+	if msg.Action() == ifs.Sync {
 		key := cacheKey(msg.ServiceName(), msg.ServiceArea())
 		cache, ok := this.distributedCaches.Get(key)
 		if ok {
-			go cache.(common.IDistributedCache).Sync()
+			go cache.(ifs.IDistributedCache).Sync()
 		}
 		return nil
 	}
@@ -69,7 +69,7 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 	}
 
 	if h.TransactionMethod() != nil {
-		if common.IsNil(msg.Tr()) {
+		if ifs.IsNil(msg.Tr()) {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
 			return this.trManager.Create(msg, vnic)
@@ -82,41 +82,41 @@ func (this *ServicePointsImpl) Handle(pb common.IElements, action common.Action,
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) TransactionHandle(pb common.IElements, action common.Action, vnic common.IVirtualNetworkInterface, msg common.IMessage) common.IElements {
+func (this *ServicePointsImpl) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) ifs.IElements {
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) handle(h common.IServicePointHandler, pb common.IElements,
-	action common.Action, vnic common.IVirtualNetworkInterface) common.IElements {
+func (this *ServicePointsImpl) handle(h ifs.IServicePointHandler, pb ifs.IElements,
+	action ifs.Action, vnic ifs.IVirtualNetworkInterface) ifs.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
 	}
 
-	var resourcs common.IResources
+	var resourcs ifs.IResources
 
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
 
 	switch action {
-	case common.POST:
+	case ifs.POST:
 		return h.Post(pb, resourcs)
-	case common.PUT:
+	case ifs.PUT:
 		return h.Put(pb, resourcs)
-	case common.PATCH:
+	case ifs.PATCH:
 		return h.Patch(pb, resourcs)
-	case common.DELETE:
+	case ifs.DELETE:
 		return h.Delete(pb, resourcs)
-	case common.GET:
+	case ifs.GET:
 		return h.Get(pb, resourcs)
 	default:
 		return object.NewError("invalid action, ignoring")
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualNetworkInterface, msg common.IMessage, isTransaction bool) common.IElements {
+func (this *ServicePointsImpl) Notify(pb ifs.IElements, vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage, isTransaction bool) ifs.IElements {
 	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
 		return object.New(nil, nil)
 	}
@@ -126,7 +126,7 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
-	var resourcs common.IResources
+	var resourcs ifs.IResources
 	if vnic != nil {
 		resourcs = vnic.Resources()
 	}
@@ -156,11 +156,11 @@ func (this *ServicePointsImpl) Notify(pb common.IElements, vnic common.IVirtualN
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (common.IServicePointHandler, bool) {
+func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (ifs.IServicePointHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
 }
 
-func (this *ServicePointsImpl) RegisterDistributedCache(cache common.IDistributedCache) {
+func (this *ServicePointsImpl) RegisterDistributedCache(cache ifs.IDistributedCache) {
 	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
 	this.distributedCaches.Put(key, cache)
 }
