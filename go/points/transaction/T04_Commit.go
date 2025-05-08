@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (this *ServiceTransactions) commit(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) bool {
+func (this *ServiceTransactions) commit(msg ifs.IMessage, vnic ifs.IVNic) bool {
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 
@@ -69,7 +69,7 @@ func (this *ServiceTransactions) commit(msg ifs.IMessage, vnic ifs.IVirtualNetwo
 	return true
 }
 
-func (this *ServiceTransactions) setPreCommitObject(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) bool {
+func (this *ServiceTransactions) setPreCommitObject(msg ifs.IMessage, vnic ifs.IVNic) bool {
 
 	pb, err := protocol.ElementsOf(this.locked, vnic.Resources())
 	if err != nil {

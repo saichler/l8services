@@ -12,7 +12,7 @@ import (
 func TestServicePoints(t *testing.T) {
 	testsp := &TestServicePointHandler{}
 	pb := object.New(nil, &testtypes.TestProto{})
-	globals.Services().AddServicePointType(testsp)
+	globals.Services().RegisterServiceHandlerType(testsp)
 	_, err := globals.Services().Activate("", "", 0, nil, nil)
 	if err == nil {
 		Log.Fail("Expected an error")

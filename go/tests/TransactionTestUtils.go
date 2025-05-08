@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func doTransaction(action ifs.Action, vnic ifs.IVirtualNetworkInterface, expected int, t *testing.T, failure bool) bool {
+func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
 	resp := vnic.SingleRequest(ServiceName, 1, action, pb)
 	if resp != nil && resp.Error() != nil {
@@ -35,13 +35,13 @@ func doTransaction(action ifs.Action, vnic ifs.IVirtualNetworkInterface, expecte
 	return true
 }
 
-func add50GetTasks(multiTask *workers.MultiTask, vnic ifs.IVirtualNetworkInterface) {
+func add50GetTasks(multiTask *workers.MultiTask, vnic ifs.IVNic) {
 	for i := 0; i < 50; i++ {
 		multiTask.AddTask(&GetTask{Vnic: vnic})
 	}
 }
 
-func add50Transactions(multiTask *workers.MultiTask, vnic ifs.IVirtualNetworkInterface) bool {
+func add50Transactions(multiTask *workers.MultiTask, vnic ifs.IVNic) bool {
 	for i := 0; i < 50; i++ {
 		multiTask.AddTask(&PostTask{Vnic: vnic})
 	}
@@ -49,7 +49,7 @@ func add50Transactions(multiTask *workers.MultiTask, vnic ifs.IVirtualNetworkInt
 }
 
 type PostTask struct {
-	Vnic ifs.IVirtualNetworkInterface
+	Vnic ifs.IVNic
 }
 
 func (this *PostTask) Run() interface{} {
@@ -62,7 +62,7 @@ func (this *PostTask) Run() interface{} {
 }
 
 type GetTask struct {
-	Vnic ifs.IVirtualNetworkInterface
+	Vnic ifs.IVNic
 }
 
 func (this *GetTask) Run() interface{} {

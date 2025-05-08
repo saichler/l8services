@@ -34,7 +34,7 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) (ifs.IElements, bool) {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vnic ifs.IVNic) (ifs.IElements, bool) {
 	if msg.Action() == ifs.GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()
@@ -89,7 +89,7 @@ func (this *ServiceTransactions) finish(msg ifs.IMessage) {
 	msg.Tr().SetState(ifs.Finished)
 }
 
-func (this *ServiceTransactions) start(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) {
+func (this *ServiceTransactions) start(msg ifs.IMessage, vnic ifs.IVNic) {
 	m, ok := this.trMap.Get(msg.Tr().Id())
 	if !ok {
 		time.Sleep(time.Second)
@@ -136,7 +136,7 @@ func (this *ServiceTransactions) processTransactions() {
 		if !ok {
 			panic("Cannot find cond for tr " + trId)
 		}
-		vnic := v.(ifs.IVirtualNetworkInterface)
+		vnic := v.(ifs.IVNic)
 		msg := m.(ifs.IMessage)
 		cond := c.(*sync.Cond)
 		this.run(msg, vnic, cond)

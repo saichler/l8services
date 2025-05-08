@@ -4,7 +4,7 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServiceTransactions) rollback(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) bool {
+func (this *ServiceTransactions) rollback(msg ifs.IMessage, vnic ifs.IVNic) bool {
 	this.trCond.L.Lock()
 	defer this.trCond.L.Unlock()
 

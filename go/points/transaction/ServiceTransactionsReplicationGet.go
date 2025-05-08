@@ -9,7 +9,7 @@ import (
 )
 
 func replicationGet(elements ifs.IElements, servicePoints ifs.IServices, msg ifs.IMessage,
-	vnic ifs.IVirtualNetworkInterface) ifs.IElements {
+	vnic ifs.IVNic) ifs.IElements {
 	index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 	if index != nil {
 		servicePoint, _ := servicePoints.ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
@@ -37,7 +37,7 @@ func replicationGet(elements ifs.IElements, servicePoints ifs.IServices, msg ifs
 	return nil
 }
 
-func getAll(elements ifs.IElements, vnic ifs.IVirtualNetworkInterface,
+func getAll(elements ifs.IElements, vnic ifs.IVNic,
 	msg ifs.IMessage, index *types.ReplicationIndex) ifs.IElements {
 	myUuid := vnic.Resources().SysConfig().LocalUuid
 	leader := health.Health(vnic.Resources()).Leader(msg.ServiceName(), msg.ServiceArea())

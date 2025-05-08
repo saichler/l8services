@@ -19,7 +19,7 @@ func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16
 	defer handler.DeActivate()
 
 	ifs.RemoveService(this.config.Services, serviceName, int32(serviceArea))
-	vnic, ok := l.(ifs.IVirtualNetworkInterface)
+	vnic, ok := l.(ifs.IVNic)
 	if ok {
 		vnic.NotifyServiceRemoved(serviceName, serviceArea)
 	}

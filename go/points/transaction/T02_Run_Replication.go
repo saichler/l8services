@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func replicationTargets(vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) (bool, bool, map[string]bool) {
+func replicationTargets(vnic ifs.IVNic, msg ifs.IMessage) (bool, bool, map[string]bool) {
 	replicas := make(map[string]bool)
 	isLeaderATarget := false
 	servicePoint, _ := vnic.Resources().Services().ServicePointHandler(msg.ServiceName(), msg.ServiceArea())

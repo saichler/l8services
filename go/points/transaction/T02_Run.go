@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-func (this *ServiceTransactions) run(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface, cond *sync.Cond) ifs.ITransaction {
+func (this *ServiceTransactions) run(msg ifs.IMessage, vnic ifs.IVNic, cond *sync.Cond) ifs.ITransaction {
 	isLeader, isLeaderATarget, targets, replicas := Targets(msg, vnic)
 	cond.L.Lock()
 	defer func() {
@@ -111,7 +111,7 @@ func (this *ServiceTransactions) run(msg ifs.IMessage, vnic ifs.IVirtualNetworkI
 	return msg.Tr()
 }
 
-func Targets(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) (bool, bool, map[string]bool, map[string]bool) {
+func Targets(msg ifs.IMessage, vnic ifs.IVNic) (bool, bool, map[string]bool, map[string]bool) {
 	healthCenter := health.Health(vnic.Resources())
 	isLeader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea()) == vnic.Resources().SysConfig().LocalUuid
 	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea())

@@ -33,11 +33,11 @@ func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) i
 	return sp
 }
 
-func (this *ServicePointsImpl) AddServicePointType(handler ifs.IServiceHandler) {
+func (this *ServicePointsImpl) RegisterServiceHandlerType(handler ifs.IServiceHandler) {
 	this.introspector.Registry().Register(handler)
 }
 
-func (this *ServicePointsImpl) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) ifs.IElements {
+func (this *ServicePointsImpl) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
@@ -82,13 +82,13 @@ func (this *ServicePointsImpl) Handle(pb ifs.IElements, action ifs.Action, vnic 
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) ifs.IElements {
+func (this *ServicePointsImpl) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	return this.handle(h, pb, action, vnic)
 }
 
 func (this *ServicePointsImpl) handle(h ifs.IServiceHandler, pb ifs.IElements,
-	action ifs.Action, vnic ifs.IVirtualNetworkInterface) ifs.IElements {
+	action ifs.Action, vnic ifs.IVNic) ifs.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
@@ -116,7 +116,7 @@ func (this *ServicePointsImpl) handle(h ifs.IServiceHandler, pb ifs.IElements,
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb ifs.IElements, vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage, isTransaction bool) ifs.IElements {
+func (this *ServicePointsImpl) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage, isTransaction bool) ifs.IElements {
 	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
 		return object.New(nil, nil)
 	}

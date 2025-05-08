@@ -37,7 +37,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	}
 	this.services.put(serviceName, serviceArea, handler)
 	ifs.AddService(this.config, serviceName, int32(serviceArea))
-	vnic, ok := l.(ifs.IVirtualNetworkInterface)
+	vnic, ok := l.(ifs.IVNic)
 
 	serviceNames := []string{serviceName}
 
@@ -47,7 +47,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 		} else {
 			repServiceName := replication.NameOf(serviceName)
 			serviceNames = append(serviceNames, repServiceName)
-			this.AddServicePointType(&replication.ReplicationServicePoint{})
+			this.RegisterServiceHandlerType(&replication.ReplicationServicePoint{})
 			_, err = this.Activate(replication.ServicePointType, repServiceName, serviceArea, r, l)
 			if err != nil {
 				return nil, err

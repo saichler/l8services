@@ -48,7 +48,7 @@ func (this *Requests) reportResult(target string, tr ifs.ITransaction) {
 	}
 }
 
-func (this *Requests) requestFromPeer(vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage, target string) {
+func (this *Requests) requestFromPeer(vnic ifs.IVNic, msg ifs.IMessage, target string) {
 	this.addOne(target)
 
 	resp := vnic.Forward(msg, target)
@@ -61,7 +61,7 @@ func (this *Requests) requestFromPeer(vnic ifs.IVirtualNetworkInterface, msg ifs
 	this.reportResult(target, tr)
 }
 
-func RequestFromPeers(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface, targets map[string]bool) (bool, map[string]string) {
+func RequestFromPeers(msg ifs.IMessage, vnic ifs.IVNic, targets map[string]bool) (bool, map[string]string) {
 
 	this := NewRequest()
 

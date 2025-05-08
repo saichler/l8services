@@ -14,7 +14,7 @@ func createTransaction(msg ifs.IMessage) {
 	}
 }
 
-func (this *TransactionManager) Create(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) ifs.IElements {
+func (this *TransactionManager) Create(msg ifs.IMessage, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg)
 
 	//This is a Get request, needs to be handled outside a transaction

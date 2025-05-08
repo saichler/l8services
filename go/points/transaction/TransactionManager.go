@@ -30,7 +30,7 @@ func (this *TransactionManager) transactionsOf(msg ifs.IMessage) *ServiceTransac
 	return st
 }
 
-func (this *TransactionManager) Run(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) ifs.IElements {
+func (this *TransactionManager) Run(msg ifs.IMessage, vnic ifs.IVNic) ifs.IElements {
 	switch msg.Tr().State() {
 	case ifs.Create:
 		this.create(msg, vnic.Resources().Logger())
@@ -68,13 +68,13 @@ func (this *TransactionManager) lock(msg ifs.IMessage, log ifs.ILogger) {
 	st.lock(msg)
 }
 
-func (this *TransactionManager) commit(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) {
+func (this *TransactionManager) commit(msg ifs.IMessage, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Commit...")
 	st := this.transactionsOf(msg)
 	st.commit(msg, vnic)
 }
 
-func (this *TransactionManager) rollback(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) {
+func (this *TransactionManager) rollback(msg ifs.IMessage, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Create...")
 	st := this.transactionsOf(msg)
 	st.rollback(msg, vnic)
@@ -86,7 +86,7 @@ func (this *TransactionManager) finish(msg ifs.IMessage, log ifs.ILogger) {
 	st.finish(msg)
 }
 
-func (this *TransactionManager) start(msg ifs.IMessage, vnic ifs.IVirtualNetworkInterface) {
+func (this *TransactionManager) start(msg ifs.IMessage, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Start...")
 	st := this.transactionsOf(msg)
 	st.start(msg, vnic)
