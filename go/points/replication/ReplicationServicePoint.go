@@ -18,7 +18,7 @@ type ReplicationServicePoint struct {
 }
 
 func (this *ReplicationServicePoint) Activate(serviceName string, serviceArea uint16,
-	resources ifs.IResources, listener ifs.IServicePointCacheListener, args ...interface{}) error {
+	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
 	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
 	uuid := resources.SysConfig().LocalUuid
@@ -77,9 +77,9 @@ func (this *ReplicationServicePoint) TransactionMethod() ifs.ITransactionMethod 
 	return nil
 }
 
-func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServicePointHandler) {
+func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServiceHandler) {
 	serviceName = NameOf(serviceName)
-	rp, ok := resources.ServicePoints().ServicePointHandler(serviceName, serviceArea)
+	rp, ok := resources.Services().ServicePointHandler(serviceName, serviceArea)
 	if ok {
 		rsp := rp.(*ReplicationServicePoint)
 		return rsp.cache.Get(serviceName).(*types.ReplicationIndex), rsp
@@ -87,6 +87,6 @@ func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IRes
 	return nil, nil
 }
 
-func UpdateIndex(sp ifs.IServicePointHandler, index *types.ReplicationIndex) {
+func UpdateIndex(sp ifs.IServiceHandler, index *types.ReplicationIndex) {
 	sp.(*ReplicationServicePoint).cache.Update(index.ServiceName, index, false)
 }

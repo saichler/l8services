@@ -47,7 +47,7 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vni
 			return object.NewError(err.Error()), false
 		}
 
-		servicePoints := vnic.Resources().ServicePoints()
+		servicePoints := vnic.Resources().Services()
 		resp := replicationGet(pb, servicePoints, msg, vnic)
 		if resp != nil {
 			return resp, false

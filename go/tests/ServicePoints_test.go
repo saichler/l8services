@@ -12,40 +12,40 @@ import (
 func TestServicePoints(t *testing.T) {
 	testsp := &TestServicePointHandler{}
 	pb := object.New(nil, &testtypes.TestProto{})
-	globals.ServicePoints().AddServicePointType(testsp)
-	_, err := globals.ServicePoints().Activate("", "", 0, nil, nil)
+	globals.Services().AddServicePointType(testsp)
+	_, err := globals.Services().Activate("", "", 0, nil, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	_, err = globals.ServicePoints().Activate("TestServicePointHandler", "", 0, nil, nil)
+	_, err = globals.Services().Activate("TestServicePointHandler", "", 0, nil, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	_, err = globals.ServicePoints().Activate(ServicePointType, ServiceName, 0, nil, nil, "")
+	_, err = globals.Services().Activate(ServicePointType, ServiceName, 0, nil, nil, "")
 	if err != nil {
 		Log.Fail(t, err)
 		return
 	}
-	sp, ok := globals.ServicePoints().ServicePointHandler(ServiceName, 0)
+	sp, ok := globals.Services().ServicePointHandler(ServiceName, 0)
 	if !ok {
 		Log.Fail(t, "Service Point Not Found")
 		return
 	}
 	sp.TransactionMethod()
 
-	globals.ServicePoints().Handle(pb, ifs.POST, nil, nil)
-	globals.ServicePoints().Handle(pb, ifs.PUT, nil, nil)
-	globals.ServicePoints().Handle(pb, ifs.DELETE, nil, nil)
-	globals.ServicePoints().Handle(pb, ifs.GET, nil, nil)
-	globals.ServicePoints().Handle(pb, ifs.PATCH, nil, nil)
+	globals.Services().Handle(pb, ifs.POST, nil, nil)
+	globals.Services().Handle(pb, ifs.PUT, nil, nil)
+	globals.Services().Handle(pb, ifs.DELETE, nil, nil)
+	globals.Services().Handle(pb, ifs.GET, nil, nil)
+	globals.Services().Handle(pb, ifs.PATCH, nil, nil)
 
 	/*
 		msg := &protocol.Message{}
 		msg.Set "The failed message"
 		msg.Source = "The source uuid"
-		globals.ServicePoints().Handle(pb, ifs.POST, nil, msg, false)
+		globals.Services().Handle(pb, ifs.POST, nil, msg, false)
 		if testsp.PostN() != 1 {
 			Log.Fail(t, "Post is not 1")
 		}

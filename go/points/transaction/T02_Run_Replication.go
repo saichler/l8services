@@ -12,7 +12,7 @@ import (
 func replicationTargets(vnic ifs.IVirtualNetworkInterface, msg ifs.IMessage) (bool, bool, map[string]bool) {
 	replicas := make(map[string]bool)
 	isLeaderATarget := false
-	servicePoint, _ := vnic.Resources().ServicePoints().ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
+	servicePoint, _ := vnic.Resources().Services().ServicePointHandler(msg.ServiceName(), msg.ServiceArea())
 	isReplicationEnabled := servicePoint.TransactionMethod().Replication()
 	replicationCount := servicePoint.TransactionMethod().ReplicationCount()
 	if isReplicationEnabled && replicationCount > 0 {

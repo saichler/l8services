@@ -5,7 +5,7 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16, r ifs.IResources, l ifs.IServicePointCacheListener) error {
+func (this *ServicePointsImpl) DeActivate(serviceName string, serviceArea uint16, r ifs.IResources, l ifs.IServiceCacheListener) error {
 
 	if serviceName == "" {
 		return errors.New("Service name is empty")

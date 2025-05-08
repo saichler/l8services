@@ -8,7 +8,7 @@ import (
 	"github.com/saichler/l8types/go/types"
 )
 
-func replicationGet(elements ifs.IElements, servicePoints ifs.IServicePoints, msg ifs.IMessage,
+func replicationGet(elements ifs.IElements, servicePoints ifs.IServices, msg ifs.IMessage,
 	vnic ifs.IVirtualNetworkInterface) ifs.IElements {
 	index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 	if index != nil {
@@ -43,13 +43,13 @@ func getAll(elements ifs.IElements, vnic ifs.IVirtualNetworkInterface,
 	leader := health.Health(vnic.Resources()).Leader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := myUuid == leader
 	if !isLeader && elements.ReplicasRequest() {
-		return vnic.Resources().ServicePoints().TransactionHandle(elements, msg.Action(), vnic, msg)
+		return vnic.Resources().Services().TransactionHandle(elements, msg.Action(), vnic, msg)
 	} else if !isLeader {
 		return vnic.Forward(msg, leader)
 	}
 
 	request := object.NewReplicasRequest(elements)
-	response := vnic.Resources().ServicePoints().TransactionHandle(elements, msg.Action(), vnic, msg)
+	response := vnic.Resources().Services().TransactionHandle(elements, msg.Action(), vnic, msg)
 	remotes := collectRemote(myUuid, index)
 	//@TODO - Switch to parallel requests
 	for dest, _ := range remotes {

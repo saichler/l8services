@@ -17,25 +17,25 @@ func NewServicesMap() *ServicesMap {
 	return newMap
 }
 
-func (mp *ServicesMap) put(serviceName string, serviceArea uint16, handler ifs.IServicePointHandler) {
+func (mp *ServicesMap) put(serviceName string, serviceArea uint16, handler ifs.IServiceHandler) {
 	key := serviceKey(serviceName, serviceArea)
 	mp.services.Put(key, handler)
 }
 
-func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (ifs.IServicePointHandler, bool) {
+func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Get(key)
 	if value != nil {
-		return value.(ifs.IServicePointHandler), ok
+		return value.(ifs.IServiceHandler), ok
 	}
 	return nil, ok
 }
 
-func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (ifs.IServicePointHandler, bool) {
+func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Delete(key)
 	if value != nil {
-		return value.(ifs.IServicePointHandler), ok
+		return value.(ifs.IServiceHandler), ok
 	}
 	return nil, ok
 }

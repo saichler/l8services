@@ -19,7 +19,7 @@ type ServicePointsImpl struct {
 	distributedCaches *maps.SyncMap
 }
 
-func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServicePoints {
+func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServices {
 	sp := &ServicePointsImpl{}
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
@@ -33,7 +33,7 @@ func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) i
 	return sp
 }
 
-func (this *ServicePointsImpl) AddServicePointType(handler ifs.IServicePointHandler) {
+func (this *ServicePointsImpl) AddServicePointType(handler ifs.IServiceHandler) {
 	this.introspector.Registry().Register(handler)
 }
 
@@ -87,7 +87,7 @@ func (this *ServicePointsImpl) TransactionHandle(pb ifs.IElements, action ifs.Ac
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) handle(h ifs.IServicePointHandler, pb ifs.IElements,
+func (this *ServicePointsImpl) handle(h ifs.IServiceHandler, pb ifs.IElements,
 	action ifs.Action, vnic ifs.IVirtualNetworkInterface) ifs.IElements {
 
 	if h == nil {
@@ -156,7 +156,7 @@ func (this *ServicePointsImpl) Notify(pb ifs.IElements, vnic ifs.IVirtualNetwork
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (ifs.IServicePointHandler, bool) {
+func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
 }
 

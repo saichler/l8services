@@ -39,7 +39,7 @@ func (this *ServiceTransactions) commit(msg ifs.IMessage, vnic ifs.IVirtualNetwo
 		return false
 	}
 
-	servicePoints := vnic.Resources().ServicePoints()
+	servicePoints := vnic.Resources().Services()
 	if msg.Action() == ifs.Notify {
 		//_, err := servicePoints.Notify()
 	} else {
@@ -81,7 +81,7 @@ func (this *ServiceTransactions) setPreCommitObject(msg ifs.IMessage, vnic ifs.I
 	if msg.Action() == ifs.PUT ||
 		msg.Action() == ifs.DELETE ||
 		msg.Action() == ifs.PATCH {
-		servicePoints := vnic.Resources().ServicePoints()
+		servicePoints := vnic.Resources().Services()
 		//Get the object before performing the action so we could rollback
 		//if necessary.
 		resp := servicePoints.TransactionHandle(pb, ifs.GET, vnic, this.locked)

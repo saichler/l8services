@@ -7,7 +7,7 @@ import (
 )
 
 func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
-	r ifs.IResources, l ifs.IServicePointCacheListener, args ...interface{}) (ifs.IServicePointHandler, error) {
+	r ifs.IResources, l ifs.IServiceCacheListener, args ...interface{}) (ifs.IServiceHandler, error) {
 
 	if typeName == "" {
 		return nil, errors.New("typeName is empty")
@@ -30,7 +30,7 @@ func (this *ServicePointsImpl) Activate(typeName string, serviceName string, ser
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
 	}
-	handler = h.(ifs.IServicePointHandler)
+	handler = h.(ifs.IServiceHandler)
 	err = handler.Activate(serviceName, serviceArea, r, l, args...)
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())

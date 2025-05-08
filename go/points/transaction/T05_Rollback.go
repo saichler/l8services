@@ -30,7 +30,7 @@ func (this *ServiceTransactions) rollback(msg ifs.IMessage, vnic ifs.IVirtualNet
 		return false
 	}
 
-	servicePoints := vnic.Resources().ServicePoints()
+	servicePoints := vnic.Resources().Services()
 	if msg.Action() == ifs.Notify {
 		//_, err := servicePoints.Notify()
 	} else {

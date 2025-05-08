@@ -22,7 +22,7 @@ func testZServicePointDeactivate(t *testing.T) {
 		return false
 	}, 5, t, "Service Point was not found")
 
-	nic.Resources().ServicePoints().DeActivate(t_servicepoints.ServiceName, 0, nic.Resources(), nic)
+	nic.Resources().Services().DeActivate(t_servicepoints.ServiceName, 0, nic.Resources(), nic)
 	defer func() {
 		topo.ReActivateTestService(nic)
 	}()
