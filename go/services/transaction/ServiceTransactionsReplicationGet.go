@@ -1,11 +1,11 @@
 package transaction
 
 import (
-	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8services/go/services/replication"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/layer8/go/overlay/health"
 )
 
 func replicationGet(elements ifs.IElements, servicePoints ifs.IServices, msg ifs.IMessage,
