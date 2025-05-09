@@ -7,7 +7,7 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/maps"
-	"github.com/saichler/l8srlz/go/l8srlz/object"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"strconv"
 )
 
