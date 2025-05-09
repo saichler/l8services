@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/saichler/reflect/go/reflect/properties"
 	"github.com/saichler/reflect/go/reflect/updating"
-	"github.com/saichler/serializer/go/l8srlz/object"
+	"github.com/saichler/l8srlz/go/l8srlz/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 )

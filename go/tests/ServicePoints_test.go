@@ -3,7 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
-	"github.com/saichler/serializer/go/l8srlz/object"
+	"github.com/saichler/l8srlz/go/l8srlz/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
 	"testing"

@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/serializer/go/l8srlz/object"
+	"github.com/saichler/l8srlz/go/l8srlz/object"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
