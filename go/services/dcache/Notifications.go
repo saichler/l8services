@@ -2,11 +2,11 @@ package dcache
 
 import (
 	"errors"
-	"github.com/saichler/reflect/go/reflect/properties"
-	"github.com/saichler/reflect/go/reflect/updating"
-	"github.com/saichler/l8srlz/go/l8srlz/object"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/reflect/go/reflect/properties"
+	"github.com/saichler/reflect/go/reflect/updating"
 )
 
 func CreateNotificationSet(t types.NotificationType, serviceName, key string, serviceArea uint16, modelType, source string,

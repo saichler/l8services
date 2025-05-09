@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8services/go/services/transaction"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/maps"
-	"github.com/saichler/l8srlz/go/serialize/object"
 	"strconv"
 )
 
