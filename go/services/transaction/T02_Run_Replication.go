@@ -1,10 +1,10 @@
 package transaction
 
 import (
-	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/layer8/go/overlay/protocol"
 	"sort"
 	"time"
 )
@@ -19,7 +19,7 @@ func replicationTargets(vnic ifs.IVNic, msg ifs.IMessage) (bool, bool, map[strin
 		index, replicationService := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 		// if the replication count is larger than available replicas
 		// warn and disable replication
-		if len(index.Ends) < replicationCount {
+		if len(index.EndPoints) < replicationCount {
 			vnic.Resources().Logger().Warning("Number of endpoint is smaller than replication count for service ",
 				msg.ServiceArea(), " area ", msg.ServiceArea())
 			return false, false, replicas
@@ -41,7 +41,7 @@ func replicationTargets(vnic ifs.IVNic, msg ifs.IMessage) (bool, bool, map[strin
 			index.Keys[key] = &types.ReplicationKey{Location: make(map[string]int64)}
 			for i := 0; i < replicationCount; i++ {
 				replicas[endpoints[i]] = true
-				index.Ends[endpoints[i]].Score++
+				index.EndPoints[endpoints[i]].Score++
 				index.Keys[key].Location[endpoints[i]] = time.Now().UnixMilli()
 			}
 			// Is the leader elected to be part of this commit
@@ -54,15 +54,15 @@ func replicationTargets(vnic ifs.IVNic, msg ifs.IMessage) (bool, bool, map[strin
 }
 
 func sortedEndpoints(index *types.ReplicationIndex) []string {
-	endpoints := make([]string, len(index.Ends))
+	endpoints := make([]string, len(index.EndPoints))
 	i := 0
-	for uuid, _ := range index.Ends {
+	for uuid, _ := range index.EndPoints {
 		endpoints[i] = uuid
 		i++
 	}
 	sort.Slice(endpoints, func(i, j int) bool {
-		if index.Ends[endpoints[i]].Score <
-			index.Ends[endpoints[j]].Score {
+		if index.EndPoints[endpoints[i]].Score <
+			index.EndPoints[endpoints[j]].Score {
 			return true
 		}
 		return false
