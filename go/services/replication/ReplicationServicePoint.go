@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	ServicePointType = "ReplicationServicePoint"
+	ServiceType = "ReplicationService"
 	Prefix           = "Rep-"
 )
 
-type ReplicationServicePoint struct {
+type ReplicationService struct {
 	cache ifs.IDistributedCache
 }
 
-func (this *ReplicationServicePoint) Activate(serviceName string, serviceArea uint16,
+func (this *ReplicationService) Activate(serviceName string, serviceArea uint16,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
 	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
@@ -28,8 +28,8 @@ func (this *ReplicationServicePoint) Activate(serviceName string, serviceArea ui
 	index.ServiceName = serviceName
 	index.ServiceArea = int32(serviceArea)
 	index.Keys = make(map[string]*types.ReplicationKey)
-	index.EndPoints = make(map[string]*types.ReplicationEndPoint)
-	index.EndPoints[uuid] = &types.ReplicationEndPoint{Score: 1}
+	index.Ends = make(map[string]*types.ReplicationEnd)
+	index.Ends[uuid] = &types.ReplicationEnd{Score: 1}
 	this.cache.Put(serviceName, index, true)
 	return nil
 }
@@ -41,17 +41,17 @@ func NameOf(serviceName string) string {
 	return buff.String()
 }
 
-func (this *ReplicationServicePoint) DeActivate() error {
+func (this *ReplicationService) DeActivate() error {
 	return nil
 }
 
-func (this *ReplicationServicePoint) Post(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Post(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Put(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Put(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Patch(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Patch(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
 	resourcs.Logger().Trace("Updating index on ", resourcs.SysConfig().LocalAlias)
 	_, e := this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
@@ -60,33 +60,33 @@ func (this *ReplicationServicePoint) Patch(pb ifs.IElements, resourcs ifs.IResou
 	}
 	return nil
 }
-func (this *ReplicationServicePoint) Delete(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Delete(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) GetCopy(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) GetCopy(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Get(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Get(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
 	return nil
 }
-func (this *ReplicationServicePoint) Failed(pb ifs.IElements, resourcs ifs.IResources, msg ifs.IMessage) ifs.IElements {
+func (this *ReplicationService) Failed(pb ifs.IElements, resourcs ifs.IResources, msg ifs.IMessage) ifs.IElements {
 	return nil
 }
 
-func (this *ReplicationServicePoint) TransactionMethod() ifs.ITransactionMethod {
+func (this *ReplicationService) TransactionMethod() ifs.ITransactionMethod {
 	return nil
 }
 
 func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServiceHandler) {
 	serviceName = NameOf(serviceName)
-	rp, ok := resources.Services().ServicePointHandler(serviceName, serviceArea)
+	rp, ok := resources.Services().ServiceHandler(serviceName, serviceArea)
 	if ok {
-		rsp := rp.(*ReplicationServicePoint)
+		rsp := rp.(*ReplicationService)
 		return rsp.cache.Get(serviceName).(*types.ReplicationIndex), rsp
 	}
 	return nil, nil
 }
 
 func UpdateIndex(sp ifs.IServiceHandler, index *types.ReplicationIndex) {
-	sp.(*ReplicationServicePoint).cache.Update(index.ServiceName, index, false)
+	sp.(*ReplicationService).cache.Update(index.ServiceName, index, false)
 }

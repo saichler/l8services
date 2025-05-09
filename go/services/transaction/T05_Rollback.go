@@ -30,12 +30,12 @@ func (this *ServiceTransactions) rollback(msg ifs.IMessage, vnic ifs.IVNic) bool
 		return false
 	}
 
-	servicePoints := vnic.Resources().Services()
+	services := vnic.Resources().Services()
 	if msg.Action() == ifs.Notify {
-		//_, err := servicePoints.Notify()
+		//_, err := services.Notify()
 	} else {
 		this.setRollbackAction(msg)
-		resp := servicePoints.TransactionHandle(this.preCommitObject, this.locked.Action(), vnic, this.locked)
+		resp := services.TransactionHandle(this.preCommitObject, this.locked.Action(), vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.Tr().SetState(ifs.Errored)
 			msg.Tr().SetErrorMessage("Rollback: Handle Error: " + resp.Error().Error())

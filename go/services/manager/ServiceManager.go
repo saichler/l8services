@@ -19,7 +19,7 @@ type ServiceManager struct {
 	distributedCaches *maps.SyncMap
 }
 
-func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServices {
+func NewServices(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServices {
 	sp := &ServiceManager{}
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
@@ -156,7 +156,7 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMe
 	}
 }
 
-func (this *ServiceManager) ServicePointHandler(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
+func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
 }
 

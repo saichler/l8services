@@ -47,12 +47,12 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vni
 			return object.NewError(err.Error()), false
 		}
 
-		servicePoints := vnic.Resources().Services()
-		resp := replicationGet(pb, servicePoints, msg, vnic)
+		services := vnic.Resources().Services()
+		resp := replicationGet(pb, services, msg, vnic)
 		if resp != nil {
 			return resp, false
 		}
-		resp = servicePoints.TransactionHandle(pb, msg.Action(), vnic, msg)
+		resp = services.TransactionHandle(pb, msg.Action(), vnic, msg)
 		return resp, false
 	}
 	return nil, true
@@ -95,8 +95,8 @@ func (this *ServiceTransactions) start(msg ifs.IMessage, vnic ifs.IVNic) {
 		time.Sleep(time.Second)
 		m, ok = this.trMap.Get(msg.Tr().Id())
 		hc := health.Health(vnic.Resources())
-		from := hc.HealthPoint(msg.Source())
-		to := hc.HealthPoint(vnic.Resources().SysConfig().LocalUuid)
+		from := hc.Health(msg.Source())
+		to := hc.Health(vnic.Resources().SysConfig().LocalUuid)
 		okStr := "NO"
 		if ok {
 			okStr = "YES"

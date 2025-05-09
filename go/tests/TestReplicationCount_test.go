@@ -2,7 +2,7 @@ package tests
 
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
-	. "github.com/saichler/l8test/go/infra/t_servicepoints"
+	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
@@ -17,8 +17,8 @@ func TestTransactionReplication(t *testing.T) {
 	nic := topo.VnicByVnetNum(1, 1)
 
 	index, _ := replication.ReplicationIndex("Tests", 2, nic.Resources())
-	if len(index.EndPoints) != 9 {
-		Log.Fail(t, "Expected 9 end points, got ", len(index.EndPoints))
+	if len(index.Ends) != 9 {
+		Log.Fail(t, "Expected 9 end points, got ", len(index.Ends))
 		return
 	}
 

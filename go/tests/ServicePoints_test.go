@@ -2,15 +2,15 @@ package tests
 
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
-	. "github.com/saichler/l8test/go/infra/t_servicepoints"
+	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
 	"testing"
 )
 
-func TestServicePoints(t *testing.T) {
-	testsp := &TestServicePointHandler{}
+func TestServices(t *testing.T) {
+	testsp := &TestServiceHandler{}
 	pb := object.New(nil, &testtypes.TestProto{})
 	globals.Services().RegisterServiceHandlerType(testsp)
 	_, err := globals.Services().Activate("", "", 0, nil, nil)
@@ -18,19 +18,19 @@ func TestServicePoints(t *testing.T) {
 		Log.Fail("Expected an error")
 		return
 	}
-	_, err = globals.Services().Activate("TestServicePointHandler", "", 0, nil, nil)
+	_, err = globals.Services().Activate("TestServiceHandler", "", 0, nil, nil)
 	if err == nil {
 		Log.Fail("Expected an error")
 		return
 	}
-	_, err = globals.Services().Activate(ServicePointType, ServiceName, 0, nil, nil, "")
+	_, err = globals.Services().Activate(ServiceType, ServiceName, 0, nil, nil, "")
 	if err != nil {
 		Log.Fail(t, err)
 		return
 	}
-	sp, ok := globals.Services().ServicePointHandler(ServiceName, 0)
+	sp, ok := globals.Services().ServiceHandler(ServiceName, 0)
 	if !ok {
-		Log.Fail(t, "Service Point Not Found")
+		Log.Fail(t, "Service  Not Found")
 		return
 	}
 	sp.TransactionMethod()

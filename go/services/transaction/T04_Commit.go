@@ -39,9 +39,9 @@ func (this *ServiceTransactions) commit(msg ifs.IMessage, vnic ifs.IVNic) bool {
 		return false
 	}
 
-	servicePoints := vnic.Resources().Services()
+	services := vnic.Resources().Services()
 	if msg.Action() == ifs.Notify {
-		//_, err := servicePoints.Notify()
+		//_, err := services.Notify()
 	} else {
 		pb, err := protocol.ElementsOf(this.locked, vnic.Resources())
 		if err != nil {
@@ -56,7 +56,7 @@ func (this *ServiceTransactions) commit(msg ifs.IMessage, vnic ifs.IVNic) bool {
 			return false
 		}
 
-		resp := servicePoints.TransactionHandle(pb, this.locked.Action(), vnic, this.locked)
+		resp := services.TransactionHandle(pb, this.locked.Action(), vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.Tr().SetState(ifs.Errored)
 			msg.Tr().SetErrorMessage("Commit: Handle Error: " + resp.Error().Error())
@@ -81,13 +81,13 @@ func (this *ServiceTransactions) setPreCommitObject(msg ifs.IMessage, vnic ifs.I
 	if msg.Action() == ifs.PUT ||
 		msg.Action() == ifs.DELETE ||
 		msg.Action() == ifs.PATCH {
-		servicePoints := vnic.Resources().Services()
+		services := vnic.Resources().Services()
 		//Get the object before performing the action so we could rollback
 		//if necessary.
-		resp := servicePoints.TransactionHandle(pb, ifs.GET, vnic, this.locked)
+		resp := services.TransactionHandle(pb, ifs.GET, vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.Tr().SetState(ifs.Errored)
-			msg.Tr().SetErrorMessage("Pre Commit Object Fetch: Service Point: " + resp.Error().Error())
+			msg.Tr().SetErrorMessage("Pre Commit Object Fetch: Service : " + resp.Error().Error())
 			return false
 		}
 		this.preCommitObject = resp

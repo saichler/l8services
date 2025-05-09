@@ -47,15 +47,15 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		} else {
 			repServiceName := replication.NameOf(serviceName)
 			serviceNames = append(serviceNames, repServiceName)
-			this.RegisterServiceHandlerType(&replication.ReplicationServicePoint{})
-			_, err = this.Activate(replication.ServicePointType, repServiceName, serviceArea, r, l)
+			this.RegisterServiceHandlerType(&replication.ReplicationService{})
+			_, err = this.Activate(replication.ServiceType, repServiceName, serviceArea, r, l)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	if ok && typeName != replication.ServicePointType {
+	if ok && typeName != replication.ServiceType {
 		err = vnic.NotifyServiceAdded(serviceNames, serviceArea)
 	}
 	return handler, err

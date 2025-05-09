@@ -2,7 +2,7 @@ package tests
 
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
-	. "github.com/saichler/l8test/go/infra/t_servicepoints"
+	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/reflect/go/tests/utils"
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/testtypes"
