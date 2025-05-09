@@ -4,7 +4,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/reflect/go/reflect/updating"
-	"github.com/saichler/serializer/go/serialize/object"
+	"github.com/saichler/serializer/go/l8srlz/object"
 	"github.com/saichler/l8utils/go/utils/registry"
 	"github.com/saichler/l8types/go/testtypes"
 	"testing"

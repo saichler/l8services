@@ -19,7 +19,7 @@ rm -rf ./build-test-security.sh
 go mod vendor
 
 # Run unit tests with coverage
-go test -tags=unit -v -coverpkg=./points/... -coverprofile=cover.html ./... --failfast
+go test -tags=unit -v -coverpkg=./services/... -coverprofile=cover.html ./... --failfast
 
 rm -rf ./tests/loader.so
 
