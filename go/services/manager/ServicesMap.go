@@ -1,9 +1,9 @@
-package service_points
+package manager
 
 import (
 	"bytes"
-	"github.com/saichler/l8utils/go/utils/maps"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8utils/go/utils/maps"
 	"strconv"
 )
 

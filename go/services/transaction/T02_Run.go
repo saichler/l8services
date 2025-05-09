@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/servicepoints/go/points/transaction/requests"
+	"github.com/saichler/l8services/go/services/transaction/requests"
 	"github.com/saichler/l8types/go/ifs"
 	"sync"
 )

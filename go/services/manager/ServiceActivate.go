@@ -1,12 +1,12 @@
-package service_points
+package manager
 
 import (
 	"errors"
-	"github.com/saichler/servicepoints/go/points/replication"
+	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServicePointsImpl) Activate(typeName string, serviceName string, serviceArea uint16,
+func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea uint16,
 	r ifs.IResources, l ifs.IServiceCacheListener, args ...interface{}) (ifs.IServiceHandler, error) {
 
 	if typeName == "" {

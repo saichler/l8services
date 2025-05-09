@@ -3,7 +3,7 @@ package replication
 import (
 	"bytes"
 	"github.com/saichler/reflect/go/reflect/introspecting"
-	"github.com/saichler/servicepoints/go/points/dcache"
+	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 )

@@ -3,7 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_servicepoints"
-	"github.com/saichler/servicepoints/go/points/replication"
+	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
 	"strconv"

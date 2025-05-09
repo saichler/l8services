@@ -1,17 +1,17 @@
-package service_points
+package manager
 
 import (
 	"bytes"
-	"github.com/saichler/serializer/go/serialize/object"
-	"github.com/saichler/servicepoints/go/points/dcache"
-	"github.com/saichler/servicepoints/go/points/transaction"
-	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/l8services/go/services/dcache"
+	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/serializer/go/serialize/object"
 	"strconv"
 )
 
-type ServicePointsImpl struct {
+type ServiceManager struct {
 	services          *ServicesMap
 	introspector      ifs.IIntrospector
 	config            *types.SysConfig
@@ -20,7 +20,7 @@ type ServicePointsImpl struct {
 }
 
 func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServices {
-	sp := &ServicePointsImpl{}
+	sp := &ServiceManager{}
 	sp.services = NewServicesMap()
 	sp.introspector = introspector
 	sp.config = config
@@ -33,11 +33,11 @@ func NewServicePoints(introspector ifs.IIntrospector, config *types.SysConfig) i
 	return sp
 }
 
-func (this *ServicePointsImpl) RegisterServiceHandlerType(handler ifs.IServiceHandler) {
+func (this *ServiceManager) RegisterServiceHandlerType(handler ifs.IServiceHandler) {
 	this.introspector.Registry().Register(handler)
 }
 
-func (this *ServicePointsImpl) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
+func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
@@ -82,12 +82,12 @@ func (this *ServicePointsImpl) Handle(pb ifs.IElements, action ifs.Action, vnic 
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
+func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServicePointsImpl) handle(h ifs.IServiceHandler, pb ifs.IElements,
+func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements,
 	action ifs.Action, vnic ifs.IVNic) ifs.IElements {
 
 	if h == nil {
@@ -116,7 +116,7 @@ func (this *ServicePointsImpl) handle(h ifs.IServiceHandler, pb ifs.IElements,
 	}
 }
 
-func (this *ServicePointsImpl) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage, isTransaction bool) ifs.IElements {
+func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage, isTransaction bool) ifs.IElements {
 	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
 		return object.New(nil, nil)
 	}
@@ -156,11 +156,11 @@ func (this *ServicePointsImpl) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.
 	}
 }
 
-func (this *ServicePointsImpl) ServicePointHandler(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
+func (this *ServiceManager) ServicePointHandler(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
 }
 
-func (this *ServicePointsImpl) RegisterDistributedCache(cache ifs.IDistributedCache) {
+func (this *ServiceManager) RegisterDistributedCache(cache ifs.IDistributedCache) {
 	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
 	this.distributedCaches.Put(key, cache)
 }
