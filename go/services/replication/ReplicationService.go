@@ -2,15 +2,15 @@ package replication
 
 import (
 	"bytes"
-	"github.com/saichler/reflect/go/reflect/introspecting"
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/reflect/go/reflect/introspecting"
 )
 
 const (
 	ServiceType = "ReplicationService"
-	Prefix           = "Rep-"
+	Prefix      = "Rep-"
 )
 
 type ReplicationService struct {
@@ -28,8 +28,8 @@ func (this *ReplicationService) Activate(serviceName string, serviceArea uint16,
 	index.ServiceName = serviceName
 	index.ServiceArea = int32(serviceArea)
 	index.Keys = make(map[string]*types.ReplicationKey)
-	index.Ends = make(map[string]*types.ReplicationEnd)
-	index.Ends[uuid] = &types.ReplicationEnd{Score: 1}
+	index.EndPoints = make(map[string]*types.ReplicationEndPoint)
+	index.EndPoints[uuid] = &types.ReplicationEndPoint{Score: 1}
 	this.cache.Put(serviceName, index, true)
 	return nil
 }
