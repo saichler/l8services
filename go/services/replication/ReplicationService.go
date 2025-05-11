@@ -45,31 +45,31 @@ func (this *ReplicationService) DeActivate() error {
 	return nil
 }
 
-func (this *ReplicationService) Post(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *ReplicationService) Put(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *ReplicationService) Patch(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
-	resourcs.Logger().Trace("Updating index on ", resourcs.SysConfig().LocalAlias)
+	vnic.Resources().Logger().Trace("Updating index on ", vnic.Resources().SysConfig().LocalAlias)
 	_, e := this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
 	if e != nil {
 		panic(e)
 	}
 	return nil
 }
-func (this *ReplicationService) Delete(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *ReplicationService) GetCopy(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) GetCopy(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *ReplicationService) Get(pb ifs.IElements, resourcs ifs.IResources) ifs.IElements {
+func (this *ReplicationService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *ReplicationService) Failed(pb ifs.IElements, resourcs ifs.IResources, msg ifs.IMessage) ifs.IElements {
+func (this *ReplicationService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
 	return nil
 }
 

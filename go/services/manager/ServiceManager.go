@@ -65,7 +65,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	}
 
 	if msg.FailMessage() != "" {
-		return h.Failed(pb, vnic.Resources(), msg)
+		return h.Failed(pb, vnic, msg)
 	}
 
 	if h.TransactionMethod() != nil {
@@ -94,23 +94,17 @@ func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements,
 		return object.New(nil, pb)
 	}
 
-	var resourcs ifs.IResources
-
-	if vnic != nil {
-		resourcs = vnic.Resources()
-	}
-
 	switch action {
 	case ifs.POST:
-		return h.Post(pb, resourcs)
+		return h.Post(pb, vnic)
 	case ifs.PUT:
-		return h.Put(pb, resourcs)
+		return h.Put(pb, vnic)
 	case ifs.PATCH:
-		return h.Patch(pb, resourcs)
+		return h.Patch(pb, vnic)
 	case ifs.DELETE:
-		return h.Delete(pb, resourcs)
+		return h.Delete(pb, vnic)
 	case ifs.GET:
-		return h.Get(pb, resourcs)
+		return h.Get(pb, vnic)
 	default:
 		return object.NewError("invalid action, ignoring")
 	}
@@ -126,13 +120,9 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMe
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
-	var resourcs ifs.IResources
-	if vnic != nil {
-		resourcs = vnic.Resources()
-	}
 
 	if msg != nil && msg.FailMessage() != "" {
-		return h.Failed(pb, resourcs, msg)
+		return h.Failed(pb, vnic, msg)
 	}
 	item, err := dcache.ItemOf(notification, this.introspector)
 	if err != nil {
@@ -142,15 +132,15 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMe
 
 	switch notification.Type {
 	case types.NotificationType_Add:
-		return h.Post(npb, resourcs)
+		return h.Post(npb, vnic)
 	case types.NotificationType_Replace:
-		return h.Put(npb, resourcs)
+		return h.Put(npb, vnic)
 	case types.NotificationType_Sync:
 		fallthrough
 	case types.NotificationType_Update:
-		return h.Patch(npb, resourcs)
+		return h.Patch(npb, vnic)
 	case types.NotificationType_Delete:
-		return h.Delete(npb, resourcs)
+		return h.Delete(npb, vnic)
 	default:
 		return object.NewError("invalid notification type, ignoring")
 	}
