@@ -90,3 +90,7 @@ func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IRes
 func UpdateIndex(sp ifs.IServiceHandler, index *types.ReplicationIndex) {
 	sp.(*ReplicationService).cache.Update(index.ServiceName, index, false)
 }
+
+func (this *ReplicationService) WebService() ifs.IWebService {
+	return nil
+}
