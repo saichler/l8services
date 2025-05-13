@@ -45,6 +45,17 @@ func (mp *ServicesMap) contains(serviceName string, serviceArea uint16) bool {
 	return mp.services.Contains(key)
 }
 
+func (mp *ServicesMap) webServices() []ifs.IWebService {
+	result := make([]ifs.IWebService, 0)
+	mp.services.Iterate(func(key interface{}, value interface{}) {
+		svc := value.(ifs.IServiceHandler)
+		if svc.WebService() != nil {
+			result = append(result, svc.WebService())
+		}
+	})
+	return result
+}
+
 func serviceKey(serviceName string, serviceArea uint16) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)

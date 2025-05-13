@@ -58,5 +58,10 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	if ok && typeName != replication.ServiceType {
 		err = vnic.NotifyServiceAdded(serviceNames, serviceArea)
 	}
+
+	if ok && handler.WebService() != nil {
+		vnic.Multicast("WebEndPoints", 0, ifs.POST, handler.WebService().Serialize())
+	}
+
 	return handler, err
 }
