@@ -58,6 +58,11 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		return nil
 	}
 
+	if msg.Action() == ifs.EndPoints {
+		this.sendEndPoints(vnic)
+		return nil
+	}
+
 	h, ok := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
@@ -153,6 +158,15 @@ func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea uint1
 func (this *ServiceManager) RegisterDistributedCache(cache ifs.IDistributedCache) {
 	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
 	this.distributedCaches.Put(key, cache)
+}
+
+func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
+	webServices := this.services.webServices()
+	for _, ws := range webServices {
+		if ws.Plugin() != "" {
+			vnic.Multicast("WebEndPoints", 0, ifs.POST, ws.Serialize())
+		}
+	}
 }
 
 func cacheKey(serviceName string, serviceArea uint16) string {
