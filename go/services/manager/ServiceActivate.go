@@ -59,8 +59,10 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		err = vnic.NotifyServiceAdded(serviceNames, serviceArea)
 	}
 
-	if ok && handler.WebService() != nil {
-		vnic.Multicast("WebEndPoints", 0, ifs.POST, handler.WebService().Serialize())
+	webService := handler.WebService()
+
+	if ok && webService != nil {
+		vnic.Multicast("WebEndPoints", 0, ifs.POST, webService.Serialize())
 	}
 
 	return handler, err
