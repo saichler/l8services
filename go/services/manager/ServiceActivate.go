@@ -62,6 +62,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	webService := handler.WebService()
 
 	if ok && webService != nil {
+		vnic.Resources().Logger().Info("Sent Webservice multicast for ", serviceName)
 		vnic.Multicast("WebEndPoints", 0, ifs.POST, webService.Serialize())
 	}
 
