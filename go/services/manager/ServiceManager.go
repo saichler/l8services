@@ -8,6 +8,7 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/layer8/go/overlay/health"
 	"strconv"
 )
 
@@ -65,7 +66,12 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 
 	h, ok := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
-		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
+		hp := health.Health(vnic.Resources()).Health(vnic.Resources().SysConfig().LocalUuid)
+		alias := "Unknown"
+		if hp != nil {
+			alias = hp.Alias
+		}
+		return object.NewError(alias + " - Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
 
