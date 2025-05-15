@@ -163,9 +163,8 @@ func (this *ServiceManager) RegisterDistributedCache(cache ifs.IDistributedCache
 func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
 	webServices := this.services.webServices()
 	for _, ws := range webServices {
-		if ws.Plugin() != "" {
-			vnic.Multicast("WebEndPoints", 0, ifs.POST, ws.Serialize())
-		}
+		vnic.Resources().Logger().Info("Sent Webservice multicast for ", ws.ServiceName(), " area ", ws.ServiceArea())
+		vnic.Multicast("WebEndPoints", 0, ifs.POST, ws.Serialize())
 	}
 }
 
