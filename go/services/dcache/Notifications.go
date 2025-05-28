@@ -139,22 +139,22 @@ func (this *DCache) createUpdateNotification(changes []*updating.Change, key str
 	return CreateUpdateNotification(changes, this.serviceName, key, this.serviceArea, this.modelType, this.source, len(changes), this.sequence)
 }
 
-func ItemOf(n *types.NotificationSet, i ifs.IIntrospector) (interface{}, error) {
+func ItemOf(n *types.NotificationSet, resources ifs.IResources) (interface{}, error) {
 	switch n.Type {
 	case types.NotificationType_Replace:
 		fallthrough
 	case types.NotificationType_Sync:
 		fallthrough
 	case types.NotificationType_Add:
-		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, resources.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Delete:
-		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, i.Registry())
+		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, resources.Registry())
 		v, e := obj.Get()
 		return v, e
 	case types.NotificationType_Update:
-		info, err := i.Registry().Info(n.ModelType)
+		info, err := resources.Registry().Info(n.ModelType)
 		if err != nil {
 			return nil, err
 		}
@@ -163,10 +163,10 @@ func ItemOf(n *types.NotificationSet, i ifs.IIntrospector) (interface{}, error) 
 			return nil, err
 		}
 		for _, notif := range n.NotificationList {
-			p, e := properties.PropertyOf(notif.PropertyId, i)
+			p, e := properties.PropertyOf(notif.PropertyId, resources)
 			var value interface{}
 			if notif.NewValue != nil {
-				obj := object.NewDecode(notif.NewValue, 0, i.Registry())
+				obj := object.NewDecode(notif.NewValue, 0, resources.Registry())
 				v, e1 := obj.Get()
 				if e1 != nil {
 					return nil, e1

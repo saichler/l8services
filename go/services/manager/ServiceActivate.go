@@ -22,7 +22,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		return handler, nil
 	}
 
-	info, err := this.introspector.Registry().Info(typeName)
+	info, err := this.resources.Registry().Info(typeName)
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
 	}
@@ -36,7 +36,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		return nil, errors.New("Activate: " + err.Error())
 	}
 	this.services.put(serviceName, serviceArea, handler)
-	ifs.AddService(this.config, serviceName, int32(serviceArea))
+	ifs.AddService(this.resources.SysConfig(), serviceName, int32(serviceArea))
 	vnic, ok := l.(ifs.IVNic)
 
 	serviceNames := []string{serviceName}

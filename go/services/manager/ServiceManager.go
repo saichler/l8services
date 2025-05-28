@@ -14,20 +14,18 @@ import (
 
 type ServiceManager struct {
 	services          *ServicesMap
-	introspector      ifs.IIntrospector
-	config            *types.SysConfig
 	trManager         *transaction.TransactionManager
 	distributedCaches *maps.SyncMap
+	resources         ifs.IResources
 }
 
-func NewServices(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IServices {
+func NewServices(resources ifs.IResources) ifs.IServices {
 	sp := &ServiceManager{}
 	sp.services = NewServicesMap()
-	sp.introspector = introspector
-	sp.config = config
+	sp.resources = resources
 	sp.trManager = transaction.NewTransactionManager()
 	sp.distributedCaches = maps.NewSyncMap()
-	_, err := introspector.Registry().Register(&types.NotificationSet{})
+	_, err := sp.resources.Registry().Register(&types.NotificationSet{})
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +33,7 @@ func NewServices(introspector ifs.IIntrospector, config *types.SysConfig) ifs.IS
 }
 
 func (this *ServiceManager) RegisterServiceHandlerType(handler ifs.IServiceHandler) {
-	this.introspector.Registry().Register(handler)
+	this.resources.Registry().Register(handler)
 }
 
 func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
@@ -135,7 +133,7 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMe
 	if msg != nil && msg.FailMessage() != "" {
 		return h.Failed(pb, vnic, msg)
 	}
-	item, err := dcache.ItemOf(notification, this.introspector)
+	item, err := dcache.ItemOf(notification, this.resources)
 	if err != nil {
 		return object.NewError(err.Error())
 	}

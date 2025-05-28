@@ -18,7 +18,7 @@ func (this *ServiceManager) DeActivate(serviceName string, serviceArea uint16, r
 
 	defer handler.DeActivate()
 
-	ifs.RemoveService(this.config.Services, serviceName, int32(serviceArea))
+	ifs.RemoveService(this.resources.SysConfig().Services, serviceName, int32(serviceArea))
 	vnic, ok := l.(ifs.IVNic)
 	if ok {
 		vnic.NotifyServiceRemoved(serviceName, serviceArea)

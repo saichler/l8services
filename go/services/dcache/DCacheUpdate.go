@@ -1,8 +1,8 @@
 package dcache
 
 import (
-	"github.com/saichler/reflect/go/reflect/updating"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/reflect/go/reflect/updating"
 )
 
 func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
@@ -32,7 +32,7 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
-	patchUpdater := updating.NewUpdater(this.resources.Introspector(), false, false)
+	patchUpdater := updating.NewUpdater(this.resources, false, false)
 	//update the item clone with the new element where nil is valid
 	e = patchUpdater.Update(itemClone, v)
 	if e != nil {
