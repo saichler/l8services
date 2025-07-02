@@ -9,7 +9,7 @@ import (
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 
-func CreateNotificationSet(t types.NotificationType, serviceName, key string, serviceArea uint16, modelType, source string,
+func CreateNotificationSet(t types.NotificationType, serviceName, key string, serviceArea byte, modelType, source string,
 	changeCount int, sequence uint32) *types.NotificationSet {
 	notificationSet := &types.NotificationSet{}
 	notificationSet.ServiceName = serviceName
@@ -28,7 +28,7 @@ func (this *DCache) createNotificationSet(t types.NotificationType, key string, 
 	return CreateNotificationSet(t, this.serviceName, key, this.serviceArea, this.modelType, this.source, changeCount, this.sequence)
 }
 
-func CreateAddNotification(any interface{}, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateAddNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Add, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
@@ -41,7 +41,7 @@ func CreateAddNotification(any interface{}, serviceName, key string, serviceArea
 	return notificationSet, nil
 }
 
-func CreateSyncNotification(any interface{}, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateSyncNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Sync, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
@@ -64,7 +64,7 @@ func (this *DCache) createSyncNotification(any interface{}, key string) (*types.
 	return CreateSyncNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateReplaceNotification(old, new interface{}, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateReplaceNotification(old, new interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Replace, serviceName, key, serviceArea, modelType, source, 1, sequence)
 	oldObj := object.NewEncode()
 	err := oldObj.Add(old)
@@ -90,7 +90,7 @@ func (this *DCache) createReplaceNotification(old, new interface{}, key string) 
 	return CreateReplaceNotification(old, new, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateDeleteNotification(any interface{}, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateDeleteNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Delete, serviceName, key, serviceArea, modelType, source, 1, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
@@ -108,7 +108,7 @@ func (this *DCache) createDeleteNotification(any interface{}, key string) (*type
 	return CreateDeleteNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateUpdateNotification(changes []*updating.Change, serviceName, key string, serviceArea uint16, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
+func CreateUpdateNotification(changes []*updating.Change, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
 	notificationSet := CreateNotificationSet(types.NotificationType_Update, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
 	for i, change := range changes {
 		n := &types.Notification{}

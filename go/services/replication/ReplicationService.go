@@ -17,7 +17,7 @@ type ReplicationService struct {
 	cache ifs.IDistributedCache
 }
 
-func (this *ReplicationService) Activate(serviceName string, serviceArea uint16,
+func (this *ReplicationService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
 	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
@@ -69,7 +69,7 @@ func (this *ReplicationService) GetCopy(pb ifs.IElements, vnic ifs.IVNic) ifs.IE
 func (this *ReplicationService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *ReplicationService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
+func (this *ReplicationService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (this *ReplicationService) TransactionMethod() ifs.ITransactionMethod {
 	return nil
 }
 
-func ReplicationIndex(serviceName string, serviceArea uint16, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServiceHandler) {
+func ReplicationIndex(serviceName string, serviceArea byte, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServiceHandler) {
 	serviceName = NameOf(serviceName)
 	rp, ok := resources.Services().ServiceHandler(serviceName, serviceArea)
 	if ok {

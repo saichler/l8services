@@ -15,12 +15,12 @@ type DCache struct {
 	resources   ifs.IResources
 	source      string
 	serviceName string
-	serviceArea uint16
+	serviceArea byte
 	modelType   string
 	sequence    uint32
 }
 
-func NewDistributedCache(serviceName string, serviceArea uint16, modelType, source string,
+func NewDistributedCache(serviceName string, serviceArea byte, modelType, source string,
 	listener ifs.IServiceCacheListener, resources ifs.IResources) ifs.IDistributedCache {
 	this := &DCache{}
 	this.cache = make(map[string]interface{})
@@ -67,6 +67,6 @@ func (this *DCache) ServiceName() string {
 	return this.serviceName
 }
 
-func (this *DCache) ServiceArea() uint16 {
+func (this *DCache) ServiceArea() byte {
 	return this.serviceArea
 }

@@ -36,7 +36,7 @@ func (this *ServiceManager) RegisterServiceHandlerType(handler ifs.IServiceHandl
 	this.resources.Registry().Register(handler)
 }
 
-func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
+func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
@@ -78,7 +78,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	}
 
 	if h.TransactionMethod() != nil {
-		if ifs.IsNil(msg.Tr()) {
+		if msg.Tr_State() == ifs.Empty {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
 			return this.trManager.Create(msg, vnic)
@@ -91,7 +91,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
+func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	return this.handle(h, pb, action, vnic)
 }
@@ -119,12 +119,12 @@ func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements,
 	}
 }
 
-func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage, isTransaction bool) ifs.IElements {
+func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message, isTransaction bool) ifs.IElements {
 	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
 		return object.New(nil, nil)
 	}
 	notification := pb.Element().(*types.NotificationSet)
-	h, ok := this.services.get(notification.ServiceName, uint16(notification.ServiceArea))
+	h, ok := this.services.get(notification.ServiceName, byte(notification.ServiceArea))
 	if !ok {
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
@@ -155,7 +155,7 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMe
 	}
 }
 
-func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
+func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
 }
 
@@ -172,7 +172,7 @@ func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
 	}
 }
 
-func cacheKey(serviceName string, serviceArea uint16) string {
+func cacheKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))

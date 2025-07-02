@@ -18,7 +18,7 @@ func NewTransactionManager() *TransactionManager {
 	return tm
 }
 
-func (this *TransactionManager) transactionsOf(msg ifs.IMessage) *ServiceTransactions {
+func (this *TransactionManager) transactionsOf(msg *ifs.Message) *ServiceTransactions {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	serviceKey := ServiceKey(msg.ServiceName(), msg.ServiceArea())
@@ -30,8 +30,8 @@ func (this *TransactionManager) transactionsOf(msg ifs.IMessage) *ServiceTransac
 	return st
 }
 
-func (this *TransactionManager) Run(msg ifs.IMessage, vnic ifs.IVNic) ifs.IElements {
-	switch msg.Tr().State() {
+func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
+	switch msg.Tr_State() {
 	case ifs.Create:
 		this.create(msg, vnic.Resources().Logger())
 	case ifs.Start:
@@ -46,47 +46,47 @@ func (this *TransactionManager) Run(msg ifs.IMessage, vnic ifs.IVNic) ifs.IEleme
 		this.rollback(msg, vnic)
 	case ifs.Errored:
 	default:
-		panic("Unexpected transaction state " + msg.Tr().State().String() + ":" + msg.Tr().ErrorMessage())
+		panic("Unexpected transaction state " + msg.Tr_State().String() + ":" + msg.Tr_ErrMsg())
 	}
-	return object.New(nil, msg.Tr())
+	return object.New(nil, TransactionOf(msg))
 }
 
-func (this *TransactionManager) create(msg ifs.IMessage, log ifs.ILogger) {
-	if msg.Tr().State() != ifs.Create {
-		panic("create: Unexpected transaction state " + msg.Tr().State().String())
+func (this *TransactionManager) create(msg *ifs.Message, log ifs.ILogger) {
+	if msg.Tr_State() != ifs.Create {
+		panic("create: Unexpected transaction state " + msg.Tr_State().String())
 	}
 	createTransaction(msg)
-	log.Info("Tr ", msg.Tr().Id(), " created!")
+	log.Info("Tr ", msg.Tr_Id(), " created!")
 	st := this.transactionsOf(msg)
 	st.addTransaction(msg)
-	msg.Tr().SetState(ifs.Created)
+	msg.SetTr_State(ifs.Created)
 }
 
-func (this *TransactionManager) lock(msg ifs.IMessage, log ifs.ILogger) {
+func (this *TransactionManager) lock(msg *ifs.Message, log ifs.ILogger) {
 	log.Debug("Tr Lock...")
 	st := this.transactionsOf(msg)
 	st.lock(msg)
 }
 
-func (this *TransactionManager) commit(msg ifs.IMessage, vnic ifs.IVNic) {
+func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Commit...")
 	st := this.transactionsOf(msg)
 	st.commit(msg, vnic)
 }
 
-func (this *TransactionManager) rollback(msg ifs.IMessage, vnic ifs.IVNic) {
+func (this *TransactionManager) rollback(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Create...")
 	st := this.transactionsOf(msg)
 	st.rollback(msg, vnic)
 }
 
-func (this *TransactionManager) finish(msg ifs.IMessage, log ifs.ILogger) {
+func (this *TransactionManager) finish(msg *ifs.Message, log ifs.ILogger) {
 	log.Debug("Tr Finish...")
 	st := this.transactionsOf(msg)
 	st.finish(msg)
 }
 
-func (this *TransactionManager) start(msg ifs.IMessage, vnic ifs.IVNic) {
+func (this *TransactionManager) start(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Start...")
 	st := this.transactionsOf(msg)
 	st.start(msg, vnic)

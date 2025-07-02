@@ -1,8 +1,9 @@
 package requests
 
 import (
-	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/layer8/go/overlay/health"
 	"sync"
 )
 
@@ -36,11 +37,11 @@ func (this *Requests) reportError(target string, err error) {
 	}
 }
 
-func (this *Requests) reportResult(target string, tr ifs.ITransaction) {
+func (this *Requests) reportResult(target string, tr *types.Transaction) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
-	if tr.State() == ifs.Errored {
-		this.pending[target] = tr.ErrorMessage()
+	if tr.State == int32(ifs.Errored) {
+		this.pending[target] = tr.ErrMsg
 	}
 	this.count--
 	if this.count == 0 {
@@ -48,7 +49,7 @@ func (this *Requests) reportResult(target string, tr ifs.ITransaction) {
 	}
 }
 
-func (this *Requests) requestFromPeer(vnic ifs.IVNic, msg ifs.IMessage, target string) {
+func (this *Requests) requestFromPeer(vnic ifs.IVNic, msg *ifs.Message, target string) {
 	this.addOne(target)
 
 	resp := vnic.Forward(msg, target)
@@ -57,11 +58,11 @@ func (this *Requests) requestFromPeer(vnic ifs.IVNic, msg ifs.IMessage, target s
 		return
 	}
 
-	tr := resp.Element().(ifs.ITransaction)
+	tr := resp.Element().(*types.Transaction)
 	this.reportResult(target, tr)
 }
 
-func RequestFromPeers(msg ifs.IMessage, vnic ifs.IVNic, targets map[string]bool) (bool, map[string]string) {
+func RequestFromPeers(msg *ifs.Message, vnic ifs.IVNic, targets map[string]bool) (bool, map[string]string) {
 
 	this := NewRequest()
 
@@ -85,14 +86,14 @@ func RequestFromPeers(msg ifs.IMessage, vnic ifs.IVNic, targets map[string]bool)
 	}
 
 	if !ok {
-		msg.Tr().SetState(ifs.Errored)
+		msg.SetTr_State(ifs.Errored)
 		return false, this.pending
 	}
 
 	return true, this.pending
 }
 
-func IsLeader(resourcs ifs.IResources, localUuid, topic string, serviceArea uint16) (bool, string) {
+func IsLeader(resourcs ifs.IResources, localUuid, topic string, serviceArea byte) (bool, string) {
 	hc := health.Health(resourcs)
 	leader := hc.Leader(topic, serviceArea)
 	return leader == localUuid, leader

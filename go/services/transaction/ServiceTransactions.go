@@ -2,12 +2,13 @@ package transaction
 
 import (
 	"bytes"
-	"github.com/saichler/layer8/go/overlay/health"
-	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/l8srlz/go/serialize/object"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/maps"
 	"github.com/saichler/l8utils/go/utils/queues"
-	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/layer8/go/overlay/protocol"
 	"strconv"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ type ServiceTransactions struct {
 	trVnicMap       *maps.SyncMap
 	trCondsMap      *maps.SyncMap
 	trQueue         *queues.Queue
-	locked          ifs.IMessage
+	locked          *ifs.Message
 	preCommitObject ifs.IElements
 	trCond          *sync.Cond
 }
@@ -34,7 +35,7 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 	return serviceTransactions
 }
 
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vnic ifs.IVNic) (ifs.IElements, bool) {
+func (this *ServiceTransactions) shouldHandleAsTransaction(msg *ifs.Message, vnic ifs.IVNic) (ifs.IElements, bool) {
 	if msg.Action() == ifs.GET {
 		this.trCond.L.Lock()
 		defer this.trCond.L.Unlock()
@@ -58,17 +59,17 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg ifs.IMessage, vni
 	return nil, true
 }
 
-func (this *ServiceTransactions) addTransaction(msg ifs.IMessage) {
-	msg.Tr().SetState(ifs.Create)
-	this.trMap.Put(msg.Tr().Id(), msg)
+func (this *ServiceTransactions) addTransaction(msg *ifs.Message) {
+	msg.SetTr_State(ifs.Create)
+	this.trMap.Put(msg.Tr_Id(), msg)
 }
 
-func (this *ServiceTransactions) delTransaction(msg ifs.IMessage) {
-	msg.Tr().SetState(ifs.Errored)
-	this.trMap.Delete(msg.Tr().Id())
+func (this *ServiceTransactions) delTransaction(msg *ifs.Message) {
+	msg.SetTr_State(ifs.Errored)
+	this.trMap.Delete(msg.Tr_Id())
 }
 
-func (this *ServiceTransactions) finish(msg ifs.IMessage) {
+func (this *ServiceTransactions) finish(msg *ifs.Message) {
 	this.trCond.L.Lock()
 	defer func() {
 		this.trCond.Broadcast()
@@ -80,20 +81,20 @@ func (this *ServiceTransactions) finish(msg ifs.IMessage) {
 		return
 	}
 
-	if this.locked.Tr().Id() == msg.Tr().Id() {
+	if this.locked.Tr_Id() == msg.Tr_Id() {
 		this.locked = nil
 		this.preCommitObject = nil
 	}
-	this.trMap.Delete(msg.Tr().Id())
-	this.trVnicMap.Delete(msg.Tr().Id())
-	msg.Tr().SetState(ifs.Finished)
+	this.trMap.Delete(msg.Tr_Id())
+	this.trVnicMap.Delete(msg.Tr_Id())
+	msg.SetTr_State(ifs.Finished)
 }
 
-func (this *ServiceTransactions) start(msg ifs.IMessage, vnic ifs.IVNic) {
-	m, ok := this.trMap.Get(msg.Tr().Id())
+func (this *ServiceTransactions) start(msg *ifs.Message, vnic ifs.IVNic) {
+	m, ok := this.trMap.Get(msg.Tr_Id())
 	if !ok {
 		time.Sleep(time.Second)
-		m, ok = this.trMap.Get(msg.Tr().Id())
+		m, ok = this.trMap.Get(msg.Tr_Id())
 		hc := health.Health(vnic.Resources())
 		from := hc.Health(msg.Source())
 		to := hc.Health(vnic.Resources().SysConfig().LocalUuid)
@@ -101,24 +102,26 @@ func (this *ServiceTransactions) start(msg ifs.IMessage, vnic ifs.IVNic) {
 		if ok {
 			okStr = "YES"
 		}
-		panic("Can't find transaction ID: " + msg.Tr().Id() + " from " +
+		panic("Can't find transaction ID: " + msg.Tr_Id() + " from " +
 			from.Alias + " to " + to.Alias + " ok " + okStr)
 	}
 
-	this.trVnicMap.Put(msg.Tr().Id(), vnic)
+	this.trVnicMap.Put(msg.Tr_Id(), vnic)
 	trCond := sync.NewCond(&sync.Mutex{})
-	this.trCondsMap.Put(msg.Tr().Id(), trCond)
+	this.trCondsMap.Put(msg.Tr_Id(), trCond)
 
-	message := m.(ifs.IMessage)
-	message.Tr().SetState(msg.Tr().State())
+	message := m.(*ifs.Message)
+	message.SetTr_State(msg.Tr_State())
 
 	trCond.L.Lock()
 	defer trCond.L.Unlock()
-	this.trQueue.Add(msg.Tr().Id())
+	this.trQueue.Add(msg.Tr_Id())
 	vnic.Resources().Logger().Debug("Before waiting for transaction to finish")
 	trCond.Wait()
 	vnic.Resources().Logger().Debug("Transaction ended")
-	msg.SetTr(message.Tr())
+	msg.SetTr_State(message.Tr_State())
+	msg.SetTr_ErrMsg(message.Tr_ErrMsg())
+	msg.SetTr_StartTime(message.Tr_StartTime())
 }
 
 func (this *ServiceTransactions) processTransactions() {
@@ -137,15 +140,22 @@ func (this *ServiceTransactions) processTransactions() {
 			panic("Cannot find cond for tr " + trId)
 		}
 		vnic := v.(ifs.IVNic)
-		msg := m.(ifs.IMessage)
+		msg := m.(*ifs.Message)
 		cond := c.(*sync.Cond)
 		this.run(msg, vnic, cond)
 	}
 }
 
-func ServiceKey(serviceName string, serviceArea uint16) string {
+func ServiceKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))
 	return buff.String()
+}
+
+func TransactionOf(msg *ifs.Message) *types.Transaction {
+	return &types.Transaction{State: int32(msg.Tr_State()),
+		Id:        msg.Tr_Id(),
+		ErrMsg:    msg.Tr_ErrMsg(),
+		StartTime: msg.Tr_StartTime()}
 }

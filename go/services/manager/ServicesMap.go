@@ -17,12 +17,12 @@ func NewServicesMap() *ServicesMap {
 	return newMap
 }
 
-func (mp *ServicesMap) put(serviceName string, serviceArea uint16, handler ifs.IServiceHandler) {
+func (mp *ServicesMap) put(serviceName string, serviceArea byte, handler ifs.IServiceHandler) {
 	key := serviceKey(serviceName, serviceArea)
 	mp.services.Put(key, handler)
 }
 
-func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
+func (mp *ServicesMap) get(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Get(key)
 	if value != nil {
@@ -31,7 +31,7 @@ func (mp *ServicesMap) get(serviceName string, serviceArea uint16) (ifs.IService
 	return nil, ok
 }
 
-func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (ifs.IServiceHandler, bool) {
+func (mp *ServicesMap) del(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Delete(key)
 	if value != nil {
@@ -40,7 +40,7 @@ func (mp *ServicesMap) del(serviceName string, serviceArea uint16) (ifs.IService
 	return nil, ok
 }
 
-func (mp *ServicesMap) contains(serviceName string, serviceArea uint16) bool {
+func (mp *ServicesMap) contains(serviceName string, serviceArea byte) bool {
 	key := serviceKey(serviceName, serviceArea)
 	return mp.services.Contains(key)
 }
@@ -56,7 +56,7 @@ func (mp *ServicesMap) webServices() []ifs.IWebService {
 	return result
 }
 
-func serviceKey(serviceName string, serviceArea uint16) string {
+func serviceKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))

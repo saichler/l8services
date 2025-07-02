@@ -8,7 +8,7 @@ import (
 	"github.com/saichler/layer8/go/overlay/health"
 )
 
-func replicationGet(elements ifs.IElements, services ifs.IServices, msg ifs.IMessage,
+func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Message,
 	vnic ifs.IVNic) ifs.IElements {
 	index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 	if index != nil {
@@ -38,7 +38,7 @@ func replicationGet(elements ifs.IElements, services ifs.IServices, msg ifs.IMes
 }
 
 func getAll(elements ifs.IElements, vnic ifs.IVNic,
-	msg ifs.IMessage, index *types.ReplicationIndex) ifs.IElements {
+	msg *ifs.Message, index *types.ReplicationIndex) ifs.IElements {
 	myUuid := vnic.Resources().SysConfig().LocalUuid
 	leader := health.Health(vnic.Resources()).Leader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := myUuid == leader
