@@ -34,13 +34,14 @@ func (this *ReplicationService) Activate(serviceName string, serviceArea byte,
 	return nil
 }
 
-func NameOf(serviceName string) string {
-	if len(serviceName) != 10 {
-		panic("Invalid service name length " + serviceName)
-	}
+func ReplicationNameOf(serviceName string) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(Prefix)
-	buff.WriteString(serviceName[0:8])
+	if len(serviceName) >= 8 {
+		buff.WriteString(serviceName[0:8])
+	} else {
+		buff.WriteString(serviceName)
+	}
 	return buff.String()
 }
 
@@ -81,7 +82,7 @@ func (this *ReplicationService) TransactionMethod() ifs.ITransactionMethod {
 }
 
 func ReplicationIndex(serviceName string, serviceArea byte, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServiceHandler) {
-	serviceName = NameOf(serviceName)
+	serviceName = ReplicationNameOf(serviceName)
 	rp, ok := resources.Services().ServiceHandler(serviceName, serviceArea)
 	if ok {
 		rsp := rp.(*ReplicationService)

@@ -50,7 +50,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		if handler.TransactionMethod().ReplicationCount() == 0 {
 			r.Logger().Error("Service point ", typeName, " has replication set to true with 0 replication count!")
 		} else {
-			repServiceName := replication.NameOf(serviceName)
+			repServiceName := replication.ReplicationNameOf(serviceName)
 			serviceNames = append(serviceNames, repServiceName)
 			this.RegisterServiceHandlerType(&replication.ReplicationService{})
 			_, err = this.Activate(replication.ServiceType, repServiceName, serviceArea, r, l)
