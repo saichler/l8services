@@ -3,9 +3,10 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
-	"github.com/saichler/l8utils/go/utils/workers"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
+	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/l8utils/go/utils/workers"
 	"testing"
 )
 
@@ -106,8 +107,8 @@ func TestParallel(t *testing.T) {
 	get := 0
 
 	for _, result := range results {
-		tr, ok := result.(ifs.ITransaction)
-		if ok && tr.State() == ifs.Commited {
+		tr, ok := result.(*types.Transaction)
+		if ok && tr.State == int32(ifs.Commited) {
 			post++
 		}
 		_, ok = result.(*testtypes.TestProto)

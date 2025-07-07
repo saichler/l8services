@@ -10,7 +10,7 @@ import (
 
 const (
 	ServiceType = "ReplicationService"
-	Prefix      = "Rep-"
+	Prefix      = "R-"
 )
 
 type ReplicationService struct {
@@ -35,9 +35,12 @@ func (this *ReplicationService) Activate(serviceName string, serviceArea byte,
 }
 
 func NameOf(serviceName string) string {
+	if len(serviceName) != 10 {
+		panic("Invalid service name length " + serviceName)
+	}
 	buff := bytes.Buffer{}
 	buff.WriteString(Prefix)
-	buff.WriteString(serviceName)
+	buff.WriteString(serviceName[0:8])
 	return buff.String()
 }
 

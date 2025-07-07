@@ -29,6 +29,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	if err != nil {
 		panic(err)
 	}
+	sp.resources.Registry().Register(&types.Transaction{})
 	return sp
 }
 

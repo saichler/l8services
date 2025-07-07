@@ -17,6 +17,11 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		return nil, errors.New("Service name is empty")
 	}
 
+	if len(serviceName) != 10 {
+		panic("Service name " + serviceName + " must be exactly 10 characters long")
+		return nil, errors.New("Service name " + serviceName + " must be exactly 10 characters long")
+	}
+
 	handler, ok := this.services.get(serviceName, serviceArea)
 	if ok {
 		return handler, nil

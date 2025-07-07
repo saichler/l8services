@@ -16,7 +16,7 @@ func TestTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
 
-	index, _ := replication.ReplicationIndex("Tests", 2, nic.Resources())
+	index, _ := replication.ReplicationIndex(ServiceName, 2, nic.Resources())
 	if len(index.EndPoints) != 9 {
 		Log.Fail(t, "Expected 9 end points, got ", len(index.EndPoints))
 		return

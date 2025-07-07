@@ -3,9 +3,10 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
-	"github.com/saichler/l8utils/go/utils/workers"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
+	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/l8utils/go/utils/workers"
 	"testing"
 )
 
@@ -17,9 +18,9 @@ func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T
 		return false
 	}
 
-	tr := resp.Element().(ifs.ITransaction)
-	if tr.State() != ifs.Commited && failure {
-		Log.Fail(t, "transaction state is not commited, ", expected, " ", tr.State().String(), " ", tr.ErrorMessage())
+	tr := resp.Element().(*types.Transaction)
+	if tr.State != int32(ifs.Commited) && failure {
+		Log.Fail(t, "transaction state is not commited, ", expected, " ", ifs.TransactionState(tr.State), " ", tr.ErrMsg)
 		return false
 	}
 
