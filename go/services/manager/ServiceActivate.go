@@ -68,7 +68,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 
 	if ok && webService != nil {
 		vnic.Resources().Logger().Info("Sent Webservice multicast for ", serviceName, " area ", serviceArea)
-		vnic.Multicast("WebEndPoints", 0, ifs.POST, webService.Serialize())
+		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
 	}
 
 	return handler, err
