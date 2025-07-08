@@ -169,7 +169,7 @@ func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
 	webServices := this.services.webServices()
 	for _, ws := range webServices {
 		vnic.Resources().Logger().Info("Sent Webservice multicast for ", ws.ServiceName(), " area ", ws.ServiceArea())
-		vnic.Multicast("WebEndPoints", 0, ifs.POST, ws.Serialize())
+		vnic.Multicast(ifs.WebService, 0, ifs.POST, ws.Serialize())
 	}
 }
 
