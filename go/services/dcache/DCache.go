@@ -18,10 +18,16 @@ type DCache struct {
 	serviceArea byte
 	modelType   string
 	sequence    uint32
+	store       ifs.IStorage
 }
 
 func NewDistributedCache(serviceName string, serviceArea byte, modelType, source string,
 	listener ifs.IServiceCacheListener, resources ifs.IResources) ifs.IDistributedCache {
+	return NewDistributedCacheWithStorage(serviceName, serviceArea, modelType, source, listener, resources, nil)
+}
+
+func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, modelType, source string,
+	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage) ifs.IDistributedCache {
 	this := &DCache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}
@@ -33,34 +39,11 @@ func NewDistributedCache(serviceName string, serviceArea byte, modelType, source
 	this.serviceName = serviceName
 	this.serviceArea = serviceArea
 	this.modelType = modelType
+	this.store = store
 	if listener != nil {
 		resources.Services().RegisterDistributedCache(this)
 	}
 	return this
-}
-
-func (this *DCache) Get(k string) interface{} {
-	this.mtx.RLock()
-	defer this.mtx.RUnlock()
-	item, ok := this.cache[k]
-	if ok {
-		itemClone := this.cloner.Clone(item)
-		return itemClone
-	}
-	return nil
-}
-
-func (this *DCache) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
-	result := map[string]interface{}{}
-	this.mtx.RLock()
-	defer this.mtx.RUnlock()
-	for k, v := range this.cache {
-		ok, elem := f(v)
-		if ok {
-			result[k] = elem
-		}
-	}
-	return result
 }
 
 func (this *DCache) ServiceName() string {
@@ -69,4 +52,11 @@ func (this *DCache) ServiceName() string {
 
 func (this *DCache) ServiceArea() byte {
 	return this.serviceArea
+}
+
+func (this *DCache) cacheEnabled() bool {
+	if this.store == nil {
+		return true
+	}
+	return this.store.CacheEnabled()
 }

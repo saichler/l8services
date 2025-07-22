@@ -10,15 +10,33 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
 	var e error
+	var item interface{}
+	var ok bool
+
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
-	item, ok := this.cache[k]
+	if this.cacheEnabled() {
+		item, ok = this.cache[k]
+	} else {
+		item, e = this.store.Get(k)
+		ok = e == nil
+	}
+
 	//If the item does not exist in the cache
 	if !ok {
 		//First clone the value so we can use it in the notification.
 		itemClone := this.cloner.Clone(v)
-		//Place the value in the cache
-		this.cache[k] = v
+		v = this.cloner.Clone(v)
+
+		if this.cacheEnabled() {
+			//Place the value in the cache
+			this.cache[k] = v
+		}
+
+		if this.store != nil {
+			e = this.store.Put(k, v)
+		}
+
 		//Send the notification using the clone outside the current go routine
 		if this.listener != nil {
 			n, e = this.createAddNotification(itemClone, k)
@@ -48,6 +66,10 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 	//Apply the changes to the existing item
 	for _, change := range changes {
 		change.Apply(item)
+	}
+
+	if this.store != nil {
+		e = this.store.Put(k, item)
 	}
 
 	//if the source is notification, don't send notification

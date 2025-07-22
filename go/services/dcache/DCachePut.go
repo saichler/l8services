@@ -8,17 +8,37 @@ import (
 func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
+	//Make sure we clone the input value, so the caller don't have a reference to the cache element
+	v = this.cloner.Clone(v)
+
 	var n *types.NotificationSet
 	var e error
+	var item interface{}
+	var ok bool
+
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
-	item, ok := this.cache[k]
+	if this.cacheEnabled() {
+		item, ok = this.cache[k]
+	} else {
+		item, e = this.store.Get(k)
+		ok = e == nil
+	}
+
 	//If the item does not exist in the cache
 	if !ok {
 		//First clone the value so we can use it in the notification.
 		itemClone := this.cloner.Clone(v)
-		//Place the value in the cache
-		this.cache[k] = v
+		if this.cacheEnabled() {
+			//Place the value in the cache
+			this.cache[k] = v
+		}
+		if this.store != nil {
+			e = this.store.Put(k, v)
+			if e != nil {
+				this.resources.Logger().Error(e.Error())
+			}
+		}
 		//Send the notification using the clone outside the current go routine
 		if this.listener != nil && !isNotification {
 			n, e = this.createAddNotification(itemClone, k)
@@ -29,8 +49,17 @@ func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*t
 		}
 		return n, e
 	}
-	//Place the value in the cache
-	this.cache[k] = v
+
+	if this.cacheEnabled() {
+		//Place the value in the cache
+		this.cache[k] = v
+	}
+	if this.store != nil {
+		e = this.store.Put(k, v)
+		if e != nil {
+			this.resources.Logger().Error(e.Error())
+		}
+	}
 
 	//if the source is a notification, don't send notification
 	if isNotification {
