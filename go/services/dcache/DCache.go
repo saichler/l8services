@@ -43,6 +43,12 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, modelT
 	if listener != nil {
 		resources.Services().RegisterDistributedCache(this)
 	}
+	if this.store != nil {
+		items := this.store.Collect(all)
+		for k, v := range items {
+			this.cache[k] = v
+		}
+	}
 	return this
 }
 
