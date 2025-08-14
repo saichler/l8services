@@ -95,6 +95,6 @@ func RequestFromPeers(msg *ifs.Message, vnic ifs.IVNic, targets map[string]bool)
 
 func IsLeader(resourcs ifs.IResources, localUuid, topic string, serviceArea byte) (bool, string) {
 	hc := health.Health(resourcs)
-	leader := hc.Leader(topic, serviceArea)
+	leader := hc.LeaderFor(topic, serviceArea)
 	return leader == localUuid, leader
 }

@@ -55,7 +55,7 @@ func TestTransactionGet(t *testing.T) {
 
 	pb := &testtypes.TestProto{MyString: "test"}
 	eg3_1 := topo.VnicByVnetNum(3, 1)
-	resp := eg3_1.SingleRequest(ServiceName, 1, ifs.GET, pb)
+	resp := eg3_1.ProximityRequest(ServiceName, 1, ifs.GET, pb)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return

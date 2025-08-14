@@ -114,7 +114,7 @@ func (this *ServiceTransactions) run(msg *ifs.Message, vnic ifs.IVNic, cond *syn
 
 func Targets(msg *ifs.Message, vnic ifs.IVNic) (bool, bool, map[string]bool, map[string]bool) {
 	healthCenter := health.Health(vnic.Resources())
-	isLeader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea()) == vnic.Resources().SysConfig().LocalUuid
+	isLeader := healthCenter.LeaderFor(msg.ServiceName(), msg.ServiceArea()) == vnic.Resources().SysConfig().LocalUuid
 	targets := healthCenter.Uuids(msg.ServiceName(), msg.ServiceArea())
 	replicas := make(map[string]bool)
 	for target, _ := range targets {

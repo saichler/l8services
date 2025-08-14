@@ -57,7 +57,7 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 
 	//Move the transaction state to start and find the leader
 	msg.SetTr_State(ifs.Start)
-	leader := healthCenter.Leader(msg.ServiceName(), msg.ServiceArea())
+	leader := healthCenter.LeaderFor(msg.ServiceName(), msg.ServiceArea())
 	isLeader := leader == vnic.Resources().SysConfig().LocalUuid
 
 	//from this point onwards, we are going to use a clone
