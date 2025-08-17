@@ -1,2 +1,172 @@
-# servicepoints
-Service Points implementation for layer8
+# L8Services
+
+A comprehensive Go-based distributed services framework providing distributed caching, transaction management, and service orchestration capabilities.
+
+## Overview
+
+L8Services is a distributed services framework built on the Layer8 platform that provides:
+
+- **Distributed Cache**: Thread-safe, synchronized distributed caching with persistent storage support
+- **Transaction Management**: ACID transaction support across distributed services with 2-phase commit protocol
+- **Service Management**: Registration, activation, and lifecycle management of microservices
+- **Replication Services**: Data replication and synchronization across service instances
+- **Notification System**: Event-driven notifications for cache updates and service state changes
+
+## Architecture
+
+The framework is organized into several core components:
+
+### Core Services
+
+- **DCache** (`services/dcache/`): Distributed caching with thread-safe operations, persistence, and notifications
+- **Transaction Manager** (`services/transaction/`): Distributed transaction coordination with full ACID properties
+- **Service Manager** (`services/manager/`): Service lifecycle management and request routing
+- **Replication Service** (`services/replication/`): Data synchronization across distributed nodes
+
+### Key Features
+
+- **Thread-Safe Operations**: All cache and service operations are protected with appropriate locking mechanisms
+- **Persistence Layer**: Optional storage backend for cache durability
+- **Event Notifications**: Real-time notifications for data changes and service events
+- **Security Integration**: Built-in security checks for all service operations
+- **Health Monitoring**: Service health tracking and reporting
+- **Web Service Integration**: RESTful API endpoints for external service interaction
+
+## Installation
+
+```bash
+go mod download
+```
+
+## Dependencies
+
+- **Layer8**: Core networking and overlay infrastructure
+- **L8Types**: Type definitions and interfaces
+- **L8Utils**: Utility functions and data structures
+- **L8Srlz**: Serialization framework
+- **L8Test**: Testing infrastructure
+- **Reflect**: Advanced reflection utilities
+
+## Usage
+
+### Creating a Distributed Cache
+
+```go
+import "github.com/saichler/l8services/go/services/dcache"
+
+// Create a new distributed cache
+cache := dcache.NewDistributedCache(
+    "myService",           // service name
+    1,                     // service area
+    "MyModel",            // model type
+    "source1",            // source identifier
+    listener,             // cache listener
+    resources,            // system resources
+)
+
+// With persistent storage
+cache := dcache.NewDistributedCacheWithStorage(
+    "myService", 1, "MyModel", "source1",
+    listener, resources, storage,
+)
+```
+
+### Service Management
+
+```go
+import "github.com/saichler/l8services/go/services/manager"
+
+// Create service manager
+services := manager.NewServices(resources)
+
+// Register a service handler
+services.RegisterServiceHandlerType(myHandler)
+
+// Handle service requests
+result := services.Handle(payload, action, vnic, message)
+```
+
+### Transaction Management
+
+```go
+// Transactions are automatically managed by the framework
+// when service handlers implement transaction methods
+// The system supports:
+// - Create: Initialize new transaction
+// - Start: Begin transaction execution
+// - Lock: Acquire distributed locks
+// - Commit: Commit changes across all participants
+// - Rollback: Rollback changes on failure
+// - Finish: Clean up transaction resources
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+cd go
+go test ./tests/...
+```
+
+Generate test coverage:
+
+```bash
+./test.sh
+```
+
+View coverage report:
+- Open `go/cover.html` in your browser
+
+## Project Structure
+
+```
+go/
+├── services/
+│   ├── dcache/          # Distributed caching implementation
+│   ├── manager/         # Service lifecycle management
+│   ├── replication/     # Data replication services
+│   └── transaction/     # Transaction management
+├── tests/               # Comprehensive test suite
+├── vendor/              # Vendored dependencies
+├── go.mod              # Go module definition
+└── test.sh             # Test execution script
+```
+
+## API Reference
+
+### Distributed Cache Operations
+
+- `Put(key, value)`: Store value in cache
+- `Get(key)`: Retrieve value from cache
+- `Delete(key)`: Remove value from cache
+- `Update(key, value)`: Update existing value
+- `Sync()`: Synchronize cache with peers
+- `Collect(filter)`: Bulk retrieve filtered items
+
+### Service Handler Interface
+
+Services must implement the `IServiceHandler` interface:
+
+- `Post(payload, vnic)`: Create new resources
+- `Put(payload, vnic)`: Replace existing resources
+- `Patch(payload, vnic)`: Update existing resources
+- `Delete(payload, vnic)`: Remove resources
+- `Get(payload, vnic)`: Retrieve resources
+- `Failed(payload, vnic, message)`: Handle failure scenarios
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Implement your changes with tests
+4. Ensure all tests pass
+5. Submit a pull request
+
+## License
+
+This project is part of the Layer8 ecosystem. Please refer to the main Layer8 project for licensing information.
+
+## Support
+
+For questions and support, please refer to the Layer8 community resources or create an issue in the repository.

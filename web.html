@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L8Services - Distributed Services Framework</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .cta-button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        nav li {
+            margin: 0 1rem;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Main Content */
+        main {
+            padding: 3rem 0;
+        }
+
+        section {
+            margin-bottom: 4rem;
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        section:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        h3 {
+            color: #555;
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%);
+            padding: 2rem;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Code Blocks */
+        .code-container {
+            background: #2d3748;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-container::before {
+            content: 'Go';
+            position: absolute;
+            top: 0.5rem;
+            right: 1rem;
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        pre {
+            color: #e2e8f0;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .keyword { color: #f7fafc; font-weight: bold; }
+        .string { color: #68d391; }
+        .comment { color: #a0aec0; font-style: italic; }
+        .function { color: #63b3ed; }
+        .type { color: #f6ad55; }
+
+        /* Installation Section */
+        .install-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .install-section h2 {
+            color: white;
+        }
+
+        .install-section h2::after {
+            background: white;
+        }
+
+        .install-command {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            margin: 1rem 0;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* Project Structure */
+        .structure-tree {
+            background: #f7fafc;
+            padding: 1.5rem;
+            border-radius: 10px;
+            font-family: monospace;
+            line-height: 1.8;
+            border-left: 4px solid #667eea;
+        }
+
+        /* API Reference */
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .api-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 10px;
+            border-top: 4px solid #667eea;
+        }
+
+        .api-section h4 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .api-list {
+            list-style: none;
+        }
+
+        .api-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .api-list li:last-child {
+            border-bottom: none;
+        }
+
+        .api-method {
+            font-family: monospace;
+            background: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 3rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h4 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #667eea;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            nav li {
+                margin: 0.25rem 0;
+            }
+
+            section {
+                padding: 2rem 1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .api-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        section {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="hero">
+                <h1>L8Services</h1>
+                <p>A comprehensive Go-based distributed services framework providing distributed caching, transaction management, and service orchestration capabilities.</p>
+                <a href="#installation" class="cta-button">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#api">API Reference</a></li>
+                <li><a href="#testing">Testing</a></li>
+                <li><a href="#contributing">Contributing</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>L8Services is a distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications.</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>🗄️ Distributed Cache</h4>
+                    <p>Thread-safe, synchronized distributed caching with persistent storage support and automatic synchronization across nodes.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚡ Transaction Management</h4>
+                    <p>ACID transaction support across distributed services with 2-phase commit protocol ensuring data consistency.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚀 Service Management</h4>
+                    <p>Registration, activation, and lifecycle management of microservices with health monitoring and discovery.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔄 Replication Services</h4>
+                    <p>Data replication and synchronization across service instances with conflict resolution and eventual consistency.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📡 Notification System</h4>
+                    <p>Event-driven notifications for cache updates and service state changes with real-time propagation.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔒 Security Integration</h4>
+                    <p>Built-in security checks for all service operations with authentication and authorization support.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture">
+            <h2>Architecture</h2>
+            <p>The framework is organized into several core components that work together to provide a robust distributed services platform:</p>
+            
+            <h3>Core Services</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>DCache (services/dcache/)</h4>
+                    <p>Distributed caching with thread-safe operations, persistence, and notifications. Supports automatic synchronization and conflict resolution.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Transaction Manager (services/transaction/)</h4>
+                    <p>Distributed transaction coordination with full ACID properties. Implements 2-phase commit protocol for consistency.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Service Manager (services/manager/)</h4>
+                    <p>Service lifecycle management and request routing. Handles service registration, discovery, and load balancing.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Replication Service (services/replication/)</h4>
+                    <p>Data synchronization across distributed nodes with configurable replication strategies and conflict resolution.</p>
+                </div>
+            </div>
+
+            <h3>Key Features</h3>
+            <ul>
+                <li><strong>Thread-Safe Operations:</strong> All cache and service operations are protected with appropriate locking mechanisms</li>
+                <li><strong>Persistence Layer:</strong> Optional storage backend for cache durability</li>
+                <li><strong>Event Notifications:</strong> Real-time notifications for data changes and service events</li>
+                <li><strong>Security Integration:</strong> Built-in security checks for all service operations</li>
+                <li><strong>Health Monitoring:</strong> Service health tracking and reporting</li>
+                <li><strong>Web Service Integration:</strong> RESTful API endpoints for external service interaction</li>
+            </ul>
+        </section>
+
+        <section id="installation" class="install-section">
+            <h2>Installation</h2>
+            <p>Get started with L8Services in your Go project:</p>
+            <div class="install-command">go mod download</div>
+            
+            <h3>Dependencies</h3>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li><strong>Layer8:</strong> Core networking and overlay infrastructure</li>
+                <li><strong>L8Types:</strong> Type definitions and interfaces</li>
+                <li><strong>L8Utils:</strong> Utility functions and data structures</li>
+                <li><strong>L8Srlz:</strong> Serialization framework</li>
+                <li><strong>L8Test:</strong> Testing infrastructure</li>
+                <li><strong>Reflect:</strong> Advanced reflection utilities</li>
+            </ul>
+        </section>
+
+        <section id="usage">
+            <h2>Usage</h2>
+            
+            <h3>Creating a Distributed Cache</h3>
+            <div class="code-container">
+                <pre><code><span class="keyword">import</span> <span class="string">"github.com/saichler/l8services/go/services/dcache"</span>
+
+<span class="comment">// Create a new distributed cache</span>
+<span class="function">cache</span> := dcache.<span class="function">NewDistributedCache</span>(
+    <span class="string">"myService"</span>,           <span class="comment">// service name</span>
+    <span class="type">1</span>,                     <span class="comment">// service area</span>
+    <span class="string">"MyModel"</span>,            <span class="comment">// model type</span>
+    <span class="string">"source1"</span>,            <span class="comment">// source identifier</span>
+    listener,             <span class="comment">// cache listener</span>
+    resources,            <span class="comment">// system resources</span>
+)
+
+<span class="comment">// With persistent storage</span>
+<span class="function">cache</span> := dcache.<span class="function">NewDistributedCacheWithStorage</span>(
+    <span class="string">"myService"</span>, <span class="type">1</span>, <span class="string">"MyModel"</span>, <span class="string">"source1"</span>,
+    listener, resources, storage,
+)</code></pre>
+            </div>
+
+            <h3>Service Management</h3>
+            <div class="code-container">
+                <pre><code><span class="keyword">import</span> <span class="string">"github.com/saichler/l8services/go/services/manager"</span>
+
+<span class="comment">// Create service manager</span>
+<span class="function">services</span> := manager.<span class="function">NewServices</span>(resources)
+
+<span class="comment">// Register a service handler</span>
+services.<span class="function">RegisterServiceHandlerType</span>(myHandler)
+
+<span class="comment">// Handle service requests</span>
+<span class="function">result</span> := services.<span class="function">Handle</span>(payload, action, vnic, message)</code></pre>
+            </div>
+
+            <h3>Transaction Management</h3>
+            <div class="code-container">
+                <pre><code><span class="comment">// Transactions are automatically managed by the framework</span>
+<span class="comment">// when service handlers implement transaction methods</span>
+<span class="comment">// The system supports:</span>
+<span class="comment">// - Create: Initialize new transaction</span>
+<span class="comment">// - Start: Begin transaction execution</span>
+<span class="comment">// - Lock: Acquire distributed locks</span>
+<span class="comment">// - Commit: Commit changes across all participants</span>
+<span class="comment">// - Rollback: Rollback changes on failure</span>
+<span class="comment">// - Finish: Clean up transaction resources</span></code></pre>
+            </div>
+        </section>
+
+        <section id="testing">
+            <h2>Testing</h2>
+            
+            <h3>Run the test suite:</h3>
+            <div class="code-container">
+                <pre><code><span class="function">cd</span> go
+<span class="function">go test</span> ./tests/...</code></pre>
+            </div>
+
+            <h3>Generate test coverage:</h3>
+            <div class="code-container">
+                <pre><code>./test.sh</code></pre>
+            </div>
+
+            <p><strong>View coverage report:</strong> Open <code>go/cover.html</code> in your browser</p>
+
+            <h3>Project Structure</h3>
+            <div class="structure-tree">
+go/<br>
+├── services/<br>
+│   ├── dcache/          # Distributed caching implementation<br>
+│   ├── manager/         # Service lifecycle management<br>
+│   ├── replication/     # Data replication services<br>
+│   └── transaction/     # Transaction management<br>
+├── tests/               # Comprehensive test suite<br>
+├── vendor/              # Vendored dependencies<br>
+├── go.mod              # Go module definition<br>
+└── test.sh             # Test execution script
+            </div>
+        </section>
+
+        <section id="api">
+            <h2>API Reference</h2>
+            
+            <div class="api-grid">
+                <div class="api-section">
+                    <h4>Distributed Cache Operations</h4>
+                    <ul class="api-list">
+                        <li><span class="api-method">Put(key, value)</span> - Store value in cache</li>
+                        <li><span class="api-method">Get(key)</span> - Retrieve value from cache</li>
+                        <li><span class="api-method">Delete(key)</span> - Remove value from cache</li>
+                        <li><span class="api-method">Update(key, value)</span> - Update existing value</li>
+                        <li><span class="api-method">Sync()</span> - Synchronize cache with peers</li>
+                        <li><span class="api-method">Collect(filter)</span> - Bulk retrieve filtered items</li>
+                    </ul>
+                </div>
+
+                <div class="api-section">
+                    <h4>Service Handler Interface</h4>
+                    <p>Services must implement the <code>IServiceHandler</code> interface:</p>
+                    <ul class="api-list">
+                        <li><span class="api-method">Post(payload, vnic)</span> - Create new resources</li>
+                        <li><span class="api-method">Put(payload, vnic)</span> - Replace existing resources</li>
+                        <li><span class="api-method">Patch(payload, vnic)</span> - Update existing resources</li>
+                        <li><span class="api-method">Delete(payload, vnic)</span> - Remove resources</li>
+                        <li><span class="api-method">Get(payload, vnic)</span> - Retrieve resources</li>
+                        <li><span class="api-method">Failed(payload, vnic, message)</span> - Handle failure scenarios</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="contributing">
+            <h2>Contributing</h2>
+            <p>We welcome contributions to L8Services! Here's how you can help:</p>
+            
+            <ol>
+                <li><strong>Fork the repository</strong> - Create your own copy of the project</li>
+                <li><strong>Create a feature branch</strong> - Work on your changes in a separate branch</li>
+                <li><strong>Implement your changes with tests</strong> - Make sure your code is well-tested</li>
+                <li><strong>Ensure all tests pass</strong> - Run the full test suite before submitting</li>
+                <li><strong>Submit a pull request</strong> - Describe your changes and their benefits</li>
+            </ol>
+
+            <p>Please make sure to follow the existing code style and include appropriate tests for any new functionality.</p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>L8Services</h4>
+                    <p>A distributed services framework built on the Layer8 platform for modern applications.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <p><a href="#api">API Documentation</a></p>
+                    <p><a href="#testing">Testing Guide</a></p>
+                    <p><a href="#usage">Usage Examples</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <p><a href="#contributing">Contributing</a></p>
+                    <p>GitHub Issues</p>
+                    <p>Layer8 Community</p>
+                </div>
+            </div>
+            <p>&copy; 2025 L8Services. Part of the Layer8 ecosystem.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll-based animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections for animation
+        document.querySelectorAll('section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>
