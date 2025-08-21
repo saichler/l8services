@@ -1,10 +1,10 @@
 package requests
 
 import (
+	"sync"
+
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
-	"github.com/saichler/layer8/go/overlay/health"
-	"sync"
 )
 
 type Requests struct {
@@ -93,8 +93,9 @@ func RequestFromPeers(msg *ifs.Message, vnic ifs.IVNic, targets map[string]bool)
 	return true, this.pending
 }
 
+/*
 func IsLeader(resourcs ifs.IResources, localUuid, topic string, serviceArea byte) (bool, string) {
 	hc := health.Health(resourcs)
 	leader := hc.LeaderFor(topic, serviceArea)
 	return leader == localUuid, leader
-}
+}*/

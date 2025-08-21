@@ -2,8 +2,10 @@ package manager
 
 import (
 	"errors"
+
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 )
 
 func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea byte,
@@ -43,6 +45,16 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	this.services.put(serviceName, serviceArea, handler)
 	ifs.AddService(this.resources.SysConfig(), serviceName, int32(serviceArea))
 	vnic, ok := l.(ifs.IVNic)
+
+	if ok {
+		serviceData := &types.ServiceData{}
+		serviceData.ServiceName = serviceName
+		serviceData.ServiceArea = int32(serviceArea)
+		serviceData.ServiceUuid = this.resources.SysConfig().LocalUuid
+		data := &types.SystemMessage_ServiceData{ServiceData: serviceData}
+		sysmsg := &types.SystemMessage{Action: types.SystemAction_Service_Add, Data: data}
+		vnic.Multicast(ifs.SysMsg, ifs.SysArea, ifs.POST, sysmsg)
+	}
 
 	serviceNames := []string{serviceName}
 
