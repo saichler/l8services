@@ -2,6 +2,8 @@ package manager
 
 import (
 	"bytes"
+	"strconv"
+
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8srlz/go/serialize/object"
@@ -9,7 +11,6 @@ import (
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/maps"
 	"github.com/saichler/layer8/go/overlay/health"
-	"strconv"
 )
 
 type ServiceManager struct {
@@ -178,4 +179,8 @@ func cacheKey(serviceName string, serviceArea byte) string {
 	buff.WriteString(serviceName)
 	buff.WriteString(strconv.Itoa(int(serviceArea)))
 	return buff.String()
+}
+
+func (this *ServiceManager) Services() *types.Services {
+	return this.services.serviceList()
 }
