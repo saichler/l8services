@@ -12,14 +12,13 @@ func (this *DCache) Sync() {
 }
 
 func (this *DCache) GetAll() map[string]interface{} {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
 	if this.cacheEnabled() {
 		result := make(map[string]interface{})
-		for key, item := range this.cache {
-			itemClone := this.cloner.Clone(item)
-			result[key] = itemClone
-		}
+		this.cache.Range(func(k, v interface{}) bool {
+			itemClone := this.cloner.Clone(v)
+			result[k.(string)] = itemClone
+			return true
+		})
 		return result
 	}
 	return this.store.Collect(all)

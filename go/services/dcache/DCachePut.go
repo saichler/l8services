@@ -6,8 +6,6 @@ import (
 )
 
 func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
 	//Make sure we clone the input value, so the caller don't have a reference to the cache element
 	v = this.cloner.Clone(v)
 
@@ -19,7 +17,7 @@ func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*t
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache[k]
+		item, ok = this.cache.Load(k)
 	} else {
 		item, e = this.store.Get(k)
 		ok = e == nil
@@ -31,7 +29,7 @@ func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*t
 		itemClone := this.cloner.Clone(v)
 		if this.cacheEnabled() {
 			//Place the value in the cache
-			this.cache[k] = v
+			this.cache.Store(k, v)
 		}
 		if this.store != nil {
 			e = this.store.Put(k, v)
@@ -52,7 +50,7 @@ func (this *DCache) Put(k string, v interface{}, sourceNotification ...bool) (*t
 
 	if this.cacheEnabled() {
 		//Place the value in the cache
-		this.cache[k] = v
+		this.cache.Store(k, v)
 	}
 	if this.store != nil {
 		e = this.store.Put(k, v)
