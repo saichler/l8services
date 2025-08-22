@@ -1,20 +1,23 @@
 package tests
 
 import (
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/saichler/l8services/go/services/replication"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func TestTransactionReplication(t *testing.T) {
 	topo.SetLogLevel(ifs.Info_Level)
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
+
+	time.Sleep(time.Second * 5)
 
 	index, _ := replication.ReplicationIndex(ServiceName, 2, nic.Resources())
 	if len(index.EndPoints) != 9 {

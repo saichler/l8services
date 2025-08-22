@@ -53,6 +53,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		serviceData.ServiceUuid = this.resources.SysConfig().LocalUuid
 		data := &types.SystemMessage_ServiceData{ServiceData: serviceData}
 		sysmsg := &types.SystemMessage{Action: types.SystemAction_Service_Add, Data: data}
+		sysmsg.Publish = true
 		vnic.Multicast(ifs.SysMsg, ifs.SysArea, ifs.POST, sysmsg)
 	}
 
