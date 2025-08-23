@@ -21,7 +21,7 @@ go mod vendor
 # Run unit tests with coverage
 go test -tags=unit -v -coverpkg=./services/... -coverprofile=cover.html ./... --failfast
 
-rm -rf ./tests/loader.so
+#rm -rf ./tests/loader.so
 
 # Open the coverage report in a browser
 go tool cover -html=cover.html

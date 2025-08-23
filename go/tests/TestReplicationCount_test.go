@@ -17,7 +17,7 @@ func TestTransactionReplication(t *testing.T) {
 	defer reset("TestTransactionReplication")
 	nic := topo.VnicByVnetNum(1, 1)
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 2)
 
 	index, _ := replication.ReplicationIndex(ServiceName, 2, nic.Resources())
 	if len(index.EndPoints) != 9 {

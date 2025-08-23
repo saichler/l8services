@@ -1,9 +1,10 @@
 package transaction
 
 import (
+	"time"
+
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"time"
 )
 
 func (this *ServiceTransactions) commit(msg *ifs.Message, vnic ifs.IVNic) bool {
@@ -53,6 +54,7 @@ func (this *ServiceTransactions) commit(msg *ifs.Message, vnic ifs.IVNic) bool {
 		if !ok {
 			msg.SetTr_State(ifs.Errored)
 			msg.SetTr_ErrMsg("Commit: Could not set pre-commit object")
+			vnic.Resources().Logger().Error("Commit: Could not set pre-commit object")
 			return false
 		}
 
@@ -60,6 +62,7 @@ func (this *ServiceTransactions) commit(msg *ifs.Message, vnic ifs.IVNic) bool {
 		if resp != nil && resp.Error() != nil {
 			msg.SetTr_State(ifs.Errored)
 			msg.SetTr_ErrMsg("Commit: Handle Error: " + resp.Error().Error())
+			vnic.Resources().Logger().Error("Commit: Handle Error: " + resp.Error().Error())
 			return false
 		}
 		this.locked.SetTr_State(ifs.Commited)
