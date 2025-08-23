@@ -94,7 +94,11 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 }
 
 func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+	this.resources.Logger().Info("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
+	if h == nil {
+		this.resources.Logger().Info("Transaction Handle: No handler for service "+msg.ServiceName(), "-", msg.ServiceArea())
+	}
 	return this.handle(h, pb, action, vnic)
 }
 

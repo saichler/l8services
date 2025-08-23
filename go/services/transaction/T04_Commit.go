@@ -57,7 +57,7 @@ func (this *ServiceTransactions) commit(msg *ifs.Message, vnic ifs.IVNic) bool {
 			vnic.Resources().Logger().Error("Commit: Could not set pre-commit object")
 			return false
 		}
-
+		vnic.Resources().Logger().Info("Commit: Before TransactionHandle")
 		resp := services.TransactionHandle(pb, this.locked.Action(), vnic, this.locked)
 		if resp != nil && resp.Error() != nil {
 			msg.SetTr_State(ifs.Errored)
@@ -65,6 +65,7 @@ func (this *ServiceTransactions) commit(msg *ifs.Message, vnic ifs.IVNic) bool {
 			vnic.Resources().Logger().Error("Commit: Handle Error: " + resp.Error().Error())
 			return false
 		}
+		vnic.Resources().Logger().Info("Commit: Before Setting Transaction as commited")
 		this.locked.SetTr_State(ifs.Commited)
 	}
 
