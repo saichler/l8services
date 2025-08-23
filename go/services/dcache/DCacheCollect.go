@@ -2,15 +2,16 @@ package dcache
 
 func (this *DCache) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
 	result := map[string]interface{}{}
+	this.mtx.RLock()
+	defer this.mtx.RUnlock()
 	if this.cacheEnabled() {
-		this.cache.Range(func(k, v interface{}) bool {
+		for k, v := range this.cache {
 			vClone := this.cloner.Clone(v)
 			ok, elem := f(vClone)
 			if ok {
-				result[k.(string)] = elem
+				result[k] = elem
 			}
-			return true
-		})
+		}
 		return result
 	}
 

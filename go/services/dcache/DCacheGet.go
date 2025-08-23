@@ -1,8 +1,11 @@
 package dcache
 
 func (this *DCache) Get(k string) interface{} {
+	this.mtx.RLock()
+	defer this.mtx.RUnlock()
+
 	if this.cacheEnabled() {
-		item, ok := this.cache.Load(k)
+		item, ok := this.cache[k]
 		if ok {
 			itemClone := this.cloner.Clone(item)
 			return itemClone

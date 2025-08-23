@@ -6,6 +6,8 @@ import (
 )
 
 func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
+	this.mtx.Lock()
+	defer this.mtx.Unlock()
 	var n *types.NotificationSet
 	var e error
 	var item interface{}
@@ -14,7 +16,7 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache.Load(k)
+		item, ok = this.cache[k]
 	} else {
 		item, e = this.store.Get(k)
 		ok = e == nil
@@ -28,7 +30,7 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 
 		if this.cacheEnabled() {
 			//Place the value in the cache
-			this.cache.Store(k, v)
+			this.cache[k] = v
 		}
 
 		if this.store != nil {

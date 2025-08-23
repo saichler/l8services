@@ -8,7 +8,9 @@ import (
 )
 
 type DCache struct {
-	cache       *sync.Map
+	cache       map[string]interface{}
+	mtx         *sync.RWMutex
+	cond        *sync.Cond
 	listener    ifs.IServiceCacheListener
 	cloner      *cloning.Cloner
 	resources   ifs.IResources
@@ -28,7 +30,9 @@ func NewDistributedCache(serviceName string, serviceArea byte, modelType, source
 func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, modelType, source string,
 	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage) ifs.IDistributedCache {
 	this := &DCache{}
-	this.cache = &sync.Map{}
+	this.cache = make(map[string]interface{})
+	this.mtx = &sync.RWMutex{}
+	this.cond = sync.NewCond(this.mtx)
 	this.listener = listener
 	this.cloner = cloning.NewCloner()
 	this.resources = resources
@@ -43,7 +47,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, modelT
 	if this.store != nil {
 		items := this.store.Collect(all)
 		for k, v := range items {
-			this.cache.Store(k, v)
+			this.cache[k] = v
 		}
 	}
 	return this
