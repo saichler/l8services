@@ -1,4 +1,4 @@
-package transaction
+package states
 
 import (
 	"github.com/saichler/l8services/go/services/replication"

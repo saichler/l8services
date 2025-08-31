@@ -1,13 +1,14 @@
 package tests
 
 import (
+	"testing"
+
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/workers"
-	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -17,6 +18,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestTransaction(t *testing.T) {
+	topo.SetLogLevel(ifs.Debug_Level)
 	defer reset("TestTransaction")
 
 	eg2_2 := topo.VnicByVnetNum(2, 2)

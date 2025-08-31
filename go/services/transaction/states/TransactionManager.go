@@ -1,9 +1,11 @@
-package transaction
+package states
 
 import (
+	"sync"
+
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
-	"sync"
+	"github.com/saichler/l8types/go/types"
 )
 
 type TransactionManager struct {
@@ -33,11 +35,11 @@ func (this *TransactionManager) transactionsOf(msg *ifs.Message) *ServiceTransac
 func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	switch msg.Tr_State() {
 	case ifs.Create:
-		this.create(msg, vnic.Resources().Logger())
+		this.create(msg, vnic)
 	case ifs.Start:
 		this.start(msg, vnic)
-	case ifs.Lock:
-		this.lock(msg, vnic.Resources().Logger())
+	case ifs.Created:
+		this.lock(msg, vnic)
 	case ifs.Commit:
 		this.commit(msg, vnic)
 	case ifs.Finish:
@@ -48,46 +50,56 @@ func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IEleme
 	default:
 		panic("Unexpected transaction state " + msg.Tr_State().String() + ":" + msg.Tr_ErrMsg())
 	}
-	return object.New(nil, TransactionOf(msg))
+	return object.New(nil, &types.Transaction{State: int32(msg.Tr_State()),
+		Id:        msg.Tr_Id(),
+		ErrMsg:    msg.Tr_ErrMsg(),
+		StartTime: msg.Tr_StartTime()})
 }
 
-func (this *TransactionManager) create(msg *ifs.Message, log ifs.ILogger) {
+func (this *TransactionManager) create(msg *ifs.Message, vnic ifs.IVNic) {
 	if msg.Tr_State() != ifs.Create {
 		panic("create: Unexpected transaction state " + msg.Tr_State().String())
 	}
 	createTransaction(msg)
-	log.Info("Tr ", msg.Tr_Id(), " created!")
 	st := this.transactionsOf(msg)
-	st.addTransaction(msg)
+	tr := st.addTransaction(msg, vnic)
+	tr.Debug("TransactionManager.create: Created Transaction ", tr.Msg().Tr_Id())
 	msg.SetTr_State(ifs.Created)
 }
 
-func (this *TransactionManager) lock(msg *ifs.Message, log ifs.ILogger) {
-	log.Debug("Tr Lock...")
+func (this *TransactionManager) lock(msg *ifs.Message, vnic ifs.IVNic) {
+	vnic.Resources().Logger().Debug("Tr Lock...")
 	st := this.transactionsOf(msg)
-	st.lock(msg)
+	state, err := st.lockFollower(msg, vnic)
+	msg.SetTr_State(state)
+	msg.SetTr_ErrMsg(err)
 }
 
 func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Commit...")
 	st := this.transactionsOf(msg)
-	st.commit(msg, vnic)
+	state, err := st.commitFollower(msg, vnic)
+	msg.SetTr_State(state)
+	msg.SetTr_ErrMsg(err)
 }
 
 func (this *TransactionManager) rollback(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Create...")
 	st := this.transactionsOf(msg)
-	st.rollback(msg, vnic)
+	state, err := st.rollbackFollower(msg, vnic)
+	msg.SetTr_State(state)
+	msg.SetTr_ErrMsg(err)
 }
 
 func (this *TransactionManager) finish(msg *ifs.Message, log ifs.ILogger) {
-	log.Debug("Tr Finish...")
+	log.Debug("TransactionManager.finish: ", msg.Tr_Id())
 	st := this.transactionsOf(msg)
-	st.finish(msg)
+	st.finishFollower(msg)
 }
 
 func (this *TransactionManager) start(msg *ifs.Message, vnic ifs.IVNic) {
-	vnic.Resources().Logger().Debug("Tr Start...")
+	vnic.Resources().Logger().Debug("TransactionManager.start: ", msg.Tr_Id())
 	st := this.transactionsOf(msg)
 	st.start(msg, vnic)
+
 }

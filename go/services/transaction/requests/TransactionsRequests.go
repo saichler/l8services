@@ -3,6 +3,7 @@ package requests
 import (
 	"sync"
 
+	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 )
@@ -49,10 +50,10 @@ func (this *Requests) reportResult(target string, tr *types.Transaction) {
 	}
 }
 
-func (this *Requests) requestFromPeer(vnic ifs.IVNic, msg *ifs.Message, target string) {
+func (this *Requests) requestFromPeer(localTr *transaction.Transaction, target string) {
 	this.addOne(target)
 
-	resp := vnic.Forward(msg, target)
+	resp := localTr.VNic().Forward(localTr.Msg(), target)
 	if resp != nil && resp.Error() != nil {
 		this.reportError(target, resp.Error())
 		return
@@ -62,7 +63,7 @@ func (this *Requests) requestFromPeer(vnic ifs.IVNic, msg *ifs.Message, target s
 	this.reportResult(target, tr)
 }
 
-func RequestFromPeers(msg *ifs.Message, vnic ifs.IVNic, targets map[string]bool) (bool, map[string]string) {
+func RequestFromPeers(tr *transaction.Transaction, targets map[string]bool) (bool, map[string]string) {
 
 	this := NewRequest()
 
@@ -70,7 +71,7 @@ func RequestFromPeers(msg *ifs.Message, vnic ifs.IVNic, targets map[string]bool)
 	defer this.cond.L.Unlock()
 
 	for target, _ := range targets {
-		go this.requestFromPeer(vnic, msg, target)
+		go this.requestFromPeer(tr, target)
 	}
 
 	if len(targets) > 0 {
@@ -86,7 +87,7 @@ func RequestFromPeers(msg *ifs.Message, vnic ifs.IVNic, targets map[string]bool)
 	}
 
 	if !ok {
-		msg.SetTr_State(ifs.Errored)
+		tr.Msg().SetTr_State(ifs.Errored)
 		return false, this.pending
 	}
 

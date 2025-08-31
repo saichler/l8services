@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/saichler/l8services/go/services/dcache"
-	"github.com/saichler/l8services/go/services/transaction"
+	"github.com/saichler/l8services/go/services/transaction/states"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
@@ -15,7 +15,7 @@ import (
 
 type ServiceManager struct {
 	services          *ServicesMap
-	trManager         *transaction.TransactionManager
+	trManager         *states.TransactionManager
 	distributedCaches *maps.SyncMap
 	resources         ifs.IResources
 }
@@ -24,7 +24,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp := &ServiceManager{}
 	sp.services = NewServicesMap()
 	sp.resources = resources
-	sp.trManager = transaction.NewTransactionManager()
+	sp.trManager = states.NewTransactionManager()
 	sp.distributedCaches = maps.NewSyncMap()
 	_, err := sp.resources.Registry().Register(&types.NotificationSet{})
 	if err != nil {
