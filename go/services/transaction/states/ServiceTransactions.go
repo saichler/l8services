@@ -42,7 +42,8 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *ifs.Message, vni
 		defer this.mtx.Unlock()
 
 		for this.running && this.lockedTrId != "" {
-			time.Sleep(time.Millisecond * 100)
+			this.cond.Wait()
+			this.cond.Broadcast()
 		}
 
 		if !this.running {
@@ -111,6 +112,13 @@ func (this *ServiceTransactions) getTransaction(msg *ifs.Message, vnic ifs.IVNic
 	return tr, nil
 }
 
+func (this *ServiceTransactions) addToQueue(trId string) {
+	this.mtx.Lock()
+	defer this.mtx.Unlock()
+	this.transactionQueue = append(this.transactionQueue, trId)
+	this.cond.Broadcast()
+}
+
 func (this *ServiceTransactions) start(msg *ifs.Message, vnic ifs.IVNic) (ifs.TransactionState, string) {
 	vnic.Resources().Logger().Debug("ServiceTransactions.start: ", msg.Tr_Id())
 	tr, err := this.getTransaction(msg, vnic)
@@ -124,12 +132,7 @@ func (this *ServiceTransactions) start(msg *ifs.Message, vnic ifs.IVNic) (ifs.Tr
 	tr.Cond().L.Lock()
 	defer tr.Cond().L.Unlock()
 
-	go func() {
-		this.mtx.Lock()
-		defer this.mtx.Unlock()
-		this.transactionQueue = append(this.transactionQueue, tr.Msg().Tr_Id())
-		this.cond.Broadcast()
-	}()
+	go this.addToQueue(tr.Msg().Tr_Id())
 
 	vnic.Resources().Logger().Debug("ServiceTransactions.start: Before waiting for transaction to finish ", tr.Msg().Tr_Id())
 
