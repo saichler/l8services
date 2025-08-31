@@ -422,7 +422,7 @@
                 </div>
                 <div class="feature-card">
                     <h4>⚡ Transaction Management</h4>
-                    <p>ACID transaction support across distributed services with 2-phase commit protocol ensuring data consistency.</p>
+                    <p>ACID transaction support across distributed services with optimized 2-phase commit protocol and enhanced state management ensuring data consistency.</p>
                 </div>
                 <div class="feature-card">
                     <h4>🚀 Service Management</h4>
@@ -441,6 +441,22 @@
                     <p>Built-in security checks for all service operations with authentication and authorization support.</p>
                 </div>
             </div>
+
+            <h3>🚀 Recent Improvements</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>⚡ Transaction System Refactoring</h4>
+                    <p>Major architectural improvements with transaction logic reorganized into dedicated states management for better performance and maintainability.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎯 Performance Optimizations</h4>
+                    <p>Enhanced transaction coordination with improved state tracking, resource cleanup, and lifecycle management for better scalability.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🏗️ Code Architecture</h4>
+                    <p>Cleaner separation of concerns with dedicated directories for transaction states and request handling, improving code organization.</p>
+                </div>
+            </div>
         </section>
 
         <section id="architecture">
@@ -455,7 +471,7 @@
                 </div>
                 <div class="feature-card">
                     <h4>Transaction Manager (services/transaction/)</h4>
-                    <p>Distributed transaction coordination with full ACID properties. Implements 2-phase commit protocol for consistency.</p>
+                    <p>Distributed transaction coordination with full ACID properties and optimized state management. Implements enhanced 2-phase commit protocol with improved performance and resource cleanup.</p>
                 </div>
                 <div class="feature-card">
                     <h4>Service Manager (services/manager/)</h4>
@@ -470,6 +486,7 @@
             <h3>Key Features</h3>
             <ul>
                 <li><strong>Thread-Safe Operations:</strong> All cache and service operations are protected with appropriate locking mechanisms</li>
+                <li><strong>Optimized Transaction Processing:</strong> Recently refactored transaction system with improved state management and coordination</li>
                 <li><strong>Persistence Layer:</strong> Optional storage backend for cache durability</li>
                 <li><strong>Event Notifications:</strong> Real-time notifications for data changes and service events</li>
                 <li><strong>Security Integration:</strong> Built-in security checks for all service operations</li>
@@ -535,14 +552,18 @@ services.<span class="function">RegisterServiceHandlerType</span>(myHandler)
             <h3>Transaction Management</h3>
             <div class="code-container">
                 <pre><code><span class="comment">// Transactions are automatically managed by the framework</span>
-<span class="comment">// when service handlers implement transaction methods</span>
+<span class="comment">// with optimized state management and coordination</span>
 <span class="comment">// The system supports:</span>
-<span class="comment">// - Create: Initialize new transaction</span>
-<span class="comment">// - Start: Begin transaction execution</span>
-<span class="comment">// - Lock: Acquire distributed locks</span>
+<span class="comment">// - Create: Initialize new transaction with state tracking</span>
+<span class="comment">// - Run: Execute transaction with replication support</span>
+<span class="comment">// - Lock: Acquire distributed locks across services</span>
 <span class="comment">// - Commit: Commit changes across all participants</span>
-<span class="comment">// - Rollback: Rollback changes on failure</span>
-<span class="comment">// - Finish: Clean up transaction resources</span></code></pre>
+<span class="comment">// - Rollback: Rollback changes on failure with state cleanup</span>
+<span class="comment">//</span>
+<span class="comment">// Recent optimizations include:</span>
+<span class="comment">// - Improved state management architecture</span>
+<span class="comment">// - Enhanced transaction coordination</span>
+<span class="comment">// - Better resource cleanup and lifecycle management</span></code></pre>
             </div>
         </section>
 
@@ -570,6 +591,8 @@ go/<br>
 │   ├── manager/         # Service lifecycle management<br>
 │   ├── replication/     # Data replication services<br>
 │   └── transaction/     # Transaction management<br>
+│       ├── states/      # Transaction state management (refactored)<br>
+│       └── requests/    # Transaction request handling<br>
 ├── tests/               # Comprehensive test suite<br>
 ├── vendor/              # Vendored dependencies<br>
 ├── go.mod              # Go module definition<br>

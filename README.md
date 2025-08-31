@@ -19,13 +19,14 @@ The framework is organized into several core components:
 ### Core Services
 
 - **DCache** (`services/dcache/`): Distributed caching with thread-safe operations, persistence, and notifications
-- **Transaction Manager** (`services/transaction/`): Distributed transaction coordination with full ACID properties
+- **Transaction Manager** (`services/transaction/`): Distributed transaction coordination with full ACID properties and optimized state management
 - **Service Manager** (`services/manager/`): Service lifecycle management and request routing
 - **Replication Service** (`services/replication/`): Data synchronization across distributed nodes
 
 ### Key Features
 
 - **Thread-Safe Operations**: All cache and service operations are protected with appropriate locking mechanisms
+- **Optimized Transaction Processing**: Recently refactored transaction system with improved state management and coordination
 - **Persistence Layer**: Optional storage backend for cache durability
 - **Event Notifications**: Real-time notifications for data changes and service events
 - **Security Integration**: Built-in security checks for all service operations
@@ -90,14 +91,18 @@ result := services.Handle(payload, action, vnic, message)
 
 ```go
 // Transactions are automatically managed by the framework
-// when service handlers implement transaction methods
+// with optimized state management and coordination
 // The system supports:
-// - Create: Initialize new transaction
-// - Start: Begin transaction execution
-// - Lock: Acquire distributed locks
+// - Create: Initialize new transaction with state tracking
+// - Run: Execute transaction with replication support
+// - Lock: Acquire distributed locks across services
 // - Commit: Commit changes across all participants
-// - Rollback: Rollback changes on failure
-// - Finish: Clean up transaction resources
+// - Rollback: Rollback changes on failure with state cleanup
+// 
+// Recent optimizations include:
+// - Improved state management architecture
+// - Enhanced transaction coordination
+// - Better resource cleanup and lifecycle management
 ```
 
 ## Testing
@@ -127,6 +132,8 @@ go/
 │   ├── manager/         # Service lifecycle management
 │   ├── replication/     # Data replication services
 │   └── transaction/     # Transaction management
+│       ├── states/      # Transaction state management (refactored)
+│       └── requests/    # Transaction request handling
 ├── tests/               # Comprehensive test suite
 ├── vendor/              # Vendored dependencies
 ├── go.mod              # Go module definition
