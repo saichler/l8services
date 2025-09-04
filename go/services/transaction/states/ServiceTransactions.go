@@ -38,10 +38,19 @@ func newServiceTransactions(serviceName string) *ServiceTransactions {
 
 func (this *ServiceTransactions) shouldHandleAsTransaction(msg *ifs.Message, vnic ifs.IVNic) (ifs.IElements, bool) {
 	if msg.Action() == ifs.GET {
+		now := time.Now().UnixMilli()
 		this.mtx.Lock()
 		defer this.mtx.Unlock()
 
 		for this.running && this.lockedTrId != "" {
+			t, ok := this.transactionsMap.Load(this.lockedTrId)
+			if !ok {
+				break
+			}
+			tr := t.(*transaction.Transaction)
+			if tr.Msg().Tr_StartTime() > now {
+				break
+			}
 			this.cond.Wait()
 			this.cond.Broadcast()
 		}
