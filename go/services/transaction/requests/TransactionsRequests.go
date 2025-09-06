@@ -55,6 +55,7 @@ func (this *Requests) requestFromPeer(localTr *transaction.Transaction, target s
 
 	resp := localTr.VNic().Forward(localTr.Msg(), target)
 	if resp != nil && resp.Error() != nil {
+		localTr.VNic().Resources().Logger().Error(resp.Error())
 		this.reportError(target, resp.Error())
 		return
 	}

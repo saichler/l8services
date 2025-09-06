@@ -83,6 +83,10 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		if msg.Tr_State() == ifs.Empty {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
+			if !msg.Request() {
+				go this.trManager.Create(msg, vnic)
+				return nil
+			}
 			return this.trManager.Create(msg, vnic)
 		}
 		vnic.Resources().Logger().Debug("Running transaction")
@@ -102,8 +106,7 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements,
-	action ifs.Action, vnic ifs.IVNic) ifs.IElements {
+func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, vnic ifs.IVNic) ifs.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)

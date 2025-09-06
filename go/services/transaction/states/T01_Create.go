@@ -36,7 +36,7 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 
 	//Compile a list of this service peers, takeaway this instance
 	targets := tr.Targets()
-
+	tr.Msg().SetRequestReply(true, false)
 	//Send the new transaction message to all the peers.
 	ok, _ = requests.RequestFromPeers(tr, targets)
 	if !ok {
