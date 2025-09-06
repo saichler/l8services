@@ -23,15 +23,17 @@ type ServiceTransactions struct {
 	running          bool
 	logger           ifs.ILogger
 	transactionQueue []string
+	concurrentGets   bool
 }
 
-func newServiceTransactions(serviceName string) *ServiceTransactions {
+func newServiceTransactions(concurrentGets bool) *ServiceTransactions {
 	serviceTransactions := &ServiceTransactions{}
 	serviceTransactions.transactionsMap = &sync.Map{}
 	serviceTransactions.transactionQueue = make([]string, 0)
 	serviceTransactions.mtx = &sync.Mutex{}
 	serviceTransactions.cond = sync.NewCond(serviceTransactions.mtx)
 	serviceTransactions.running = true
+	serviceTransactions.concurrentGets = concurrentGets
 	go serviceTransactions.processTransactions()
 	return serviceTransactions
 }
@@ -42,17 +44,19 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *ifs.Message, vni
 		this.mtx.Lock()
 		defer this.mtx.Unlock()
 
-		for this.running && this.lockedTrId != "" {
-			t, ok := this.transactionsMap.Load(this.lockedTrId)
-			if !ok {
-				break
+		if this.concurrentGets {
+			for this.running && this.lockedTrId != "" {
+				t, ok := this.transactionsMap.Load(this.lockedTrId)
+				if !ok {
+					break
+				}
+				tr := t.(*transaction.Transaction)
+				if tr.Msg().Tr_StartTime() > now {
+					break
+				}
+				this.cond.Wait()
+				this.cond.Broadcast()
 			}
-			tr := t.(*transaction.Transaction)
-			if tr.Msg().Tr_StartTime() > now {
-				break
-			}
-			this.cond.Wait()
-			this.cond.Broadcast()
 		}
 
 		if !this.running {

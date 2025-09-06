@@ -24,7 +24,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp := &ServiceManager{}
 	sp.services = NewServicesMap()
 	sp.resources = resources
-	sp.trManager = states.NewTransactionManager()
+	sp.trManager = states.NewTransactionManager(sp)
 	sp.distributedCaches = maps.NewSyncMap()
 	_, err := sp.resources.Registry().Register(&types.NotificationSet{})
 	if err != nil {
@@ -79,7 +79,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		return h.Failed(pb, vnic, msg)
 	}
 
-	if h.TransactionMethod() != nil {
+	if h.TransactionConfig() != nil {
 		if msg.Tr_State() == ifs.Empty {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")

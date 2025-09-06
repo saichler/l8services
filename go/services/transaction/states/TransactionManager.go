@@ -6,16 +6,19 @@ import (
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/l8utils/go/utils/strings"
 )
 
 type TransactionManager struct {
 	serviceTransactions map[string]*ServiceTransactions
+	services            ifs.IServices
 	mtx                 *sync.Mutex
 }
 
-func NewTransactionManager() *TransactionManager {
+func NewTransactionManager(services ifs.IServices) *TransactionManager {
 	tm := &TransactionManager{}
 	tm.mtx = &sync.Mutex{}
+	tm.services = services
 	tm.serviceTransactions = make(map[string]*ServiceTransactions)
 	return tm
 }
@@ -26,7 +29,11 @@ func (this *TransactionManager) transactionsOf(msg *ifs.Message) *ServiceTransac
 	serviceKey := ServiceKey(msg.ServiceName(), msg.ServiceArea())
 	st, ok := this.serviceTransactions[serviceKey]
 	if !ok {
-		this.serviceTransactions[serviceKey] = newServiceTransactions(serviceKey)
+		h, ook := this.services.ServiceHandler(msg.ServiceName(), msg.ServiceArea())
+		if !ook {
+			panic(strings.New("Cannot find service handler for ", msg.ServiceName(), " - ", msg.ServiceArea()).String())
+		}
+		this.serviceTransactions[serviceKey] = newServiceTransactions(h.TransactionConfig().ConcurrentGets())
 		st = this.serviceTransactions[serviceKey]
 	}
 	return st

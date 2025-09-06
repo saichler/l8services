@@ -119,8 +119,8 @@ func (this *Transaction) replicationTargets() (bool, bool, map[string]bool) {
 	replicas := make(map[string]bool)
 	isLeaderATarget := false
 	service, _ := this.vnic.Resources().Services().ServiceHandler(this.msg.ServiceName(), this.msg.ServiceArea())
-	isReplicationEnabled := service.TransactionMethod().Replication()
-	replicationCount := service.TransactionMethod().ReplicationCount()
+	isReplicationEnabled := service.TransactionConfig().Replication()
+	replicationCount := service.TransactionConfig().ReplicationCount()
 	if isReplicationEnabled && replicationCount > 0 {
 		index, replicationService := replication.ReplicationIndex(this.msg.ServiceName(), this.msg.ServiceArea(), this.vnic.Resources())
 		// if the replication count is larger than available replicas
@@ -134,7 +134,7 @@ func (this *Transaction) replicationTargets() (bool, bool, map[string]bool) {
 		if err != nil {
 			panic(err)
 		}
-		key := service.TransactionMethod().KeyOf(elems, this.vnic.Resources())
+		key := service.TransactionConfig().KeyOf(elems, this.vnic.Resources())
 		uuids, ok := index.Keys[key]
 		if ok {
 			for uuid, _ := range uuids.Location {
@@ -143,7 +143,7 @@ func (this *Transaction) replicationTargets() (bool, bool, map[string]bool) {
 			}
 		} else {
 			endpoints := sortedEndpoints(index)
-			replicationCounts := service.TransactionMethod().ReplicationCount()
+			replicationCounts := service.TransactionConfig().ReplicationCount()
 			index.Keys[key] = &types.ReplicationKey{Location: make(map[string]int64)}
 			for i := 0; i < replicationCounts; i++ {
 				replicas[endpoints[i]] = true

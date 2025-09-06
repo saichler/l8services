@@ -1,6 +1,8 @@
 package states
 
 import (
+	"sync"
+
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
@@ -14,7 +16,7 @@ func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Mes
 	if index != nil {
 		service, _ := services.ServiceHandler(msg.ServiceName(), msg.ServiceArea())
 		// This is a replication service, we need to check if the key is not here
-		key := service.TransactionMethod().KeyOf(elements, vnic.Resources())
+		key := service.TransactionConfig().KeyOf(elements, vnic.Resources())
 		if key == "" {
 			return getAll(elements, vnic, msg, index)
 		}
@@ -51,11 +53,20 @@ func getAll(elements ifs.IElements, vnic ifs.IVNic,
 	request := object.NewReplicasRequest(elements)
 	response := vnic.Resources().Services().TransactionHandle(elements, msg.Action(), vnic, msg)
 	remotes := collectRemote(myUuid, index)
-	//@TODO - Switch to parallel requests
+
+	wait := sync.WaitGroup{}
+	mtx := sync.Mutex{}
 	for dest, _ := range remotes {
-		resp := vnic.Request(dest, msg.ServiceName(), msg.ServiceArea(), msg.Action(), request)
-		response.Append(resp)
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			resp := vnic.Request(dest, msg.ServiceName(), msg.ServiceArea(), msg.Action(), request, int(msg.Tr_Timeout()))
+			mtx.Lock()
+			response.Append(resp)
+			mtx.Unlock()
+		}()
 	}
+	wait.Wait()
 	return response
 }
 

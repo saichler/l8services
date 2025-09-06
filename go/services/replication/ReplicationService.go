@@ -2,6 +2,7 @@ package replication
 
 import (
 	"bytes"
+
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
@@ -77,7 +78,7 @@ func (this *ReplicationService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *if
 	return nil
 }
 
-func (this *ReplicationService) TransactionMethod() ifs.ITransactionMethod {
+func (this *ReplicationService) TransactionConfig() ifs.ITransactionConfig {
 	return nil
 }
 
