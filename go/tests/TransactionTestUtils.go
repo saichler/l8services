@@ -46,7 +46,7 @@ func doAsyncTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *test
 		return false
 	}
 
-	time.Sleep(time.Second * 500)
+	time.Sleep(time.Second)
 
 	if action == ifs.POST {
 		handlers := topo.AllTrHandlers()
