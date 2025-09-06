@@ -14,7 +14,7 @@ import (
 
 func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := vnic.ProximityRequest(ServiceName, 1, action, pb)
+	resp := vnic.ProximityRequest(ServiceName, 1, action, pb, 15)
 	if resp != nil && resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false
@@ -79,7 +79,7 @@ type PostTask struct {
 
 func (this *PostTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := this.Vnic.ProximityRequest(ServiceName, 1, ifs.POST, pb)
+	resp := this.Vnic.ProximityRequest(ServiceName, 1, ifs.POST, pb, 5)
 	if resp != nil && resp.Error() != nil {
 		return Log.Error(resp.Error().Error())
 	}
@@ -92,7 +92,7 @@ type GetTask struct {
 
 func (this *GetTask) Run() interface{} {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := this.Vnic.ProximityRequest(ServiceName, 1, ifs.GET, pb)
+	resp := this.Vnic.ProximityRequest(ServiceName, 1, ifs.GET, pb, 5)
 	if resp != nil && resp.Error() != nil {
 		return Log.Error(resp.Error().Error())
 	}

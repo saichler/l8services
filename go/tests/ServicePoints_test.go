@@ -1,12 +1,13 @@
 package tests
 
 import (
+	"testing"
+
+	"github.com/saichler/l8srlz/go/serialize/object"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
-	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
-	"testing"
 )
 
 func TestServices(t *testing.T) {
@@ -33,7 +34,7 @@ func TestServices(t *testing.T) {
 		Log.Fail(t, "Service  Not Found")
 		return
 	}
-	sp.TransactionMethod()
+	sp.TransactionConfig()
 
 	globals.Services().Handle(pb, ifs.POST, nil, nil)
 	globals.Services().Handle(pb, ifs.PUT, nil, nil)

@@ -40,7 +40,7 @@ func TestTransactionReplication(t *testing.T) {
 func doRound(ecount, score int, t *testing.T) bool {
 	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(score)}
 	eg := topo.VnicByVnetNum(2, 1)
-	resp := eg.ProximityRequest(ServiceName, 2, ifs.POST, pb)
+	resp := eg.ProximityRequest(ServiceName, 2, ifs.POST, pb, 5)
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false
