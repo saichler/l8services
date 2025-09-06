@@ -12,6 +12,7 @@ func (this *ServiceTransactions) run(tr *transaction.Transaction) *types.Transac
 	isLeader, isLeaderATarget, targets, replicas := tr.TargetsWithReplication()
 	this.mtx.Lock()
 	defer func() {
+		defer this.cond.Broadcast()
 		defer this.mtx.Unlock()
 		tr.Debug("T02_Run.run: Transaction leader cleanup ", tr.Msg().Tr_Id())
 		//Cleanup
