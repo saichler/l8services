@@ -59,7 +59,7 @@ func (this *ReplicationService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IEleme
 func (this *ReplicationService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
 	vnic.Resources().Logger().Trace("Updating index on ", vnic.Resources().SysConfig().LocalAlias)
-	_, e := this.cache.Update(incoming.ServiceName, incoming, pb.Notification())
+	_, e := this.cache.Patch(incoming.ServiceName, incoming, pb.Notification())
 	if e != nil {
 		panic(e)
 	}
@@ -93,7 +93,7 @@ func ReplicationIndex(serviceName string, serviceArea byte, resources ifs.IResou
 }
 
 func UpdateIndex(sp ifs.IServiceHandler, index *types.ReplicationIndex) {
-	sp.(*ReplicationService).cache.Update(index.ServiceName, index, false)
+	sp.(*ReplicationService).cache.Patch(index.ServiceName, index, false)
 }
 
 func (this *ReplicationService) WebService() ifs.IWebService {
