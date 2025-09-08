@@ -14,6 +14,5 @@ func (this *DCache) Collect(f func(interface{}) (bool, interface{})) map[string]
 		}
 		return result
 	}
-
 	return this.store.Collect(f)
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 
-func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
+func (this *DCache) Patch(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
@@ -24,17 +24,19 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 
 	//If the item does not exist in the cache
 	if !ok {
-		//First clone the value so we can use it in the notification.
+		//We need to clone the item twice, once for the cache and another
+		//for the notification
 		itemClone := this.cloner.Clone(v)
-		v = this.cloner.Clone(v)
+		vClone := this.cloner.Clone(v)
 
 		if this.cacheEnabled() {
-			//Place the value in the cache
-			this.cache[k] = v
+			//Place the new Item clone in the cache
+			this.cache[k] = vClone
 		}
 
 		if this.store != nil {
-			e = this.store.Put(k, v)
+			//place the new item clone in the store
+			e = this.store.Put(k, vClone)
 		}
 
 		//Send the notification using the clone outside the current go routine
@@ -47,9 +49,11 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 		}
 		return n, e
 	}
+
 	//Clone the existing item
 	itemClone := this.cloner.Clone(item)
 	//Create a new updater
+
 	patchUpdater := updating.NewUpdater(this.resources, false, false)
 	//update the item clone with the new element where nil is valid
 	e = patchUpdater.Update(itemClone, v)
@@ -63,7 +67,7 @@ func (this *DCache) Update(k string, v interface{}, sourceNotification ...bool) 
 		return nil, nil
 	}
 
-	//Apply the changes to the existing item
+	//Apply the changes to the existing item in the cache
 	for _, change := range changes {
 		change.Apply(item)
 	}
