@@ -23,15 +23,17 @@ func (this *ReplicationService) Activate(serviceName string, serviceArea byte,
 	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
 	uuid := resources.SysConfig().LocalUuid
-	this.cache = dcache.NewDistributedCache(serviceName, serviceArea, "ReplicationIndex",
-		uuid, listener, resources)
+
 	index := &types.ReplicationIndex{}
 	index.ServiceName = serviceName
 	index.ServiceArea = int32(serviceArea)
 	index.Keys = make(map[string]*types.ReplicationKey)
 	index.EndPoints = make(map[string]*types.ReplicationEndPoint)
 	index.EndPoints[uuid] = &types.ReplicationEndPoint{Score: 1}
-	this.cache.Put(serviceName, index, true)
+
+	this.cache = dcache.NewDistributedCache(serviceName, serviceArea, index, []interface{}{index},
+		listener, resources)
+
 	return nil
 }
 
@@ -59,7 +61,7 @@ func (this *ReplicationService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IEleme
 func (this *ReplicationService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	incoming := pb.Element().(*types.ReplicationIndex)
 	vnic.Resources().Logger().Trace("Updating index on ", vnic.Resources().SysConfig().LocalAlias)
-	_, e := this.cache.Patch(incoming.ServiceName, incoming, pb.Notification())
+	_, e := this.cache.Patch(incoming, pb.Notification())
 	if e != nil {
 		panic(e)
 	}
@@ -87,13 +89,18 @@ func ReplicationIndex(serviceName string, serviceArea byte, resources ifs.IResou
 	rp, ok := resources.Services().ServiceHandler(serviceName, serviceArea)
 	if ok {
 		rsp := rp.(*ReplicationService)
-		return rsp.cache.Get(serviceName).(*types.ReplicationIndex), rsp
+		filter := &types.ReplicationIndex{}
+		filter.ServiceName = serviceName
+		index, err := rsp.cache.Get(filter)
+		if err == nil {
+			return index.(*types.ReplicationIndex), rsp
+		}
 	}
 	return nil, nil
 }
 
 func UpdateIndex(sp ifs.IServiceHandler, index *types.ReplicationIndex) {
-	sp.(*ReplicationService).cache.Patch(index.ServiceName, index, false)
+	sp.(*ReplicationService).cache.Patch(index, false)
 }
 
 func (this *ReplicationService) WebService() ifs.IWebService {

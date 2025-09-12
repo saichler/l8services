@@ -1,15 +1,25 @@
 package dcache
 
 import (
+	"errors"
+
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 
-func (this *DCache) Post(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
+func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
+	k, err := this.keyFor(v)
+	if err != nil {
+		return nil, err
+	}
+	if k == "" {
+		return nil, errors.New("Interface does not contain the Key attributes")
+	}
 	//Make sure we clone the input value, so the caller don't have a reference to the cache element
 	v = this.cloner.Clone(v)
+
+	this.mtx.Lock()
+	defer this.mtx.Unlock()
 
 	var n *types.NotificationSet
 	var e error

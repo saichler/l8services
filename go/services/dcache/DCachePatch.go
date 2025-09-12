@@ -1,11 +1,21 @@
 package dcache
 
 import (
+	"errors"
+
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 
-func (this *DCache) Patch(k string, v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
+func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
+	k, err := this.keyFor(v)
+	if err != nil {
+		return nil, err
+	}
+	if k == "" {
+		return nil, errors.New("Interface does not contain the Key attributes")
+	}
+
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	var n *types.NotificationSet
