@@ -110,7 +110,11 @@ func (this *DCache) keyFor(any interface{}) (string, error) {
 		return "", errors.New("Cannot get key for nil interface")
 	}
 
-	v := reflect.ValueOf(any).Elem()
+	v := reflect.ValueOf(any)
+	if v.Kind() != reflect.Ptr {
+		return "", errors.New("Cannot get key for non-pointer interface")
+	}
+	v = v.Elem()
 
 	if this.keyFieldNames == nil {
 		typ, err := this.typeFor(any)
