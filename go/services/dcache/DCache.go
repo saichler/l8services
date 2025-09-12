@@ -45,7 +45,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 	this.serviceName = serviceName
 	this.serviceArea = serviceArea
 	this.store = store
-	_, err := this.keyFor(sample)
+	_, err := this.PrimaryKeyFor(sample)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +57,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 		}
 	} else if initElements != nil {
 		for _, item := range initElements {
-			k, err := this.keyFor(item)
+			k, err := this.PrimaryKeyFor(item)
 			if err != nil {
 				continue
 			}
@@ -105,7 +105,7 @@ func (this *DCache) typeFor(any interface{}) (string, error) {
 	return this.modelType, nil
 }
 
-func (this *DCache) keyFor(any interface{}) (string, error) {
+func (this *DCache) PrimaryKeyFor(any interface{}) (string, error) {
 	if any == nil {
 		return "", errors.New("Cannot get key for nil interface")
 	}

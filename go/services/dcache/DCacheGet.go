@@ -7,7 +7,7 @@ import (
 )
 
 func (this *DCache) Get(v interface{}) (interface{}, error) {
-	k, err := this.keyFor(v)
+	k, err := this.PrimaryKeyFor(v)
 	if err != nil {
 		return nil, err
 	}

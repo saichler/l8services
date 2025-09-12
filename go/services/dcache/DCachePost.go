@@ -8,7 +8,7 @@ import (
 )
 
 func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
-	k, err := this.keyFor(v)
+	k, err := this.PrimaryKeyFor(v)
 	if err != nil {
 		return nil, err
 	}
