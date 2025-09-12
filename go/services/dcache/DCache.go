@@ -100,7 +100,9 @@ func (this *DCache) typeFor(any interface{}) (string, error) {
 		v = v.Elem()
 	}
 
-	return v.Type().Name(), nil
+	this.modelType = v.Type().Name()
+
+	return this.modelType, nil
 }
 
 func (this *DCache) keyFor(any interface{}) (string, error) {
