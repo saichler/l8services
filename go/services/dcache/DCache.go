@@ -29,11 +29,16 @@ type DCache struct {
 
 func NewDistributedCache(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
 	listener ifs.IServiceCacheListener, resources ifs.IResources) ifs.IDistributedCache {
-	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil)
+	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil, false)
+}
+
+func NewDistributedCacheNoSync(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
+	listener ifs.IServiceCacheListener, resources ifs.IResources) ifs.IDistributedCache {
+	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil, true)
 }
 
 func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
-	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage) ifs.IDistributedCache {
+	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage, noSync bool) ifs.IDistributedCache {
 	this := &DCache{}
 	this.cache = make(map[string]interface{})
 	this.mtx = &sync.RWMutex{}
@@ -65,7 +70,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 		}
 	}
 
-	if listener != nil {
+	if listener != nil && !noSync {
 		resources.Services().RegisterDistributedCache(this)
 	}
 	return this
