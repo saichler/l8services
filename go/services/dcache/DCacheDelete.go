@@ -25,11 +25,10 @@ func (this *DCache) Delete(v interface{}, sourceNotification ...bool) (*types.No
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache[k]
+		item, ok = this.cache.delete(k)
 		if !ok {
 			return nil, errors.New("Key " + k + " not found")
 		}
-		delete(this.cache, k)
 	}
 
 	if this.store != nil {

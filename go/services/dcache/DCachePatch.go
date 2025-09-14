@@ -26,7 +26,7 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*types.Not
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache[k]
+		item, ok = this.cache.get(k)
 	} else {
 		item, e = this.store.Get(k)
 		ok = e == nil
@@ -41,7 +41,7 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*types.Not
 
 		if this.cacheEnabled() {
 			//Place the new Item clone in the cache
-			this.cache[k] = vClone
+			this.cache.put(k, vClone)
 		}
 
 		if this.store != nil {

@@ -19,7 +19,7 @@ func (this *DCache) Get(v interface{}) (interface{}, error) {
 	defer this.mtx.RUnlock()
 
 	if this.cacheEnabled() {
-		item, ok := this.cache[k]
+		item, ok := this.cache.get(k)
 		if ok {
 			itemClone := this.cloner.Clone(item)
 			return itemClone, nil

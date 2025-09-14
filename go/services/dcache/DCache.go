@@ -12,7 +12,8 @@ import (
 )
 
 type DCache struct {
-	cache         map[string]interface{}
+	cache         *localCache
+	order         []string
 	mtx           *sync.RWMutex
 	cond          *sync.Cond
 	listener      ifs.IServiceCacheListener
@@ -40,7 +41,7 @@ func NewDistributedCacheNoSync(serviceName string, serviceArea byte, sample inte
 func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
 	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage, noSync bool) ifs.IDistributedCache {
 	this := &DCache{}
-	this.cache = make(map[string]interface{})
+	this.cache = newLocalCache()
 	this.mtx = &sync.RWMutex{}
 	this.cond = sync.NewCond(this.mtx)
 	this.listener = listener
@@ -58,7 +59,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 	if this.store != nil {
 		items := this.store.Collect(all)
 		for k, v := range items {
-			this.cache[k] = v
+			this.cache.put(k, v)
 		}
 	} else if initElements != nil {
 		for _, item := range initElements {
@@ -66,7 +67,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 			if err != nil {
 				continue
 			}
-			this.cache[k] = item
+			this.cache.put(k, item)
 		}
 	}
 
@@ -94,7 +95,7 @@ func (this *DCache) cacheEnabled() bool {
 func (this *DCache) Size() int {
 	this.mtx.RLock()
 	defer this.mtx.RUnlock()
-	return len(this.cache)
+	return this.cache.size()
 }
 
 func (this *DCache) typeFor(any interface{}) (string, error) {
