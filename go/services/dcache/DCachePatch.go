@@ -77,10 +77,14 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*types.Not
 		return nil, nil
 	}
 
+	this.cache.removeFromStats(k)
+
 	//Apply the changes to the existing item in the cache
 	for _, change := range changes {
 		change.Apply(item)
 	}
+
+	this.cache.addToStats(item)
 
 	if this.store != nil {
 		e = this.store.Put(k, item)

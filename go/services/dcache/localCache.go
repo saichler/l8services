@@ -12,7 +12,7 @@ func newLocalCache() *localCache {
 	return &localCache{cache: make(map[string]interface{}), order: make([]string, 0), key2order: make(map[string]int)}
 }
 
-func (this *localCache) put(key string, value interface{}) {
+func (this *localCache) removeFromStats(key string) (interface{}, bool) {
 	old, ok := this.cache[key]
 	if ok && this.statsFunc != nil {
 		for stat, f := range this.statsFunc {
@@ -21,11 +21,10 @@ func (this *localCache) put(key string, value interface{}) {
 			}
 		}
 	}
-	this.cache[key] = value
-	if !ok {
-		this.order = append(this.order, key)
-		this.key2order[key] = len(this.order) - 1
-	}
+	return old, ok
+}
+
+func (this *localCache) addToStats(value interface{}) {
 	if this.statsFunc != nil {
 		for stat, f := range this.statsFunc {
 			if f(value) {
@@ -35,20 +34,23 @@ func (this *localCache) put(key string, value interface{}) {
 	}
 }
 
+func (this *localCache) put(key string, value interface{}) {
+	_, ok := this.removeFromStats(key)
+	this.cache[key] = value
+	if !ok {
+		this.order = append(this.order, key)
+		this.key2order[key] = len(this.order) - 1
+	}
+	this.addToStats(value)
+}
+
 func (this *localCache) get(key string) (interface{}, bool) {
 	item, ok := this.cache[key]
 	return item, ok
 }
 
 func (this *localCache) delete(key string) (interface{}, bool) {
-	item, ok := this.cache[key]
-	if ok && this.statsFunc != nil {
-		for stat, f := range this.statsFunc {
-			if f(item) {
-				this.stats[stat]--
-			}
-		}
-	}
+	item, ok := this.removeFromStats(key)
 	delete(this.cache, key)
 	return item, ok
 }
