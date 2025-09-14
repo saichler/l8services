@@ -91,6 +91,12 @@ func (this *DCache) cacheEnabled() bool {
 	return this.store.CacheEnabled()
 }
 
+func (this *DCache) Size() int {
+	this.mtx.RLock()
+	defer this.mtx.RUnlock()
+	return len(this.cache)
+}
+
 func (this *DCache) typeFor(any interface{}) (string, error) {
 	if this.modelType != "" {
 		return this.modelType, nil
