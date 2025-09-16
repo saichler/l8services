@@ -67,6 +67,9 @@ func (this *localCache) fetch(start, blockSize int) []interface{} {
 		if ok {
 			result = append(result, value)
 		}
+		if blockSize == 0 {
+			continue
+		}
 		if len(result) >= blockSize {
 			break
 		}
