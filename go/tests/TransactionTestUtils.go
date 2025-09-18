@@ -8,6 +8,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/workers"
 )
 
@@ -19,7 +20,7 @@ func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T
 		return false
 	}
 
-	tr := resp.Element().(*types.Transaction)
+	tr := resp.Element().(*l8services.L8Transaction)
 	if tr.State != int32(ifs.Commited) && failure {
 		Log.Fail(t, "transaction state is not commited, ", expected, " ", ifs.TransactionState(tr.State), " ", tr.ErrMsg)
 		return false

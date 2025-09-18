@@ -7,6 +7,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/workers"
 )
 
@@ -108,7 +109,7 @@ func TestParallel(t *testing.T) {
 	get := 0
 
 	for _, result := range results {
-		tr, ok := result.(*types.Transaction)
+		tr, ok := result.(*l8services.L8Transaction)
 		if ok && tr.State == int32(ifs.Commited) {
 			post++
 		}
