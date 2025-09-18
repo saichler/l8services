@@ -3,10 +3,11 @@ package dcache
 import (
 	"errors"
 
+	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 
-func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {
+func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
 	k, err := this.PrimaryKeyFor(v)
 	if err != nil {
 		return nil, err
@@ -17,7 +18,7 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*types.Not
 
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
-	var n *types.NotificationSet
+	var n *l8notify.L8NotificationSet
 	var e error
 	var item interface{}
 	var ok bool

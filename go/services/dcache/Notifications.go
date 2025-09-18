@@ -5,67 +5,68 @@ import (
 
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/reflect/go/reflect/properties"
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 
-func CreateNotificationSet(t types.NotificationType, serviceName, key string, serviceArea byte, modelType, source string,
-	changeCount int, sequence uint32) *types.NotificationSet {
-	notificationSet := &types.NotificationSet{}
+func CreateNotificationSet(t l8notify.L8NotificationType, serviceName, key string, serviceArea byte, modelType, source string,
+	changeCount int, sequence uint32) *l8notify.L8NotificationSet {
+	notificationSet := &l8notify.L8NotificationSet{}
 	notificationSet.ServiceName = serviceName
 	notificationSet.ServiceArea = int32(serviceArea)
 	notificationSet.ModelType = modelType
 	notificationSet.Source = source
 	notificationSet.Type = t
-	notificationSet.NotificationList = make([]*types.Notification, changeCount)
+	notificationSet.NotificationList = make([]*l8notify.L8Notification, changeCount)
 	notificationSet.Sequence = sequence
 	notificationSet.ModelKey = key
 	return notificationSet
 }
 
-func (this *DCache) createNotificationSet(t types.NotificationType, key string, changeCount int) *types.NotificationSet {
+func (this *DCache) createNotificationSet(t l8notify.L8NotificationType, key string, changeCount int) *l8notify.L8NotificationSet {
 	defer func() { this.sequence++ }()
 	return CreateNotificationSet(t, this.serviceName, key, this.serviceArea, this.modelType, this.source, changeCount, this.sequence)
 }
 
-func CreateAddNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Add, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
+func CreateAddNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*l8notify.L8NotificationSet, error) {
+	notificationSet := CreateNotificationSet(l8notify.L8NotificationType_Add, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
 	}
-	n := &types.Notification{}
+	n := &l8notify.L8Notification{}
 	n.NewValue = obj.Data()
 	notificationSet.NotificationList[0] = n
 	return notificationSet, nil
 }
 
-func CreateSyncNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Sync, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
+func CreateSyncNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*l8notify.L8NotificationSet, error) {
+	notificationSet := CreateNotificationSet(l8notify.L8NotificationType_Sync, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
 	}
-	n := &types.Notification{}
+	n := &l8notify.L8Notification{}
 	n.NewValue = obj.Data()
 	notificationSet.NotificationList[0] = n
 	return notificationSet, nil
 }
 
-func (this *DCache) createAddNotification(any interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createAddNotification(any interface{}, key string) (*l8notify.L8NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateAddNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func (this *DCache) createSyncNotification(any interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createSyncNotification(any interface{}, key string) (*l8notify.L8NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateSyncNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateReplaceNotification(old, new interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Replace, serviceName, key, serviceArea, modelType, source, 1, sequence)
+func CreateReplaceNotification(old, new interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*l8notify.L8NotificationSet, error) {
+	notificationSet := CreateNotificationSet(l8notify.L8NotificationType_Replace, serviceName, key, serviceArea, modelType, source, 1, sequence)
 	oldObj := object.NewEncode()
 	err := oldObj.Add(old)
 	if err != nil {
@@ -78,40 +79,40 @@ func CreateReplaceNotification(old, new interface{}, serviceName, key string, se
 		return nil, err
 	}
 
-	n := &types.Notification{}
+	n := &l8notify.L8Notification{}
 	n.OldValue = oldObj.Data()
 	n.NewValue = newObj.Data()
 	notificationSet.NotificationList[0] = n
 	return notificationSet, nil
 }
 
-func (this *DCache) createReplaceNotification(old, new interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createReplaceNotification(old, new interface{}, key string) (*l8notify.L8NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateReplaceNotification(old, new, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateDeleteNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Delete, serviceName, key, serviceArea, modelType, source, 1, sequence)
+func CreateDeleteNotification(any interface{}, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*l8notify.L8NotificationSet, error) {
+	notificationSet := CreateNotificationSet(l8notify.L8NotificationType_Delete, serviceName, key, serviceArea, modelType, source, 1, sequence)
 	obj := object.NewEncode()
 	err := obj.Add(any)
 	if err != nil {
 		return nil, err
 	}
-	n := &types.Notification{}
+	n := &l8notify.L8Notification{}
 	n.OldValue = obj.Data()
 	notificationSet.NotificationList[0] = n
 	return notificationSet, nil
 }
 
-func (this *DCache) createDeleteNotification(any interface{}, key string) (*types.NotificationSet, error) {
+func (this *DCache) createDeleteNotification(any interface{}, key string) (*l8notify.L8NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateDeleteNotification(any, this.serviceName, key, this.serviceArea, this.modelType, this.source, 1, this.sequence)
 }
 
-func CreateUpdateNotification(changes []*updating.Change, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*types.NotificationSet, error) {
-	notificationSet := CreateNotificationSet(types.NotificationType_Update, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
+func CreateUpdateNotification(changes []*updating.Change, serviceName, key string, serviceArea byte, modelType, source string, changeCount int, sequence uint32) (*l8notify.L8NotificationSet, error) {
+	notificationSet := CreateNotificationSet(l8notify.L8NotificationType_Update, serviceName, key, serviceArea, modelType, source, changeCount, sequence)
 	for i, change := range changes {
-		n := &types.Notification{}
+		n := &l8notify.L8Notification{}
 		n.PropertyId = change.PropertyId()
 		if change.OldValue() != nil {
 			obj := object.NewEncode()
@@ -134,26 +135,26 @@ func CreateUpdateNotification(changes []*updating.Change, serviceName, key strin
 	return notificationSet, nil
 }
 
-func (this *DCache) createUpdateNotification(changes []*updating.Change, key string) (*types.NotificationSet, error) {
+func (this *DCache) createUpdateNotification(changes []*updating.Change, key string) (*l8notify.L8NotificationSet, error) {
 	defer func() { this.sequence++ }()
 	return CreateUpdateNotification(changes, this.serviceName, key, this.serviceArea, this.modelType, this.source, len(changes), this.sequence)
 }
 
-func ItemOf(n *types.NotificationSet, resources ifs.IResources) (interface{}, error) {
+func ItemOf(n *l8notify.L8NotificationSet, resources ifs.IResources) (interface{}, error) {
 	switch n.Type {
-	case types.NotificationType_Replace:
+	case l8notify.L8NotificationType_Replace:
 		fallthrough
-	case types.NotificationType_Sync:
+	case l8notify.L8NotificationType_Sync:
 		fallthrough
-	case types.NotificationType_Add:
+	case l8notify.L8NotificationType_Add:
 		obj := object.NewDecode(n.NotificationList[0].NewValue, 0, resources.Registry())
 		v, e := obj.Get()
 		return v, e
-	case types.NotificationType_Delete:
+	case l8notify.L8NotificationType_Delete:
 		obj := object.NewDecode(n.NotificationList[0].OldValue, 0, resources.Registry())
 		v, e := obj.Get()
 		return v, e
-	case types.NotificationType_Update:
+	case l8notify.L8NotificationType_Update:
 		info, err := resources.Registry().Info(n.ModelType)
 		if err != nil {
 			return nil, err
