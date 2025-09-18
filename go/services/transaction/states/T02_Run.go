@@ -4,7 +4,6 @@ import (
 	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8services/go/services/transaction/requests"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types"
 )
 
 func (this *ServiceTransactions) run(tr *transaction.Transaction) *types.Transaction {

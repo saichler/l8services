@@ -1,7 +1,6 @@
 package dcache
 
 import (
-	"github.com/saichler/l8types/go/types"
 )
 
 func (this *DCache) Put(v interface{}, sourceNotification ...bool) (*types.NotificationSet, error) {

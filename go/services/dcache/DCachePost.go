@@ -3,7 +3,6 @@ package dcache
 import (
 	"errors"
 
-	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/reflect/go/reflect/updating"
 )
 

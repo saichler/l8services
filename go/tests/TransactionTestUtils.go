@@ -8,7 +8,6 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
-	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/workers"
 )
 

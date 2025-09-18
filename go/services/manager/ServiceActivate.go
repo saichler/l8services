@@ -5,7 +5,6 @@ import (
 
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types"
 )
 
 func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea byte,

@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types"
 )
 
 type ServicesMap struct {
