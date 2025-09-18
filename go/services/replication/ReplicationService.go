@@ -5,6 +5,7 @@ import (
 
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/reflect/go/reflect/introspecting"
 )
 
@@ -19,16 +20,16 @@ type ReplicationService struct {
 
 func (this *ReplicationService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
-	node, _ := resources.Introspector().Inspect(&types.ReplicationIndex{})
+	node, _ := resources.Introspector().Inspect(&l8services.L8ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName")
 	uuid := resources.SysConfig().LocalUuid
 
-	index := &types.ReplicationIndex{}
+	index := &l8services.L8ReplicationIndex{}
 	index.ServiceName = serviceName
 	index.ServiceArea = int32(serviceArea)
-	index.Keys = make(map[string]*types.ReplicationKey)
-	index.EndPoints = make(map[string]*types.ReplicationEndPoint)
-	index.EndPoints[uuid] = &types.ReplicationEndPoint{Score: 1}
+	index.Keys = make(map[string]*l8services.L8ReplicationKey)
+	index.EndPoints = make(map[string]*l8services.L8ReplicationEndPoint)
+	index.EndPoints[uuid] = &l8services.L8ReplicationEndPoint{Score: 1}
 
 	this.cache = dcache.NewDistributedCache(serviceName, serviceArea, index, []interface{}{index},
 		listener, resources)
@@ -58,7 +59,7 @@ func (this *ReplicationService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IEleme
 	return nil
 }
 func (this *ReplicationService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	incoming := pb.Element().(*types.ReplicationIndex)
+	incoming := pb.Element().(*l8services.L8ReplicationIndex)
 	vnic.Resources().Logger().Trace("Updating index on ", vnic.Resources().SysConfig().LocalAlias)
 	_, e := this.cache.Patch(incoming, pb.Notification())
 	if e != nil {
@@ -83,22 +84,22 @@ func (this *ReplicationService) TransactionConfig() ifs.ITransactionConfig {
 	return nil
 }
 
-func ReplicationIndex(serviceName string, serviceArea byte, resources ifs.IResources) (*types.ReplicationIndex, ifs.IServiceHandler) {
+func ReplicationIndex(serviceName string, serviceArea byte, resources ifs.IResources) (*l8services.L8ReplicationIndex, ifs.IServiceHandler) {
 	serviceName = ReplicationNameOf(serviceName)
 	rp, ok := resources.Services().ServiceHandler(serviceName, serviceArea)
 	if ok {
 		rsp := rp.(*ReplicationService)
-		filter := &types.ReplicationIndex{}
+		filter := &l8services.L8ReplicationIndex{}
 		filter.ServiceName = serviceName
 		index, err := rsp.cache.Get(filter)
 		if err == nil {
-			return index.(*types.ReplicationIndex), rsp
+			return index.(*l8services.L8ReplicationIndex), rsp
 		}
 	}
 	return nil, nil
 }
 
-func UpdateIndex(sp ifs.IServiceHandler, index *types.ReplicationIndex) {
+func UpdateIndex(sp ifs.IServiceHandler, index *l8services.L8ReplicationIndex) {
 	sp.(*ReplicationService).cache.Patch(index, false)
 }
 
