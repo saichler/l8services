@@ -5,6 +5,7 @@ import (
 
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/strings"
 )
 
@@ -56,7 +57,7 @@ func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IEleme
 	default:
 		panic("Unexpected transaction state " + msg.Tr_State().String() + ":" + msg.Tr_ErrMsg())
 	}
-	return object.New(nil, &types.Transaction{State: int32(msg.Tr_State()),
+	return object.New(nil, &l8services.L8Transaction{State: int32(msg.Tr_State()),
 		Id:        msg.Tr_Id(),
 		ErrMsg:    msg.Tr_ErrMsg(),
 		StartTime: msg.Tr_StartTime()})

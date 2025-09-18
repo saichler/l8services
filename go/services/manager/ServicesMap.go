@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 )
 
 type ServicesMap struct {
@@ -68,9 +69,9 @@ func serviceKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
-func (mp *ServicesMap) serviceList() *types.Services {
-	s := &types.Services{}
-	s.ServiceToAreas = make(map[string]*types.ServiceAreas)
+func (mp *ServicesMap) serviceList() *l8services.L8Services {
+	s := &l8services.L8Services{}
+	s.ServiceToAreas = make(map[string]*l8services.L8ServiceAreas)
 	mp.services.Range(func(key, value interface{}) bool {
 		str := key.(string)
 		index := strings.Index(str, "--")
@@ -79,7 +80,7 @@ func (mp *ServicesMap) serviceList() *types.Services {
 		areaInt, _ := strconv.Atoi(areaStr)
 		sv, ok := s.ServiceToAreas[name]
 		if !ok {
-			sv = &types.ServiceAreas{}
+			sv = &l8services.L8ServiceAreas{}
 			sv.Areas = make(map[int32]bool)
 			s.ServiceToAreas[name] = sv
 		}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8system"
 )
 
 func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea byte,
@@ -46,12 +47,12 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	vnic, ok := l.(ifs.IVNic)
 
 	if ok {
-		serviceData := &types.ServiceData{}
+		serviceData := &l8system.L8ServiceData{}
 		serviceData.ServiceName = serviceName
 		serviceData.ServiceArea = int32(serviceArea)
 		serviceData.ServiceUuid = this.resources.SysConfig().LocalUuid
-		data := &types.SystemMessage_ServiceData{ServiceData: serviceData}
-		sysmsg := &types.SystemMessage{Action: types.SystemAction_Service_Add, Data: data}
+		data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
+		sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 		sysmsg.Publish = true
 		vnic.Multicast(ifs.SysMsg, ifs.SysArea, ifs.POST, sysmsg)
 	}

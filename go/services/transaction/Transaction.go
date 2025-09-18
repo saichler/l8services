@@ -7,6 +7,7 @@ import (
 
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
 )
@@ -143,7 +144,7 @@ func (this *Transaction) replicationTargets() (bool, bool, map[string]bool) {
 		} else {
 			endpoints := sortedEndpoints(index)
 			replicationCounts := service.TransactionConfig().ReplicationCount()
-			index.Keys[key] = &types.ReplicationKey{Location: make(map[string]int64)}
+			index.Keys[key] = &l8services.L8ReplicationKey{Location: make(map[string]int64)}
 			for i := 0; i < replicationCounts; i++ {
 				replicas[endpoints[i]] = true
 				index.EndPoints[endpoints[i]].Score++
@@ -158,7 +159,7 @@ func (this *Transaction) replicationTargets() (bool, bool, map[string]bool) {
 	return false, false, replicas
 }
 
-func sortedEndpoints(index *types.ReplicationIndex) []string {
+func sortedEndpoints(index *l8services.L8ReplicationIndex) []string {
 	endpoints := make([]string, len(index.EndPoints))
 	i := 0
 	for uuid, _ := range index.EndPoints {

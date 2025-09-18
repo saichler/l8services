@@ -9,6 +9,7 @@ import (
 	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/strings"
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/protocol"
@@ -198,12 +199,12 @@ func ServiceKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
-func TransactionOf(tr *transaction.Transaction) *types.Transaction {
+func TransactionOf(tr *transaction.Transaction) *l8services.L8Transaction {
 	return TransactionFor(tr.Msg())
 }
 
-func TransactionFor(msg *ifs.Message) *types.Transaction {
-	return &types.Transaction{State: int32(msg.Tr_State()),
+func TransactionFor(msg *ifs.Message) *l8services.L8Transaction {
+	return &l8services.L8Transaction{State: int32(msg.Tr_State()),
 		Id:        msg.Tr_Id(),
 		ErrMsg:    msg.Tr_ErrMsg(),
 		StartTime: msg.Tr_StartTime()}

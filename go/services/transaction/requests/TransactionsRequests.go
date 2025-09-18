@@ -5,6 +5,7 @@ import (
 
 	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 )
 
 type Requests struct {
@@ -37,7 +38,7 @@ func (this *Requests) reportError(target string, err error) {
 	}
 }
 
-func (this *Requests) reportResult(target string, tr *types.Transaction) {
+func (this *Requests) reportResult(target string, tr *l8services.L8Transaction) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
 	if tr.State == int32(ifs.Errored) {
@@ -59,7 +60,7 @@ func (this *Requests) requestFromPeer(localTr *transaction.Transaction, target s
 		return
 	}
 
-	tr := resp.Element().(*types.Transaction)
+	tr := resp.Element().(*l8services.L8Transaction)
 	this.reportResult(target, tr)
 }
 

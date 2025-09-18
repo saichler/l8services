@@ -4,9 +4,10 @@ import (
 	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8services/go/services/transaction/requests"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 )
 
-func (this *ServiceTransactions) run(tr *transaction.Transaction) *types.Transaction {
+func (this *ServiceTransactions) run(tr *transaction.Transaction) *l8services.L8Transaction {
 	tr.Debug("T02_Run.run: ", tr.Msg().Tr_Id())
 	isLeader, isLeaderATarget, targets, replicas := tr.TargetsWithReplication()
 	this.mtx.Lock()

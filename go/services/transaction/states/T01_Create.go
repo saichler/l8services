@@ -6,6 +6,7 @@ import (
 	"github.com/saichler/l8services/go/services/transaction/requests"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/layer8/go/overlay/protocol"
 )
 
@@ -55,7 +56,7 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 	//from this point onwards, we are going to use a clone
 	//As we only need the message attributes, without the data
 	msgClone := tr.Msg().Clone()
-	o := object.New(nil, &types.Transaction{})
+	o := object.New(nil, &l8services.L8Transaction{})
 	data, _ := protocol.DataFor(o, tr.Security())
 	msgClone.SetData(data)
 

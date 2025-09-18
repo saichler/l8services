@@ -8,6 +8,8 @@ import (
 	"github.com/saichler/l8services/go/services/transaction/states"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8notify"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/maps"
 	"github.com/saichler/layer8/go/overlay/health"
 )
@@ -25,11 +27,11 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp.resources = resources
 	sp.trManager = states.NewTransactionManager(sp)
 	sp.distributedCaches = maps.NewSyncMap()
-	_, err := sp.resources.Registry().Register(&types.NotificationSet{})
+	_, err := sp.resources.Registry().Register(&l8notify.L8NotificationSet{})
 	if err != nil {
 		panic(err)
 	}
-	sp.resources.Registry().Register(&types.Transaction{})
+	sp.resources.Registry().Register(&l8services.L8Transaction{})
 	return sp
 }
 
@@ -131,7 +133,7 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
 		return object.New(nil, nil)
 	}
-	notification := pb.Element().(*types.NotificationSet)
+	notification := pb.Element().(*l8notify.L8NotificationSet)
 	h, ok := this.services.get(notification.ServiceName, byte(notification.ServiceArea))
 	if !ok {
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
@@ -148,15 +150,15 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 	npb := object.NewNotify(item)
 
 	switch notification.Type {
-	case types.NotificationType_Add:
+	case l8notify.L8NotificationType_Add:
 		return h.Post(npb, vnic)
-	case types.NotificationType_Replace:
+	case l8notify.L8NotificationType_Replace:
 		return h.Put(npb, vnic)
-	case types.NotificationType_Sync:
+	case l8notify.L8NotificationType_Sync:
 		fallthrough
-	case types.NotificationType_Update:
+	case l8notify.L8NotificationType_Update:
 		return h.Patch(npb, vnic)
-	case types.NotificationType_Delete:
+	case l8notify.L8NotificationType_Delete:
 		return h.Delete(npb, vnic)
 	default:
 		return object.NewError("invalid notification type, ignoring")
@@ -187,6 +189,6 @@ func cacheKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
-func (this *ServiceManager) Services() *types.Services {
+func (this *ServiceManager) Services() *l8services.L8Services {
 	return this.services.serviceList()
 }
