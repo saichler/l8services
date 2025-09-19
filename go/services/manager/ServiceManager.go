@@ -11,7 +11,7 @@ import (
 	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/maps"
-	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/l8bus/go/overlay/health"
 )
 
 type ServiceManager struct {

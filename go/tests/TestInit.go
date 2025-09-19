@@ -3,7 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_topology"
-	"github.com/saichler/layer8/go/overlay/protocol"
+	"github.com/saichler/l8bus/go/overlay/protocol"
 	. "github.com/saichler/l8types/go/ifs"
 )
 

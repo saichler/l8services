@@ -5,7 +5,7 @@ import (
 
 	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/layer8/go/overlay/protocol"
+	"github.com/saichler/l8bus/go/overlay/protocol"
 )
 
 func (this *ServiceTransactions) commitInternal(tr *transaction.Transaction) (ifs.TransactionState, string) {

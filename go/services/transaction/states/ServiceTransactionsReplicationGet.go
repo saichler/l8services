@@ -7,7 +7,7 @@ import (
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8services"
-	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/l8bus/go/overlay/health"
 )
 
 func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Message,

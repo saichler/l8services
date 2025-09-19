@@ -7,8 +7,8 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/testtypes"
-	"github.com/saichler/reflect/go/reflect/introspecting"
-	"github.com/saichler/reflect/go/tests/utils"
+	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8reflect/go/tests/utils"
 )
 
 func TestCacheListener(t *testing.T) {

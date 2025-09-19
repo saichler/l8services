@@ -3,7 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8test/go/infra/t_service"
-	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/l8bus/go/overlay/health"
 	"testing"
 )
 

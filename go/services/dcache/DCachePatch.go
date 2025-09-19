@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/saichler/l8types/go/types/l8notify"
-	"github.com/saichler/reflect/go/reflect/updating"
+	"github.com/saichler/l8reflect/go/reflect/updating"
 )
 
 func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {

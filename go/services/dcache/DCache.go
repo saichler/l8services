@@ -7,8 +7,8 @@ import (
 
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8utils/go/utils/strings"
-	"github.com/saichler/reflect/go/reflect/cloning"
-	"github.com/saichler/reflect/go/reflect/introspecting"
+	"github.com/saichler/l8reflect/go/reflect/cloning"
+	"github.com/saichler/l8reflect/go/reflect/introspecting"
 )
 
 type DCache struct {
