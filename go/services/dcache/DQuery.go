@@ -49,7 +49,7 @@ func (this *DQuery) prepare(cache map[string]interface{}, order []string) {
 				return lessThan(v1, v2)
 			}
 		}
-		return data[i] < data[j]
+		return lessThan(data[i], data[j])
 	})
 	this.data = data
 }
