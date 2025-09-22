@@ -42,7 +42,7 @@ func (this *DQuery) prepare(cache map[string]interface{}, order []string) {
 	}
 	fmt.Println("Query has ", len(data), " sorting")
 	sort.Slice(data, func(i, j int) bool {
-		if order == nil {
+		if order == nil && this.query.SortBy() != "" {
 			v1 := this.query.SortByValue(cache[data[i]])
 			v2 := this.query.SortByValue(cache[data[j]])
 			if v1 != nil && v2 != nil {
