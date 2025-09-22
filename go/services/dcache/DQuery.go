@@ -49,6 +49,7 @@ func (this *DQuery) prepare(cache map[string]interface{}, order []string) {
 		}
 		return data[i] < data[j]
 	})
+	this.data = data
 }
 
 func lessThan(a interface{}, b interface{}) bool {
