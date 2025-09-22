@@ -75,6 +75,7 @@ func (this *localCache) fetch(start, blockSize int, q ifs.IQuery) []interface{} 
 	dq, ok := this.queries[q.Hash()]
 	if !ok {
 		dq = NewDQuery(q)
+		this.queries[q.Hash()] = dq
 	}
 	if dq.stamp != this.stamp {
 		if q.Criteria() == nil && q.SortBy() == "" {
