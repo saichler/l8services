@@ -1,7 +1,9 @@
 package dcache
 
 import (
+	"encoding/binary"
 	"fmt"
+	"net"
 	"sort"
 
 	"github.com/saichler/l8types/go/ifs"
@@ -76,6 +78,21 @@ func lessThan(a interface{}, b interface{}) bool {
 		}
 	case string:
 		if v2, ok := b.(string); ok {
+			// Check if both strings are IPv4 addresses
+			ip1 := net.ParseIP(v1)
+			ip2 := net.ParseIP(v2)
+			if ip1 != nil && ip2 != nil {
+				// Check if they are IPv4 (not IPv6)
+				ip1v4 := ip1.To4()
+				ip2v4 := ip2.To4()
+				if ip1v4 != nil && ip2v4 != nil {
+					// Convert IPv4 to uint32 for comparison
+					num1 := binary.BigEndian.Uint32(ip1v4)
+					num2 := binary.BigEndian.Uint32(ip2v4)
+					return num1 < num2
+				}
+			}
+			// If not both IPv4, compare as regular strings
 			return v1 < v2
 		}
 	case uint:
