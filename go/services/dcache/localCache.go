@@ -1,6 +1,7 @@
 package dcache
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/saichler/l8types/go/ifs"
@@ -72,15 +73,20 @@ func (this *localCache) size() int {
 }
 
 func (this *localCache) fetch(start, blockSize int, q ifs.IQuery) []interface{} {
+	fmt.Println("Fetch invoked")
 	dq, ok := this.queries[q.Hash()]
 	if !ok {
+		fmt.Println("Query not found, creating it")
 		dq = NewDQuery(q)
 		this.queries[q.Hash()] = dq
 	}
 	if dq.stamp != this.stamp {
+		fmt.Println("Query stamp changed")
 		if q.Criteria() == nil && q.SortBy() == "" {
+			fmt.Println("Query sort by is empty and no criteria")
 			dq.prepare(this.cache, this.order)
 		} else {
+			fmt.Println("Query has criteria and sortby")
 			dq.prepare(this.cache, nil)
 		}
 	}

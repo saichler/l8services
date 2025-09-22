@@ -1,6 +1,7 @@
 package dcache
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/saichler/l8types/go/ifs"
@@ -27,15 +28,17 @@ func (this *DQuery) prepare(cache map[string]interface{}, order []string) {
 	data := make([]string, 0)
 
 	if order != nil {
+		fmt.Println("Order is nil")
 		data = order
 	} else {
+		fmt.Println("Order is not nil")
 		for k, v := range cache {
 			if this.query.Match(v) {
 				data = append(data, k)
 			}
 		}
 	}
-
+	fmt.Println("Query has ", len(data), " sorting")
 	sort.Slice(data, func(i, j int) bool {
 		if order == nil {
 			v1 := this.query.SortByValue(cache[data[i]])
