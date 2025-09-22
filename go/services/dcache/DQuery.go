@@ -26,7 +26,9 @@ func (this *DQuery) Hash() string {
 	return this.hash
 }
 
-func (this *DQuery) prepare(cache map[string]interface{}, order []string) {
+func (this *DQuery) prepare(cache map[string]interface{}, order []string, stamp int64) {
+	this.stamp = stamp
+
 	data := make([]string, 0)
 
 	if order != nil {

@@ -2,6 +2,8 @@ package dcache
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/saichler/l8types/go/ifs"
@@ -82,12 +84,13 @@ func (this *localCache) fetch(start, blockSize int, q ifs.IQuery) []interface{} 
 	}
 	if dq.stamp != this.stamp {
 		fmt.Println("Query stamp changed")
-		if q.Criteria() == nil && q.SortBy() == "" {
+		qrt := reflect.ValueOf(q.Criteria())
+		if (!qrt.IsValid() || qrt.IsNil()) && strings.TrimSpace(q.SortBy()) == "" {
 			fmt.Println("Query sort by is empty and no criteria")
-			dq.prepare(this.cache, this.order)
+			dq.prepare(this.cache, this.order, this.stamp)
 		} else {
 			fmt.Println("Query has criteria and sortby - len of cache ", len(this.cache), " cr ", q.Criteria(), " - -", q.SortBy())
-			dq.prepare(this.cache, nil)
+			dq.prepare(this.cache, nil, this.stamp)
 		}
 	}
 	result := make([]interface{}, 0)
