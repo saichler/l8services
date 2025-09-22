@@ -1,15 +1,25 @@
 package dcache
 
+import (
+	"time"
+
+	"github.com/saichler/l8types/go/ifs"
+)
+
 type localCache struct {
 	cache     map[string]interface{}
 	order     []string
 	key2order map[string]int
 	stats     map[string]int32
 	statsFunc map[string]func(interface{}) bool
+	stamp     int64
+	queries   map[string]*DQuery
 }
 
 func newLocalCache() *localCache {
-	return &localCache{cache: make(map[string]interface{}), order: make([]string, 0), key2order: make(map[string]int)}
+	return &localCache{cache: make(map[string]interface{}),
+		order: make([]string, 0), key2order: make(map[string]int),
+		queries: make(map[string]*DQuery)}
 }
 
 func (this *localCache) removeFromStats(key string) (interface{}, bool) {
@@ -39,6 +49,7 @@ func (this *localCache) put(key string, value interface{}) {
 	this.cache[key] = value
 	if !ok {
 		this.order = append(this.order, key)
+		this.stamp = time.Now().Unix()
 		this.key2order[key] = len(this.order) - 1
 	}
 	this.addToStats(value)
@@ -52,6 +63,7 @@ func (this *localCache) get(key string) (interface{}, bool) {
 func (this *localCache) delete(key string) (interface{}, bool) {
 	item, ok := this.removeFromStats(key)
 	delete(this.cache, key)
+	this.stamp = time.Now().Unix()
 	return item, ok
 }
 
@@ -59,10 +71,21 @@ func (this *localCache) size() int {
 	return len(this.cache)
 }
 
-func (this *localCache) fetch(start, blockSize int) []interface{} {
+func (this *localCache) fetch(start, blockSize int, q ifs.IQuery) []interface{} {
+	dq, ok := this.queries[q.Hash()]
+	if !ok {
+		dq = NewDQuery(q)
+	}
+	if dq.stamp != this.stamp {
+		if q.Criteria() == nil && q.SortBy() == "" {
+			dq.prepare(this.cache, this.order)
+		} else {
+			dq.prepare(this.cache, nil)
+		}
+	}
 	result := make([]interface{}, 0)
-	for i := start; i < len(this.order); i++ {
-		key := this.order[i]
+	for i := start; i < len(dq.data); i++ {
+		key := dq.data[i]
 		value, ok := this.cache[key]
 		if ok {
 			result = append(result, value)

@@ -13,7 +13,6 @@ import (
 
 type DCache struct {
 	cache         *localCache
-	order         []string
 	mtx           *sync.RWMutex
 	cond          *sync.Cond
 	listener      ifs.IServiceCacheListener
