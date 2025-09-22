@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8utils/go/utils/strings"
 	"github.com/saichler/l8reflect/go/reflect/cloning"
 	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8utils/go/utils/strings"
 )
 
 type DCache struct {
@@ -62,9 +62,11 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 			this.cache.put(k, v)
 		}
 	} else if initElements != nil {
+		resources.Logger().Info("Distributed cache - Adding initialized elements")
 		for _, item := range initElements {
-			k, err := this.PrimaryKeyFor(item)
-			if err != nil {
+			k, er := this.PrimaryKeyFor(item)
+			if er != nil {
+				resources.Logger().Info(er.Error())
 				continue
 			}
 			this.cache.put(k, item)
