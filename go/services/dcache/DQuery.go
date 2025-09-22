@@ -28,10 +28,10 @@ func (this *DQuery) prepare(cache map[string]interface{}, order []string) {
 	data := make([]string, 0)
 
 	if order != nil {
-		fmt.Println("Order is nil")
+		fmt.Println("Order is not nil")
 		data = order
 	} else {
-		fmt.Println("Order is not nil")
+		fmt.Println("Order is nil")
 		for k, v := range cache {
 			if this.query.Match(v) {
 				data = append(data, k)

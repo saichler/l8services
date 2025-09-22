@@ -86,7 +86,7 @@ func (this *localCache) fetch(start, blockSize int, q ifs.IQuery) []interface{} 
 			fmt.Println("Query sort by is empty and no criteria")
 			dq.prepare(this.cache, this.order)
 		} else {
-			fmt.Println("Query has criteria and sortby")
+			fmt.Println("Query has criteria and sortby - len of cache ", len(this.cache), " cr ", q.Criteria(), " - -", q.SortBy())
 			dq.prepare(this.cache, nil)
 		}
 	}
