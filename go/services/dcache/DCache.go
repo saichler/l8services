@@ -55,13 +55,30 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 		panic(err)
 	}
 
+	loadedFromStore := false
+
 	if this.store != nil {
 		items := this.store.Collect(all)
 		for k, v := range items {
 			this.cache.put(k, v)
 		}
-	} else if initElements != nil {
-		resources.Logger().Info("Distributed cache - Adding initialized elements")
+		if len(items) > 0 {
+			loadedFromStore = true
+		}
+	}
+
+	if !loadedFromStore && this.store != nil {
+		for _, item := range initElements {
+			k, er := this.PrimaryKeyFor(item)
+			if er != nil {
+				resources.Logger().Info(er.Error())
+				continue
+			}
+			this.store.Put(k, item)
+		}
+	}
+
+	if !loadedFromStore && this.cacheEnabled() && initElements != nil {
 		for _, item := range initElements {
 			k, er := this.PrimaryKeyFor(item)
 			if er != nil {
