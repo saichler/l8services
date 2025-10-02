@@ -116,4 +116,11 @@ func (this *localCache) addStatsFunc(name string, f func(interface{}) bool) {
 		this.stats = make(map[string]int32)
 	}
 	this.statsFunc[name] = f
+	if len(this.cache) > 0 {
+		for _, elem := range this.cache {
+			if f(elem) {
+				this.stats[name]++
+			}
+		}
+	}
 }
