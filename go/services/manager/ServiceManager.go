@@ -2,6 +2,7 @@ package manager
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 
 	"github.com/saichler/l8bus/go/overlay/health"
@@ -58,6 +59,8 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 
 	// Handle participant registry actions
 	if action >= ifs.ServiceRegister && action <= ifs.ServiceQuery {
+		vnic.Resources().Logger().Debug("Routing to participant registry, action:", action)
+		fmt.Println("[PARTICIPANT] - ROUTING")
 		return this.participantRegistry.handleRegistry(action, vnic, msg)
 	}
 
@@ -95,7 +98,9 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		return h.Failed(pb, vnic, msg)
 	}
 
-	if h.TransactionConfig() != nil {
+	isStartTransaction := h.TransactionConfig() != nil && msg.Action() < ifs.ElectionRequest && this.GetLeader(msg.ServiceName(), msg.ServiceArea()) != ""
+
+	if isStartTransaction {
 		if msg.Tr_State() == ifs.Empty {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
@@ -185,7 +190,8 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 }
 
 func (this *ServiceManager) onNodeDelete(uuid string) {
-
+	this.participantRegistry.UnregisterParticipantFromAll(uuid)
+	this.resources.Logger().Info("Unregistered all services for failed node", uuid)
 }
 
 func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
@@ -236,7 +242,7 @@ func (this *ServiceManager) UnregisterParticipant(serviceName string, serviceAre
 	this.participantRegistry.UnregisterParticipant(serviceName, serviceArea, uuid)
 }
 
-func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) []string {
+func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) map[string]bool {
 	return this.participantRegistry.GetParticipants(serviceName, serviceArea)
 }
 

@@ -1,7 +1,9 @@
 package tests
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
@@ -18,11 +20,54 @@ func TestMain(m *testing.M) {
 }
 
 func TestTransaction(t *testing.T) {
+	fmt.Println("TestTransaction")
+
+	i := 0
+	for ; i < 10; i++ {
+		ok := true
+		for vnet := 1; vnet <= 3; vnet++ {
+			for vnic := 1; vnic <= 3; vnic++ {
+				nic := topo.VnicByVnetNum(vnet, vnic)
+				if nic.Resources().Services().GetLeader("Tests", 1) == "" {
+					ok = false
+					break
+				}
+				participants := len(nic.Resources().Services().GetParticipants("Tests", 1))
+				if participants < 2 {
+					ok = false
+					break
+				}
+			}
+			if !ok {
+				break
+			}
+		}
+		if ok {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
+	if i == 10 {
+		t.Fail()
+		fmt.Println("Not ready for transaction")
+		return
+	}
+
 	topo.SetLogLevel(ifs.Debug_Level)
 	defer reset("TestTransaction")
 
 	eg2_2 := topo.VnicByVnetNum(2, 2)
 	eg1_1 := topo.VnicByVnetNum(1, 1)
+
+	leader1 := eg2_2.Resources().Services().GetLeader("Tests", 1)
+	leader2 := eg1_1.Resources().Services().GetLeader("Tests", 1)
+	if leader1 == "" || leader2 != leader1 {
+		eg2_2.Resources().Logger().Fail(t, "Leader is blank or diff '", leader1, "-", leader2, "'")
+		return
+	}
+
+	fmt.Println("Start Transaction, leader is ", leader1)
 
 	if !doTransaction(ifs.POST, eg2_2, 1, t, true) {
 		return

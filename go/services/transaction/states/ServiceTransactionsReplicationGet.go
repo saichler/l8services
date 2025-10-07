@@ -7,7 +7,6 @@ import (
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8services"
-	"github.com/saichler/l8bus/go/overlay/health"
 )
 
 func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Message,
@@ -42,7 +41,7 @@ func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Mes
 func getAll(elements ifs.IElements, vnic ifs.IVNic,
 	msg *ifs.Message, index *l8services.L8ReplicationIndex) ifs.IElements {
 	myUuid := vnic.Resources().SysConfig().LocalUuid
-	leader := health.Health(vnic.Resources()).LeaderFor(msg.ServiceName(), msg.ServiceArea())
+	leader := vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := myUuid == leader
 	if !isLeader && elements.ReplicasRequest() {
 		return vnic.Resources().Services().TransactionHandle(elements, msg.Action(), vnic, msg)

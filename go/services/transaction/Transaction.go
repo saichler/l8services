@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
@@ -84,16 +83,14 @@ func (this *Transaction) Leader() string {
 }
 
 func (this *Transaction) Targets() map[string]bool {
-	healthCenter := health.Health(this.vnic.Resources())
-	targets := healthCenter.Uuids(this.msg.ServiceName(), this.msg.ServiceArea())
+	targets := this.vnic.Resources().Services().GetParticipants(this.msg.ServiceName(), this.msg.ServiceArea())
 	delete(targets, this.vnic.Resources().SysConfig().LocalUuid)
 	return targets
 }
 
 func (this *Transaction) TargetsWithReplication() (bool, bool, map[string]bool, map[string]bool) {
-	healthCenter := health.Health(this.vnic.Resources())
-	isLeader := healthCenter.LeaderFor(this.msg.ServiceName(), this.msg.ServiceArea()) == this.vnic.Resources().SysConfig().LocalUuid
-	targets := healthCenter.Uuids(this.msg.ServiceName(), this.msg.ServiceArea())
+	targets := this.vnic.Resources().Services().GetParticipants(this.msg.ServiceName(), this.msg.ServiceArea())
+	isLeader := this.IsLeader()
 	replicas := make(map[string]bool)
 	for target, _ := range targets {
 		replicas[target] = true

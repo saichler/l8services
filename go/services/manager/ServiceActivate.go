@@ -2,6 +2,7 @@ package manager
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
@@ -10,7 +11,7 @@ import (
 
 func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea byte,
 	r ifs.IResources, l ifs.IServiceCacheListener, args ...interface{}) (ifs.IServiceHandler, error) {
-
+	r.Logger().Debug("[Activate]", r.SysConfig().LocalUuid, "-", serviceName, "-", serviceArea, "-", l != nil)
 	if typeName == "" {
 		return nil, errors.New("typeName is empty")
 	}
@@ -82,6 +83,20 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	if ok && webService != nil {
 		vnic.Resources().Logger().Info("Sent Webservice multicast for ", serviceName, " area ", serviceArea)
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
+	}
+
+	// Only trigger election and participant registration for services with TransactionConfig
+	if ok && handler.TransactionConfig() != nil {
+		// Register as participant for this service
+		localUuid := this.resources.SysConfig().LocalUuid
+		fmt.Println("[ACTIVATE]", localUuid, "- Registering participant for", serviceName, "area", serviceArea)
+		this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
+		fmt.Println("[ACTIVATE]", localUuid, "- Multicasting ServiceRegister for", serviceName, "area", serviceArea)
+		vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
+
+		// Trigger election for this service
+		fmt.Println("[ACTIVATE]", localUuid, "- Starting election for", serviceName, "area", serviceArea)
+		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 	}
 
 	return handler, err

@@ -66,8 +66,11 @@ func (le *LeaderElection) handleElectionRequest(vnic ifs.IVNic, msg *ifs.Message
 	localUuid := vnic.Resources().SysConfig().LocalUuid
 	senderUuid := msg.Source()
 
+	vnic.Resources().Logger().Debug("Election request from", senderUuid, "for", msg.ServiceName(), "area", msg.ServiceArea(), "local:", localUuid)
+
 	// If sender has lower priority (higher UUID), respond that we're still alive
 	if senderUuid < localUuid {
+		vnic.Resources().Logger().Debug("Responding to election request and starting own election")
 		vnic.Unicast(senderUuid, msg.ServiceName(), msg.ServiceArea(), ifs.ElectionResponse, nil)
 		// Start our own election since we have higher priority
 		go le.startElection(msg.ServiceName(), msg.ServiceArea(), vnic)
@@ -80,19 +83,21 @@ func (le *LeaderElection) handleElectionResponse(vnic ifs.IVNic, msg *ifs.Messag
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getLeaderInfo(key)
 	if info == nil {
+		vnic.Resources().Logger().Debug("Election response received but no leader info for", msg.ServiceName(), "area", msg.ServiceArea())
 		return nil
 	}
 
+	vnic.Resources().Logger().Debug("Election response from", msg.Source(), "for", msg.ServiceName(), "area", msg.ServiceArea())
+
 	info.mtx.Lock()
-	defer info.mtx.Unlock()
 
 	// If we're in an election and received a response, a higher-priority node exists
 	if info.state == electing {
+		vnic.Resources().Logger().Debug("Higher priority node exists, aborting election")
 		info.state = hasLeader
-		if info.electionTimer != nil {
-			info.electionTimer.Stop()
-		}
+		// Don't call timer.Stop() - just change state and the election goroutine will handle it
 	}
+	info.mtx.Unlock()
 
 	return nil
 }
@@ -101,21 +106,25 @@ func (le *LeaderElection) handleLeaderAnnouncement(vnic ifs.IVNic, msg *ifs.Mess
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getOrCreateLeaderInfo(key)
 
-	info.mtx.Lock()
-	defer info.mtx.Unlock()
-
 	localUuid := vnic.Resources().SysConfig().LocalUuid
 	senderUuid := msg.Source()
 
+	vnic.Resources().Logger().Debug("Leader announcement from", senderUuid, "for", msg.ServiceName(), "area", msg.ServiceArea())
+
+	info.mtx.Lock()
 	// Accept the leader announcement
 	info.leaderUuid = senderUuid
 	info.lastHeartbeat = time.Now()
 
 	if senderUuid == localUuid {
+		vnic.Resources().Logger().Debug("I am the leader")
 		info.state = isLeader
+		info.mtx.Unlock()
 		le.startHeartbeat(key, msg.ServiceName(), msg.ServiceArea(), vnic)
 	} else {
+		vnic.Resources().Logger().Debug("Following leader:", senderUuid)
 		info.state = hasLeader
+		info.mtx.Unlock()
 		le.startHeartbeatMonitor(key, msg.ServiceName(), msg.ServiceArea(), vnic)
 	}
 
@@ -206,6 +215,7 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 
 	info.mtx.Lock()
 	if info.state == electing || info.state == isLeader {
+		vnic.Resources().Logger().Debug("Election already in progress or already leader for", serviceName, "area", serviceArea)
 		info.mtx.Unlock()
 		return
 	}
@@ -217,6 +227,8 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 	// Send election request to all nodes
 	vnic.Multicast(serviceName, serviceArea, ifs.ElectionRequest, nil)
 
+	vnic.Resources().Logger().Debug("Waiting", electionTimeout, "for election responses")
+
 	// Wait for responses
 	timer := time.NewTimer(electionTimeout)
 	info.mtx.Lock()
@@ -226,16 +238,21 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 	<-timer.C
 
 	info.mtx.Lock()
-	if info.state == electing {
+	currentState := info.state
+	vnic.Resources().Logger().Debug("Election timeout elapsed, state:", currentState)
+
+	if currentState == electing {
 		// No higher-priority node responded, we are the leader
+		localUuid := vnic.Resources().SysConfig().LocalUuid
 		info.state = isLeader
-		info.leaderUuid = vnic.Resources().SysConfig().LocalUuid
+		info.leaderUuid = localUuid
 		info.mtx.Unlock()
 
 		vnic.Resources().Logger().Info("Elected as leader for", serviceName, "area", serviceArea)
 		vnic.Multicast(serviceName, serviceArea, ifs.LeaderAnnouncement, nil)
 		le.startHeartbeat(key, serviceName, serviceArea, vnic)
 	} else {
+		vnic.Resources().Logger().Debug("Not becoming leader, state changed to:", currentState)
 		info.mtx.Unlock()
 	}
 }
@@ -368,6 +385,11 @@ func (le *LeaderElection) GetLeader(serviceName string, serviceArea byte) string
 
 	info.mtx.RLock()
 	defer info.mtx.RUnlock()
+
+	if info.leaderUuid == "" {
+		return ""
+	}
+
 	return info.leaderUuid
 }
 
