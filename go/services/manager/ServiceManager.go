@@ -4,21 +4,24 @@ import (
 	"bytes"
 	"strconv"
 
+	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8services/go/services/transaction/states"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8health"
 	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/maps"
-	"github.com/saichler/l8bus/go/overlay/health"
 )
 
 type ServiceManager struct {
-	services          *ServicesMap
-	trManager         *states.TransactionManager
-	distributedCaches *maps.SyncMap
-	resources         ifs.IResources
+	services            *ServicesMap
+	trManager           *states.TransactionManager
+	distributedCaches   *maps.SyncMap
+	resources           ifs.IResources
+	leaderElection      *LeaderElection
+	participantRegistry *ParticipantRegistry
 }
 
 func NewServices(resources ifs.IResources) ifs.IServices {
@@ -27,6 +30,8 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp.resources = resources
 	sp.trManager = states.NewTransactionManager(sp)
 	sp.distributedCaches = maps.NewSyncMap()
+	sp.leaderElection = NewLeaderElection()
+	sp.participantRegistry = NewParticipantRegistry()
 	_, err := sp.resources.Registry().Register(&l8notify.L8NotificationSet{})
 	if err != nil {
 		panic(err)
@@ -49,6 +54,16 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().SysConfig().LocalUuid, "")
 	if err != nil {
 		return object.NewError(err.Error())
+	}
+
+	// Handle participant registry actions
+	if action >= ifs.ServiceRegister && action <= ifs.ServiceQuery {
+		return this.participantRegistry.handleRegistry(action, vnic, msg)
+	}
+
+	// Handle leader election actions
+	if action >= ifs.ElectionRequest && action <= ifs.LeaderChallenge {
+		return this.leaderElection.handleElection(action, vnic, msg)
 	}
 
 	if msg.Action() == ifs.Sync {
@@ -159,10 +174,18 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 	case l8notify.L8NotificationType_Update:
 		return h.Patch(npb, vnic)
 	case l8notify.L8NotificationType_Delete:
-		return h.Delete(npb, vnic)
+		result := h.Delete(npb, vnic)
+		if notification.ServiceName == health.ServiceName {
+			this.onNodeDelete(item.(*l8health.L8Health).AUuid)
+		}
+		return result
 	default:
 		return object.NewError("invalid notification type, ignoring")
 	}
+}
+
+func (this *ServiceManager) onNodeDelete(uuid string) {
+
 }
 
 func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
@@ -191,4 +214,36 @@ func cacheKey(serviceName string, serviceArea byte) string {
 
 func (this *ServiceManager) Services() *l8services.L8Services {
 	return this.services.serviceList()
+}
+
+func (this *ServiceManager) StartElection(serviceName string, serviceArea byte, vnic ifs.IVNic) {
+	this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
+}
+
+func (this *ServiceManager) GetLeader(serviceName string, serviceArea byte) string {
+	return this.leaderElection.GetLeader(serviceName, serviceArea)
+}
+
+func (this *ServiceManager) IsLeader(serviceName string, serviceArea byte, uuid string) bool {
+	return this.leaderElection.IsLeader(serviceName, serviceArea, uuid)
+}
+
+func (this *ServiceManager) RegisterParticipant(serviceName string, serviceArea byte, uuid string) {
+	this.participantRegistry.RegisterParticipant(serviceName, serviceArea, uuid)
+}
+
+func (this *ServiceManager) UnregisterParticipant(serviceName string, serviceArea byte, uuid string) {
+	this.participantRegistry.UnregisterParticipant(serviceName, serviceArea, uuid)
+}
+
+func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) []string {
+	return this.participantRegistry.GetParticipants(serviceName, serviceArea)
+}
+
+func (this *ServiceManager) IsParticipant(serviceName string, serviceArea byte, uuid string) bool {
+	return this.participantRegistry.IsParticipant(serviceName, serviceArea, uuid)
+}
+
+func (this *ServiceManager) ParticipantCount(serviceName string, serviceArea byte) int {
+	return this.participantRegistry.ParticipantCount(serviceName, serviceArea)
 }

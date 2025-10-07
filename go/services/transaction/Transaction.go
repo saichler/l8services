@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/saichler/l8bus/go/overlay/health"
+	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8services"
-	"github.com/saichler/l8bus/go/overlay/health"
-	"github.com/saichler/l8bus/go/overlay/protocol"
 )
 
 type Transaction struct {
@@ -75,14 +75,12 @@ func (this *Transaction) VNic() ifs.IVNic {
 }
 
 func (this *Transaction) IsLeader() bool {
-	healthCenter := health.Health(this.vnic.Resources())
-	leader := healthCenter.LeaderFor(this.msg.ServiceName(), this.msg.ServiceArea())
+	leader := this.vnic.Resources().Services().GetLeader(this.msg.ServiceName(), this.msg.ServiceArea())
 	return leader == this.vnic.Resources().SysConfig().LocalUuid
 }
 
 func (this *Transaction) Leader() string {
-	healthCenter := health.Health(this.vnic.Resources())
-	return healthCenter.LeaderFor(this.msg.ServiceName(), this.msg.ServiceArea())
+	return this.vnic.Resources().Services().GetLeader(this.msg.ServiceName(), this.msg.ServiceArea())
 }
 
 func (this *Transaction) Targets() map[string]bool {
