@@ -50,7 +50,7 @@ func TestTransaction(t *testing.T) {
 
 	if i == 10 {
 		t.Fail()
-		fmt.Println("Not ready for transaction")
+		fmt.Println("[PARTICIPANT] Not ready for transaction")
 		return
 	}
 

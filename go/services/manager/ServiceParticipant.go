@@ -119,6 +119,7 @@ func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea b
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
 	if ps == nil {
+		fmt.Println("[PARTICIPANT] GetParticipants: No participant set for", serviceName, "area", serviceArea)
 		return map[string]bool{}
 	}
 
@@ -129,6 +130,8 @@ func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea b
 	for uuid := range ps.uuids {
 		participants[uuid] = true
 	}
+
+	fmt.Println("[PARTICIPANT] GetParticipants:", serviceName, "area", serviceArea, "count:", len(participants), "participants:", participants)
 
 	return participants
 }

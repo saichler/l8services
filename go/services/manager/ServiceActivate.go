@@ -91,6 +91,11 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		localUuid := this.resources.SysConfig().LocalUuid
 		fmt.Println("[ACTIVATE]", localUuid, "- Registering participant for", serviceName, "area", serviceArea)
 		this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
+
+		// Query for existing participants first
+		fmt.Println("[ACTIVATE]", localUuid, "- Querying for existing participants for", serviceName, "area", serviceArea)
+		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
+
 		fmt.Println("[ACTIVATE]", localUuid, "- Multicasting ServiceRegister for", serviceName, "area", serviceArea)
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
 
