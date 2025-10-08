@@ -21,7 +21,7 @@ func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T
 	}
 
 	tr := resp.Element().(*l8services.L8Transaction)
-	if tr.State != int32(ifs.Commited) && failure {
+	if tr.State != int32(ifs.Committed) && failure {
 		Log.Fail(t, "transaction state is not commited, ", expected, " ", ifs.TransactionState(tr.State), " ", tr.ErrMsg)
 		return false
 	}

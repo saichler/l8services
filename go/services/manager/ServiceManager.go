@@ -107,7 +107,8 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		}
 		vnic.Resources().Logger().Debug("Running transaction")
 		defer vnic.Resources().Logger().Debug("Defer Running transaction")
-		return this.trManager.Run(msg, vnic)
+		this.trManager.Run(msg, vnic)
+		return nil
 	}
 
 	return this.handle(h, pb, action, vnic)

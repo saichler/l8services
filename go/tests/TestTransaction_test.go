@@ -155,7 +155,7 @@ func TestParallel(t *testing.T) {
 
 	for _, result := range results {
 		tr, ok := result.(*l8services.L8Transaction)
-		if ok && tr.State == int32(ifs.Commited) {
+		if ok && tr.State == int32(ifs.Committed) {
 			post++
 		}
 		_, ok = result.(*testtypes.TestProto)
