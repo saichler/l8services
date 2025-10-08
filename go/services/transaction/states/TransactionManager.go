@@ -3,9 +3,7 @@ package states
 import (
 	"sync"
 
-	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/strings"
 )
 
@@ -23,7 +21,7 @@ func NewTransactionManager(services ifs.IServices) *TransactionManager {
 	return tm
 }
 
-func (this *TransactionManager) transactionsOf(msg *ifs.Message) *ServiceTransactions {
+func (this *TransactionManager) transactionsOf(msg *ifs.Message, nic ifs.IVNic) *ServiceTransactions {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
 	serviceKey := ServiceKey(msg.ServiceName(), msg.ServiceArea())
@@ -33,80 +31,45 @@ func (this *TransactionManager) transactionsOf(msg *ifs.Message) *ServiceTransac
 		if !ook {
 			panic(strings.New("Cannot find service handler for ", msg.ServiceName(), " - ", msg.ServiceArea()).String())
 		}
-		this.serviceTransactions[serviceKey] = newServiceTransactions(h.TransactionConfig().ConcurrentGets())
+		this.serviceTransactions[serviceKey] = newServiceTransactions(h.TransactionConfig().ConcurrentGets(), nic)
 		st = this.serviceTransactions[serviceKey]
 	}
 	return st
 }
 
-func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
+func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) {
 	switch msg.Tr_State() {
-	case ifs.Create:
-		this.create(msg, vnic)
-	case ifs.Start:
-		this.start(msg, vnic)
 	case ifs.Created:
-		this.lock(msg, vnic)
-	case ifs.Commit:
+		this.created(msg, vnic)
+	case ifs.Running:
 		this.commit(msg, vnic)
-	case ifs.Finish:
-		this.finish(msg, vnic.Resources().Logger())
 	case ifs.Rollback:
 		this.rollback(msg, vnic)
-	case ifs.Errored:
 	default:
 		panic("Unexpected transaction state " + msg.Tr_State().String() + ":" + msg.Tr_ErrMsg())
 	}
-	return object.New(nil, &l8services.L8Transaction{State: int32(msg.Tr_State()),
-		Id:        msg.Tr_Id(),
-		ErrMsg:    msg.Tr_ErrMsg(),
-		StartTime: msg.Tr_StartTime()})
 }
 
-func (this *TransactionManager) create(msg *ifs.Message, vnic ifs.IVNic) {
-	if msg.Tr_State() != ifs.Create {
-		panic("create: Unexpected transaction state " + msg.Tr_State().String())
+// First we insert the transaction to the Queue and mark it as queued
+func (this *TransactionManager) created(msg *ifs.Message, vnic ifs.IVNic) {
+	st := this.transactionsOf(msg, vnic)
+	err := st.addTransaction(msg, vnic)
+	if err != nil {
+		msg.SetTr_State(ifs.Failed)
+		msg.SetTr_ErrMsg(err.Error())
 	}
-	createTransaction(msg)
-	st := this.transactionsOf(msg)
-	tr := st.addTransaction(msg, vnic)
-	tr.Debug("TransactionManager.create: Created Transaction ", tr.Msg().Tr_Id())
-	msg.SetTr_State(ifs.Created)
-}
-
-func (this *TransactionManager) lock(msg *ifs.Message, vnic ifs.IVNic) {
-	vnic.Resources().Logger().Debug("Tr Lock...")
-	st := this.transactionsOf(msg)
-	state, err := st.lockFollower(msg, vnic)
-	msg.SetTr_State(state)
-	msg.SetTr_ErrMsg(err)
+	// Unicast the new state to the originator
+	vnic.Reply(msg, L8TransactionFor(msg))
 }
 
 func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Commit...")
-	st := this.transactionsOf(msg)
-	state, err := st.commitFollower(msg, vnic)
-	msg.SetTr_State(state)
-	msg.SetTr_ErrMsg(err)
+	st := this.transactionsOf(msg, vnic)
+	st.commitInternal(msg)
 }
 
 func (this *TransactionManager) rollback(msg *ifs.Message, vnic ifs.IVNic) {
 	vnic.Resources().Logger().Debug("Tr Create...")
-	st := this.transactionsOf(msg)
-	state, err := st.rollbackFollower(msg, vnic)
-	msg.SetTr_State(state)
-	msg.SetTr_ErrMsg(err)
-}
-
-func (this *TransactionManager) finish(msg *ifs.Message, log ifs.ILogger) {
-	log.Debug("TransactionManager.finish: ", msg.Tr_Id())
-	st := this.transactionsOf(msg)
-	st.finishFollower(msg)
-}
-
-func (this *TransactionManager) start(msg *ifs.Message, vnic ifs.IVNic) {
-	vnic.Resources().Logger().Debug("TransactionManager.start: ", msg.Tr_Id())
-	st := this.transactionsOf(msg)
-	st.start(msg, vnic)
-
+	st := this.transactionsOf(msg, vnic)
+	st.rollbackInternal(msg)
 }

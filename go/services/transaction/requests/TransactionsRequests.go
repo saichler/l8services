@@ -3,7 +3,6 @@ package requests
 import (
 	"sync"
 
-	"github.com/saichler/l8services/go/services/transaction"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8services"
 )
@@ -12,12 +11,14 @@ type Requests struct {
 	cond    *sync.Cond
 	pending map[string]string
 	count   int
+	vnic    ifs.IVNic
 }
 
-func NewRequest() *Requests {
+func NewRequest(vnic ifs.IVNic) *Requests {
 	rq := &Requests{}
 	rq.pending = make(map[string]string)
 	rq.cond = sync.NewCond(&sync.Mutex{})
+	rq.vnic = vnic
 	return rq
 }
 
@@ -41,7 +42,7 @@ func (this *Requests) reportError(target string, err error) {
 func (this *Requests) reportResult(target string, tr *l8services.L8Transaction) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
-	if tr.State == int32(ifs.Errored) {
+	if tr.State == int32(ifs.Failed) {
 		this.pending[target] = tr.ErrMsg
 	}
 	this.count--
@@ -50,12 +51,12 @@ func (this *Requests) reportResult(target string, tr *l8services.L8Transaction) 
 	}
 }
 
-func (this *Requests) requestFromPeer(localTr *transaction.Transaction, target string) {
+func (this *Requests) requestFromPeer(msg *ifs.Message, target string) {
 	this.addOne(target)
 
-	resp := localTr.VNic().Forward(localTr.Msg(), target)
+	resp := this.vnic.Forward(msg, target)
 	if resp != nil && resp.Error() != nil {
-		localTr.VNic().Resources().Logger().Error(resp.Error())
+		this.vnic.Resources().Logger().Error(resp.Error())
 		this.reportError(target, resp.Error())
 		return
 	}
@@ -64,15 +65,15 @@ func (this *Requests) requestFromPeer(localTr *transaction.Transaction, target s
 	this.reportResult(target, tr)
 }
 
-func RequestFromPeers(tr *transaction.Transaction, targets map[string]bool) (bool, map[string]string) {
+func RequestFromPeers(msg *ifs.Message, targets map[string]bool, vnic ifs.IVNic) (bool, map[string]string) {
 
-	this := NewRequest()
+	this := NewRequest(vnic)
 
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
 
 	for target, _ := range targets {
-		go this.requestFromPeer(tr, target)
+		go this.requestFromPeer(msg, target)
 	}
 
 	if len(targets) > 0 {
@@ -88,7 +89,7 @@ func RequestFromPeers(tr *transaction.Transaction, targets map[string]bool) (boo
 	}
 
 	if !ok {
-		tr.Msg().SetTr_State(ifs.Errored)
+		msg.SetTr_State(ifs.Failed)
 		return false, this.pending
 	}
 

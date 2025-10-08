@@ -1,56 +1,31 @@
 package states
 
 import (
-	"github.com/saichler/l8services/go/services/transaction"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServiceTransactions) rollbackInternal(tr *transaction.Transaction) (ifs.TransactionState, string) {
+func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) {
 
-	if tr.Msg().Tr_State() != ifs.Commited {
-		panic("T05_Rollback.rollbackInternal: Unexpected transaction state " + tr.Msg().Tr_State().String() + " " + tr.Msg().Tr_Id())
-	}
-
-	if this.lockedTrId == "" {
-		tr.Msg().SetTr_State(ifs.Errored)
-		tr.Msg().SetTr_ErrMsg("T05_Rollback.rollbackInternal: No committed transaction " + tr.Msg().Tr_Id())
-		tr.Error(tr.Msg().Tr_ErrMsg())
-		return tr.Msg().Tr_State(), tr.Msg().Tr_ErrMsg()
-	}
-
-	if this.lockedTrId != tr.Msg().Tr_Id() {
-		tr.Msg().SetTr_State(ifs.Errored)
-		tr.Msg().SetTr_ErrMsg("T05_Rollback.rollbackInternal: commit was for another transaction " + tr.Msg().Tr_Id())
-		tr.Error(tr.Msg().Tr_ErrMsg())
-		return tr.Msg().Tr_State(), tr.Msg().Tr_ErrMsg()
-	}
-
-	if tr.Msg().Action() == ifs.Notify {
+	if msg.Action() == ifs.Notify {
 		//_, err := services.Notify()
-	} else {
-		this.setRollbackAction(tr.Msg())
-		resp := tr.Services().TransactionHandle(tr.PreTrElement(), tr.Msg().Action(), tr.VNic(), tr.Msg())
-		if resp != nil && resp.Error() != nil {
-			tr.Msg().SetTr_State(ifs.Errored)
-			tr.Msg().SetTr_ErrMsg("T05_Rollback.rollbackInternal: Handle Error: " + tr.Msg().Tr_Id() + " " + resp.Error().Error())
-			tr.Error(tr.Msg().Tr_ErrMsg())
-			return tr.Msg().Tr_State(), tr.Msg().Tr_ErrMsg()
-		}
 	}
+	this.setRollbackAction(msg)
 
-	tr.Msg().SetTr_State(ifs.Rollbacked)
-	return tr.Msg().Tr_State(), tr.Msg().Tr_ErrMsg()
-}
+	this.preCommitMtx.Lock()
+	defer this.preCommitMtx.Unlock()
 
-func (this *ServiceTransactions) rollbackFollower(msg *ifs.Message, vnic ifs.IVNic) (ifs.TransactionState, string) {
-	tr, err := this.getTransaction(msg, vnic)
-	if err != nil {
-		err = vnic.Resources().Logger().Error("T05_Rollback.rollbackFollower: Transaction ID ", msg.Tr_Id(), " does not exist")
-		return ifs.Errored, err.Error()
+	elem := this.preCommitObject(msg)
+	resp := this.nic.Resources().Services().TransactionHandle(elem, msg.Action(), this.nic, msg)
+	if resp != nil && resp.Error() != nil {
+		msg.SetTr_State(ifs.Failed)
+		msg.SetTr_ErrMsg("T05_Rollback.rollbackInternal: Handle Error: " + msg.Tr_Id() + " " + resp.Error().Error())
+		this.nic.Reply(msg, L8TransactionFor(msg))
+		delete(this.preCommit, msg.Tr_Id())
+		return
 	}
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
-	return this.rollbackInternal(tr)
+	this.nic.Reply(msg, L8TransactionFor(msg))
+	delete(this.preCommit, msg.Tr_Id())
 }
 
 func (this *ServiceTransactions) setRollbackAction(msg *ifs.Message) {
@@ -64,4 +39,13 @@ func (this *ServiceTransactions) setRollbackAction(msg *ifs.Message) {
 	case ifs.PATCH:
 		msg.SetAction(ifs.PUT)
 	}
+}
+
+func (this *ServiceTransactions) preCommitObject(msg *ifs.Message) ifs.IElements {
+	item := this.preCommit[msg.Tr_Id()]
+	elem, ok := item.(ifs.IElements)
+	if ok {
+		return elem
+	}
+	return object.New(nil, item)
 }

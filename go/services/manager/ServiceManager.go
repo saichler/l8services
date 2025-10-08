@@ -99,15 +99,10 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	}
 
 	isStartTransaction := h.TransactionConfig() != nil && msg.Action() < ifs.ElectionRequest && this.GetLeader(msg.ServiceName(), msg.ServiceArea()) != ""
-
 	if isStartTransaction {
-		if msg.Tr_State() == ifs.Empty {
+		if msg.Tr_State() == ifs.NotATransaction {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
-			if !msg.Request() {
-				go this.trManager.Create(msg, vnic)
-				return nil
-			}
 			return this.trManager.Create(msg, vnic)
 		}
 		vnic.Resources().Logger().Debug("Running transaction")
