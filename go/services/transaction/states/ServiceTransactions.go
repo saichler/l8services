@@ -33,7 +33,7 @@ func newServiceTransactions(concurrentGets bool, nic ifs.IVNic) *ServiceTransact
 	serviceTransactions.concurrentGets = concurrentGets
 	serviceTransactions.preCommitMtx = &sync.Mutex{}
 	serviceTransactions.preCommit = map[string]interface{}{}
-	
+
 	go serviceTransactions.processTransactions()
 	return serviceTransactions
 }

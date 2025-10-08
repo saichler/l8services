@@ -3,9 +3,11 @@ package manager
 import (
 	"bytes"
 	"strconv"
+	"time"
 
 	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8services/go/services/dcache"
+	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8services/go/services/transaction/states"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
@@ -111,13 +113,31 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	return this.handle(h, pb, action, vnic)
 }
 
+func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, r ifs.IResources) {
+	index, replicationService := replication.ReplicationIndex(serviceName, serviceArea, r)
+	if index.Keys == nil {
+		index.Keys = make(map[string]*l8services.L8ReplicationKey)
+	}
+	if index.Keys[key] == nil {
+		index.Keys[key] = &l8services.L8ReplicationKey{}
+		index.Keys[key].Location = make(map[string]int64)
+	}
+	index.Keys[key].Location[r.SysConfig().LocalUuid] = time.Now().UnixMilli()
+	replication.UpdateIndex(replicationService, index)
+}
+
 func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	this.resources.Logger().Info("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if h == nil {
 		this.resources.Logger().Info("Transaction Handle: No handler for service "+msg.ServiceName(), "-", msg.ServiceArea())
 	}
-	return this.handle(h, pb, action, vnic)
+	resp := this.handle(h, pb, action, vnic)
+	if resp.Error() == nil && h.TransactionConfig().Replication() {
+		key := h.TransactionConfig().KeyOf(pb, vnic.Resources())
+		this.updateReplicationIndex(msg.ServiceName(), msg.ServiceArea(), key, vnic.Resources())
+	}
+	return resp
 }
 
 func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, vnic ifs.IVNic) ifs.IElements {
@@ -245,4 +265,8 @@ func (this *ServiceManager) IsParticipant(serviceName string, serviceArea byte, 
 
 func (this *ServiceManager) ParticipantCount(serviceName string, serviceArea byte) int {
 	return this.participantRegistry.ParticipantCount(serviceName, serviceArea)
+}
+
+func (this *ServiceManager) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]bool {
+	return this.participantRegistry.RoundRobinParticipants(serviceName, serviceArea, replications)
 }

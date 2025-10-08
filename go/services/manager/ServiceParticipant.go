@@ -7,8 +7,9 @@ import (
 )
 
 type participantSet struct {
-	uuids map[string]struct{}
-	mtx   sync.RWMutex
+	uuids   map[string]struct{}
+	rrIndex int
+	mtx     sync.RWMutex
 }
 
 type ParticipantRegistry struct {
@@ -103,6 +104,49 @@ func (pr *ParticipantRegistry) UnregisterParticipant(serviceName string, service
 	ps.mtx.Lock()
 	delete(ps.uuids, uuid)
 	ps.mtx.Unlock()
+}
+
+func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]bool {
+	key := makeServiceKey(serviceName, serviceArea)
+	ps := pr.getParticipantSet(key)
+	if ps == nil {
+		return map[string]bool{}
+	}
+
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+
+	// Convert map to slice for indexed access
+	totalParticipants := len(ps.uuids)
+	if totalParticipants == 0 {
+		return map[string]bool{}
+	}
+
+	participants := make([]string, 0, totalParticipants)
+	for uuid := range ps.uuids {
+		participants = append(participants, uuid)
+	}
+
+	// If replications >= total participants, return all
+	if replications >= totalParticipants {
+		result := make(map[string]bool, totalParticipants)
+		for _, uuid := range participants {
+			result[uuid] = true
+		}
+		return result
+	}
+
+	// Select participants using round-robin
+	result := make(map[string]bool, replications)
+	for i := 0; i < replications; i++ {
+		index := (ps.rrIndex + i) % totalParticipants
+		result[participants[index]] = true
+	}
+
+	// Update round-robin index for next call
+	ps.rrIndex = (ps.rrIndex + replications) % totalParticipants
+
+	return result
 }
 
 func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea byte) map[string]bool {

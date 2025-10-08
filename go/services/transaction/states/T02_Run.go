@@ -19,7 +19,15 @@ func (this *ServiceTransactions) run(msg *ifs.Message) {
 	msg.SetTr_State(ifs.Running)
 	this.nic.Reply(msg, L8TransactionFor(msg))
 
-	targets := this.nic.Resources().Services().GetParticipants(msg.ServiceName(), msg.ServiceArea())
+	var targets map[string]bool
+	service, _ := this.nic.Resources().Services().ServiceHandler(msg.ServiceName(), msg.ServiceArea())
+	if service.TransactionConfig().Replication() {
+		targets = this.nic.Resources().Services().RoundRobinParticipants(msg.ServiceName(), msg.ServiceArea(),
+			service.TransactionConfig().ReplicationCount())
+	} else {
+		targets = this.nic.Resources().Services().GetParticipants(msg.ServiceName(), msg.ServiceArea())
+	}
+
 	this.nic.Resources().Logger().Debug("T02_Run.run: Sending to targets", msg.Tr_Id())
 	ok, errs := requests.RequestFromPeers(msg, targets, this.nic)
 	if !ok {
