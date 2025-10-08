@@ -9,8 +9,7 @@ import (
 	"github.com/saichler/l8types/go/types/l8services"
 )
 
-func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Message,
-	vnic ifs.IVNic) ifs.IElements {
+func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 	if index != nil {
 		service, _ := services.ServiceHandler(msg.ServiceName(), msg.ServiceArea())
