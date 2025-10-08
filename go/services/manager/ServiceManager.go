@@ -2,7 +2,6 @@ package manager
 
 import (
 	"bytes"
-	"fmt"
 	"strconv"
 
 	"github.com/saichler/l8bus/go/overlay/health"
@@ -60,7 +59,6 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	// Handle participant registry actions
 	if action >= ifs.ServiceRegister && action <= ifs.ServiceQuery {
 		vnic.Resources().Logger().Debug("Routing to participant registry, action:", action)
-		fmt.Println("[PARTICIPANT] - ROUTING")
 		return this.participantRegistry.handleRegistry(action, vnic, msg)
 	}
 
@@ -107,8 +105,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		}
 		vnic.Resources().Logger().Debug("Running transaction")
 		defer vnic.Resources().Logger().Debug("Defer Running transaction")
-		this.trManager.Run(msg, vnic)
-		return nil
+		return this.trManager.Run(msg, vnic)
 	}
 
 	return this.handle(h, pb, action, vnic)

@@ -2,7 +2,6 @@ package manager
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8types/go/ifs"
@@ -81,7 +80,7 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	webService := handler.WebService()
 
 	if ok && webService != nil {
-		vnic.Resources().Logger().Info("Sent Webservice multicast for ", serviceName, " area ", serviceArea)
+		vnic.Resources().Logger().Debug("Sent Webservice multicast for ", serviceName, " area ", serviceArea)
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
 	}
 
@@ -89,18 +88,14 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	if ok && handler.TransactionConfig() != nil {
 		// Register as participant for this service
 		localUuid := this.resources.SysConfig().LocalUuid
-		fmt.Println("[ACTIVATE]", localUuid, "- Registering participant for", serviceName, "area", serviceArea)
 		this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
 
 		// Query for existing participants first
-		fmt.Println("[ACTIVATE]", localUuid, "- Querying for existing participants for", serviceName, "area", serviceArea)
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
-		fmt.Println("[ACTIVATE]", localUuid, "- Multicasting ServiceRegister for", serviceName, "area", serviceArea)
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
 
 		// Trigger election for this service
-		fmt.Println("[ACTIVATE]", localUuid, "- Starting election for", serviceName, "area", serviceArea)
 		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 	}
 

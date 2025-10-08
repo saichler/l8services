@@ -35,7 +35,7 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 		defer mtx.Unlock()
 		leader := vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea())
 		leaderResponse := vnic.Forward(msg, leader)
-		//Send the final result to the initiator.
+		//Send the final resulth to the initiator.
 		vnic.Reply(msg, leaderResponse)
 	}()
 	//Return the temporary response as the transaction state created

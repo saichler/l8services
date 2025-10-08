@@ -5,10 +5,10 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServiceTransactions) commitInternal(msg *ifs.Message) {
+func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements {
 	if msg.Action() == ifs.Notify {
 		//_, err := services.Notify()
-		return
+		return nil
 	}
 
 	pb, err := protocol.ElementsOf(msg, this.nic.Resources())
@@ -16,8 +16,7 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg("T04_Commit.commitInternal: Protocol Error: " + msg.Tr_Id() + " " + err.Error())
 		this.nic.Resources().Logger().Debug(msg.Tr_Id() + " " + err.Error())
-		this.nic.Reply(msg, L8TransactionFor(msg))
-		return
+		return L8TransactionFor(msg)
 	}
 
 	err = this.setPreCommitObject(msg)
@@ -25,8 +24,7 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg(err.Error())
 		this.nic.Resources().Logger().Debug(msg.Tr_Id() + " " + err.Error())
-		this.nic.Reply(msg, L8TransactionFor(msg))
-		return
+		return L8TransactionFor(msg)
 	}
 
 	this.nic.Resources().Logger().Debug("T04_Commit.commitInternal: Before Transaction Handle ", msg.Tr_Id())
@@ -34,14 +32,13 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) {
 	if resp != nil && resp.Error() != nil {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg("T04_Commit.commitInternal: Handle Error: " + msg.Tr_Id() + " " + resp.Error().Error())
-		this.nic.Resources().Logger().Debug(msg.Tr_Id() + " " + err.Error())
-		this.nic.Reply(msg, L8TransactionFor(msg))
-		return
+		this.nic.Resources().Logger().Debug(msg.Tr_ErrMsg())
+		return L8TransactionFor(msg)
 	}
 	this.nic.Resources().Logger().Debug("T04_Commit.commitInternal: Transaction commited on node ",
 		this.nic.Resources().SysConfig().LocalUuid, " - ", msg.Tr_Id())
 	msg.SetTr_State(ifs.Committed)
-	this.nic.Reply(msg, L8TransactionFor(msg))
+	return L8TransactionFor(msg)
 }
 
 func (this *ServiceTransactions) setPreCommitObject(msg *ifs.Message) error {

@@ -128,7 +128,7 @@ func (le *LeaderElection) handleLeaderAnnouncement(vnic ifs.IVNic, msg *ifs.Mess
 		le.startHeartbeatMonitor(key, msg.ServiceName(), msg.ServiceArea(), vnic)
 	}
 
-	vnic.Resources().Logger().Info("Leader for", msg.ServiceName(), "area", msg.ServiceArea(), "is", senderUuid)
+	vnic.Resources().Logger().Debug("Leader for", msg.ServiceName(), "area", msg.ServiceArea(), "is", senderUuid)
 	return nil
 }
 
@@ -222,7 +222,7 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 	info.state = electing
 	info.mtx.Unlock()
 
-	vnic.Resources().Logger().Info("Starting election for", serviceName, "area", serviceArea)
+	vnic.Resources().Logger().Debug("Starting election for", serviceName, "area", serviceArea)
 
 	// Send election request to all nodes
 	vnic.Multicast(serviceName, serviceArea, ifs.ElectionRequest, nil)
@@ -248,7 +248,7 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 		info.leaderUuid = localUuid
 		info.mtx.Unlock()
 
-		vnic.Resources().Logger().Info("Elected as leader for", serviceName, "area", serviceArea)
+		vnic.Resources().Logger().Debug("Elected as leader for", serviceName, "area", serviceArea)
 		vnic.Multicast(serviceName, serviceArea, ifs.LeaderAnnouncement, nil)
 		le.startHeartbeat(key, serviceName, serviceArea, vnic)
 	} else {
@@ -320,7 +320,7 @@ func (le *LeaderElection) startHeartbeatMonitor(key string, serviceName string, 
 				}
 
 				if time.Since(lastHb) > heartbeatTimeout {
-					vnic.Resources().Logger().Info("Leader heartbeat timeout for", serviceName, "area", serviceArea)
+					vnic.Resources().Logger().Debug("Leader heartbeat timeout for", serviceName, "area", serviceArea)
 					info.mtx.Lock()
 					info.state = idle
 					info.leaderUuid = ""

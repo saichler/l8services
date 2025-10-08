@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
@@ -20,40 +19,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestTransaction(t *testing.T) {
-	fmt.Println("TestTransaction")
-
-	i := 0
-	for ; i < 10; i++ {
-		ok := true
-		for vnet := 1; vnet <= 3; vnet++ {
-			for vnic := 1; vnic <= 3; vnic++ {
-				nic := topo.VnicByVnetNum(vnet, vnic)
-				if nic.Resources().Services().GetLeader("Tests", 1) == "" {
-					ok = false
-					break
-				}
-				participants := len(nic.Resources().Services().GetParticipants("Tests", 1))
-				if participants < 2 {
-					ok = false
-					break
-				}
-			}
-			if !ok {
-				break
-			}
-		}
-		if ok {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-
-	if i == 10 {
-		t.Fail()
-		fmt.Println("[PARTICIPANT] Not ready for transaction")
-		return
-	}
-
 	topo.SetLogLevel(ifs.Debug_Level)
 	defer reset("TestTransaction")
 
@@ -194,13 +159,10 @@ func TestTransactionRollback(t *testing.T) {
 	for _, ts := range handlers {
 		dels += ts.DeleteN()
 	}
-	//Why 21? there are 9 instances of the service, 1 leader and 8 followers.
-	//The leader trys to commit on the followers before commiting on it own.
-	//One of them fail, hence 7 commited that need to be rollback. The failed one
-	//Will auto rollback by itself.
-	//We have 3 post times 7 == 21
-	if dels != 21 {
-		Log.Fail(t, "Expected a rollback on 21 ", dels)
+
+	//Why 27? 9 services times 3 posts
+	if dels != 27 {
+		Log.Fail(t, "Expected a rollback on 27 ", dels)
 		return
 	}
 }

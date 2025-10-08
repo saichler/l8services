@@ -37,39 +37,43 @@ func (this *TransactionManager) transactionsOf(msg *ifs.Message, nic ifs.IVNic) 
 	return st
 }
 
-func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) {
+func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	switch msg.Tr_State() {
 	case ifs.Created:
-		this.created(msg, vnic)
+		return this.created(msg, vnic)
 	case ifs.Running:
-		this.commit(msg, vnic)
+		return this.commit(msg, vnic)
 	case ifs.Rollback:
-		this.rollback(msg, vnic)
+		return this.rollback(msg, vnic)
+	case ifs.Cleanup:
+		return this.cleanup(msg, vnic)
 	default:
 		panic("Unexpected transaction state " + msg.Tr_State().String() + ":" + msg.Tr_ErrMsg())
 	}
 }
 
 // First we insert the transaction to the Queue and mark it as queued
-func (this *TransactionManager) created(msg *ifs.Message, vnic ifs.IVNic) {
+func (this *TransactionManager) created(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
 	err := st.addTransaction(msg, vnic)
 	if err != nil {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg(err.Error())
 	}
-	// Unicast the new state to the originator
-	vnic.Reply(msg, L8TransactionFor(msg))
+	return L8TransactionFor(msg)
 }
 
-func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) {
-	vnic.Resources().Logger().Debug("Tr Commit...")
+func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
-	st.commitInternal(msg)
+	return st.commitInternal(msg)
 }
 
-func (this *TransactionManager) rollback(msg *ifs.Message, vnic ifs.IVNic) {
-	vnic.Resources().Logger().Debug("Tr Create...")
+func (this *TransactionManager) rollback(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
-	st.rollbackInternal(msg)
+	return st.rollbackInternal(msg)
+}
+
+func (this *TransactionManager) cleanup(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
+	st := this.transactionsOf(msg, vnic)
+	return st.cleanupInternal(msg)
 }

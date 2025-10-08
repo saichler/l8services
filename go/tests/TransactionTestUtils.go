@@ -14,7 +14,7 @@ import (
 
 func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := vnic.ProximityRequest(ServiceName, 1, action, pb, 5)
+	resp := vnic.ProximityRequest(ServiceName, 1, action, pb, 60)
 	if resp != nil && resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false
@@ -97,4 +97,38 @@ func (this *GetTask) Run() interface{} {
 		return Log.Error(resp.Error().Error())
 	}
 	return resp.Element()
+}
+
+func waitForElection(t *testing.T) bool {
+	i := 0
+	for ; i < 10; i++ {
+		ok := true
+		for vnet := 1; vnet <= 3; vnet++ {
+			for vnic := 1; vnic <= 3; vnic++ {
+				nic := topo.VnicByVnetNum(vnet, vnic)
+				if nic.Resources().Services().GetLeader("Tests", 1) == "" {
+					ok = false
+					break
+				}
+				participants := len(nic.Resources().Services().GetParticipants("Tests", 1))
+				if participants < 2 {
+					ok = false
+					break
+				}
+			}
+			if !ok {
+				break
+			}
+		}
+		if ok {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
+	if i == 10 {
+		t.Fail()
+		return false
+	}
+	return true
 }

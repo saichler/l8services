@@ -5,11 +5,12 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
-func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) {
+func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) ifs.IElements {
 
 	if msg.Action() == ifs.Notify {
-		//_, err := services.Notify()
+		return nil
 	}
+
 	this.setRollbackAction(msg)
 
 	this.preCommitMtx.Lock()
@@ -20,12 +21,11 @@ func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) {
 	if resp != nil && resp.Error() != nil {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg("T05_Rollback.rollbackInternal: Handle Error: " + msg.Tr_Id() + " " + resp.Error().Error())
-		this.nic.Reply(msg, L8TransactionFor(msg))
 		delete(this.preCommit, msg.Tr_Id())
-		return
+		return L8TransactionFor(msg)
 	}
-	this.nic.Reply(msg, L8TransactionFor(msg))
 	delete(this.preCommit, msg.Tr_Id())
+	return L8TransactionFor(msg)
 }
 
 func (this *ServiceTransactions) setRollbackAction(msg *ifs.Message) {
