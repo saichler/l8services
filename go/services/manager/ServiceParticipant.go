@@ -8,7 +8,7 @@ import (
 
 type participantSet struct {
 	uuids   map[string]struct{}
-	rrIndex int
+	rrUsed  map[string]struct{}
 	mtx     sync.RWMutex
 }
 
@@ -116,35 +116,42 @@ func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, servic
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
-	// Convert map to slice for indexed access
 	totalParticipants := len(ps.uuids)
 	if totalParticipants == 0 {
 		return map[string]bool{}
 	}
 
-	participants := make([]string, 0, totalParticipants)
-	for uuid := range ps.uuids {
-		participants = append(participants, uuid)
+	// Initialize rrUsed map if needed
+	if ps.rrUsed == nil {
+		ps.rrUsed = make(map[string]struct{})
+	}
+
+	// If all participants have been used, reset for new cycle
+	if len(ps.rrUsed) >= totalParticipants {
+		ps.rrUsed = make(map[string]struct{})
 	}
 
 	// If replications >= total participants, return all
 	if replications >= totalParticipants {
 		result := make(map[string]bool, totalParticipants)
-		for _, uuid := range participants {
+		for uuid := range ps.uuids {
 			result[uuid] = true
 		}
 		return result
 	}
 
-	// Select participants using round-robin
+	// Select participants that haven't been used yet in this cycle
 	result := make(map[string]bool, replications)
-	for i := 0; i < replications; i++ {
-		index := (ps.rrIndex + i) % totalParticipants
-		result[participants[index]] = true
+	for uuid := range ps.uuids {
+		if len(result) >= replications {
+			break
+		}
+		// Skip if already used in this cycle
+		if _, used := ps.rrUsed[uuid]; !used {
+			result[uuid] = true
+			ps.rrUsed[uuid] = struct{}{}
+		}
 	}
-
-	// Update round-robin index for next call
-	ps.rrIndex = (ps.rrIndex + replications) % totalParticipants
 
 	return result
 }

@@ -30,9 +30,13 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 	this.nic.Resources().Logger().Debug("T04_Commit.commitInternal: Before Transaction Handle ", msg.Tr_Id())
 	resp := this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), this.nic, msg)
 	if resp != nil && resp.Error() != nil {
+		this.preCommitMtx.Lock()
+		delete(this.preCommit, msg.Tr_Id())
+		this.preCommitMtx.Unlock()
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg("T04_Commit.commitInternal: Handle Error: " + msg.Tr_Id() + " " + resp.Error().Error())
 		this.nic.Resources().Logger().Debug(msg.Tr_ErrMsg())
+
 		return L8TransactionFor(msg)
 	}
 	this.nic.Resources().Logger().Debug("T04_Commit.commitInternal: Transaction commited on node ",
