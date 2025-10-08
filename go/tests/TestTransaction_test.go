@@ -160,9 +160,9 @@ func TestTransactionRollback(t *testing.T) {
 		dels += ts.DeleteN()
 	}
 
-	//Why 27? 9 services times 3 posts
-	if dels != 27 {
-		Log.Fail(t, "Expected a rollback on 27 ", dels)
+	//Why 24? 9 services times 3 posts, each with 1 error = 27-3 = 24
+	if dels != 24 {
+		Log.Fail(t, "Expected a rollback on 24 ", dels)
 		return
 	}
 }

@@ -29,19 +29,25 @@ func (this *ServiceTransactions) run(msg *ifs.Message) {
 	}
 
 	this.nic.Resources().Logger().Debug("T02_Run.run: Sending to targets", msg.Tr_Id())
-	ok, errs := requests.RequestFromPeers(msg, targets, this.nic)
+	ok, peers := requests.RequestFromPeers(msg, targets, this.nic)
 	if !ok {
-		// Rollback
+		commitedTargets := make(map[string]bool)
+		errMsg := ""
+		for k, v := range peers {
+			if v == "" {
+				commitedTargets[k] = true
+			} else {
+				errMsg = v
+			}
+		}
+
+		// Send Rollback only to those peers that commited successfully
 		msg.SetTr_State(ifs.Rollback)
-		requests.RequestFromPeers(msg, targets, this.nic)
+		requests.RequestFromPeers(msg, commitedTargets, this.nic)
 
 		msg.SetTr_State(ifs.Failed)
-		errMsg := ""
-		for _, err := range errs {
-			errMsg = err
-			break
-		}
 		msg.SetTr_ErrMsg("T02_Run.run: Failed to commit:" + errMsg)
+
 		this.nic.Reply(msg, L8TransactionFor(msg))
 		return
 	}
