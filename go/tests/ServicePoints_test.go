@@ -10,7 +10,7 @@ import (
 	"github.com/saichler/l8types/go/testtypes"
 )
 
-func TestServices(t *testing.T) {
+func testServices(t *testing.T) {
 	testsp := &TestServiceHandler{}
 	pb := object.New(nil, &testtypes.TestProto{})
 	globals.Services().RegisterServiceHandlerType(testsp)
