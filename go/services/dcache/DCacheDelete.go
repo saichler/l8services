@@ -25,7 +25,7 @@ func (this *DCache) Delete(v interface{}, sourceNotification ...bool) (*l8notify
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache.delete(k)
+		item, ok = this.cache.Delete(k)
 		if !ok {
 			return nil, errors.New("Key " + k + " not found")
 		}

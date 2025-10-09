@@ -3,8 +3,8 @@ package dcache
 import (
 	"errors"
 
-	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8reflect/go/reflect/updating"
+	"github.com/saichler/l8types/go/types/l8notify"
 )
 
 func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
@@ -26,7 +26,7 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache.get(k)
+		item, ok = this.cache.Get(k)
 	} else {
 		item, e = this.store.Get(k)
 		ok = e == nil
@@ -41,7 +41,7 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.
 
 		if this.cacheEnabled() {
 			//Place the new Item clone in the cache
-			this.cache.put(k, vClone)
+			this.cache.Put(k, vClone)
 		}
 
 		if this.store != nil {
@@ -77,14 +77,14 @@ func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.
 		return nil, nil
 	}
 
-	this.cache.removeFromStats(k)
+	this.cache.RemoveFromStats(k)
 
 	//Apply the changes to the existing item in the cache
 	for _, change := range changes {
 		change.Apply(item)
 	}
 
-	this.cache.addToStats(item)
+	this.cache.AddToStats(item)
 
 	if this.store != nil {
 		e = this.store.Put(k, item)

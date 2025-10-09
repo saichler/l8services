@@ -16,7 +16,7 @@ func (this *DCache) GetAll() map[string]interface{} {
 	defer this.mtx.Unlock()
 	if this.cacheEnabled() {
 		result := make(map[string]interface{})
-		for key, item := range this.cache.cache {
+		for key, item := range this.cache.Cache() {
 			itemClone := this.cloner.Clone(item)
 			result[key] = itemClone
 		}
