@@ -14,13 +14,13 @@ func createTransaction(msg *ifs.Message) {
 }
 
 func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
-	st := this.transactionsOf(msg, vnic)
+	//st := this.transactionsOf(msg, vnic)
 
 	//This is a Get request, needs to be handled outside a transaction
-	resp, ok := st.shouldHandleAsTransaction(msg, vnic)
-	if !ok {
-		return resp
-	}
+	//resp, ok := st.shouldHandleAsTransaction(msg, vnic)
+	//if !ok {
+	//	return resp
+	//}
 
 	//Create the new transaction inside the message
 	createTransaction(msg)
