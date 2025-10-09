@@ -10,7 +10,7 @@ import (
 )
 
 func replicationGet(elements ifs.IElements, services ifs.IServices, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
-	index, _ := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
+	index := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), vnic.Resources())
 	if index != nil {
 		service, _ := services.ServiceHandler(msg.ServiceName(), msg.ServiceArea())
 		// This is a replication service, we need to check if the key is not here

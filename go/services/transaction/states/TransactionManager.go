@@ -55,12 +55,7 @@ func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IEleme
 // First we insert the transaction to the Queue and mark it as queued
 func (this *TransactionManager) created(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
-	err := st.addTransaction(msg, vnic)
-	if err != nil {
-		msg.SetTr_State(ifs.Failed)
-		msg.SetTr_ErrMsg(err.Error())
-	}
-	return L8TransactionFor(msg)
+	return st.queueTransaction(msg, vnic)
 }
 
 func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {

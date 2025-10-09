@@ -4,7 +4,9 @@ import (
 	"errors"
 
 	"github.com/saichler/l8services/go/services/replication"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8types/go/types/l8system"
 )
 
@@ -62,20 +64,6 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 
 	serviceNames := []string{serviceName}
 
-	if handler.TransactionConfig() != nil && handler.TransactionConfig().Replication() {
-		if handler.TransactionConfig().ReplicationCount() == 0 {
-			r.Logger().Error("Service point ", typeName, " has replication set to true with 0 replication count!")
-		} else {
-			repServiceName := replication.ReplicationNameOf(serviceName)
-			serviceNames = append(serviceNames, repServiceName)
-			this.RegisterServiceHandlerType(&replication.ReplicationService{})
-			_, err = this.Activate(replication.ServiceType, repServiceName, serviceArea, r, l)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	if ok && typeName != replication.ServiceType {
 		err = vnic.NotifyServiceAdded(serviceNames, serviceArea)
 	}
@@ -85,6 +73,27 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 	if ok && webService != nil {
 		vnic.Resources().Logger().Debug("Sent Webservice multicast for ", serviceName, " area ", serviceArea)
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
+	}
+
+	if handler.TransactionConfig() != nil && handler.TransactionConfig().Replication() {
+		if handler.TransactionConfig().ReplicationCount() == 0 {
+			r.Logger().Error("Service point ", typeName, " has replication set to true with 0 replication count!")
+		} else {
+			repService := replication.Service(r)
+			if repService == nil {
+				this.Activate(replication.ServiceType, replication.ServiceName, replication.ServiceArea, r, l)
+				repService = replication.Service(r)
+			}
+
+			index := &l8services.L8ReplicationIndex{}
+			index.ServiceName = serviceName
+			index.ServiceArea = int32(serviceArea)
+			index.Keys = make(map[string]*l8services.L8ReplicationKey)
+
+			if vnic != nil {
+				repService.Post(object.New(nil, index), vnic)
+			}
+		}
 	}
 
 	// Only trigger election and participant registration for services with TransactionConfig

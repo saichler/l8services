@@ -39,6 +39,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 		panic(err)
 	}
 	sp.resources.Registry().Register(&l8services.L8Transaction{})
+	sp.resources.Registry().Register(&replication.ReplicationService{})
 	return sp
 }
 
@@ -99,7 +100,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	}
 
 	isStartTransaction := h.TransactionConfig() != nil && msg.Action() < ifs.ElectionRequest && this.GetLeader(msg.ServiceName(), msg.ServiceArea()) != ""
-	if isStartTransaction && msg.Action() != ifs.GET {
+	if isStartTransaction {
 		if msg.Tr_State() == ifs.NotATransaction {
 			vnic.Resources().Logger().Debug("Starting transaction")
 			defer vnic.Resources().Logger().Debug("Defer Starting transaction")
@@ -114,7 +115,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 }
 
 func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, r ifs.IResources) {
-	index, replicationService := replication.ReplicationIndex(serviceName, serviceArea, r)
+	index := replication.ReplicationIndex(serviceName, serviceArea, r)
 	if index.Keys == nil {
 		index.Keys = make(map[string]*l8services.L8ReplicationKey)
 	}
@@ -123,7 +124,8 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 		index.Keys[key].Location = make(map[string]int64)
 	}
 	index.Keys[key].Location[r.SysConfig().LocalUuid] = time.Now().UnixMilli()
-	replication.UpdateIndex(replicationService, index)
+	repService := replication.Service(r)
+	repService.Patch(object.New(nil, index), nil)
 }
 
 func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {

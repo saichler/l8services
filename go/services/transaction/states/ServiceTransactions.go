@@ -80,18 +80,6 @@ func (this *ServiceTransactions) shouldHandleAsTransaction(msg *ifs.Message, vni
 	return nil, true
 }
 
-func (this *ServiceTransactions) addTransaction(msg *ifs.Message, vnic ifs.IVNic) error {
-	msg.SetTr_State(ifs.Queued)
-	if vnic.Resources().SysConfig().LocalUuid != vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea()) {
-		return vnic.Resources().Logger().Error("A non leader has got the message")
-	}
-	this.mtx.Lock()
-	defer this.mtx.Unlock()
-	this.queue = append(this.queue, msg)
-	this.cond.Broadcast()
-	return nil
-}
-
 func (this *ServiceTransactions) Next() *ifs.Message {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
