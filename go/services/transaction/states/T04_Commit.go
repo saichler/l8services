@@ -2,6 +2,7 @@ package states
 
 import (
 	"github.com/saichler/l8bus/go/overlay/protocol"
+	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 )
 
@@ -17,6 +18,10 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 		msg.SetTr_ErrMsg("T04_Commit.commitInternal: Protocol Error: " + msg.Tr_Id() + " " + err.Error())
 		this.nic.Resources().Logger().Debug(msg.Tr_Id() + " " + err.Error())
 		return L8TransactionFor(msg)
+	}
+
+	if msg.Tr_Replica() > 0 {
+		pb = object.NewReplicaRequest(pb, msg.Tr_Replica())
 	}
 
 	err = this.setPreCommitObject(msg)
