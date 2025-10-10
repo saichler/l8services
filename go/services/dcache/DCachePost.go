@@ -29,7 +29,7 @@ func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*l8notify.L
 	isNotification := (sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 
 	if this.cacheEnabled() {
-		item, ok = this.cache.Get(k)
+		item, ok = this.cache.get(k)
 	} else {
 		item, e = this.store.Get(k)
 		ok = e == nil
@@ -41,7 +41,7 @@ func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*l8notify.L
 		itemClone := this.cloner.Clone(v)
 		if this.cacheEnabled() {
 			//Place the value in the cache
-			this.cache.Put(k, v)
+			this.cache.put(k, v)
 		}
 		if this.store != nil {
 			e = this.store.Put(k, v)
@@ -65,7 +65,7 @@ func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*l8notify.L
 
 	if this.cacheEnabled() {
 		//Place the value in the cache
-		this.cache.Put(k, vClone)
+		this.cache.put(k, vClone)
 	}
 
 	if this.store != nil {

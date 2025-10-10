@@ -1,6 +1,5 @@
 package dcache
 
-/*
 import (
 	"encoding/binary"
 	"fmt"
@@ -113,4 +112,3 @@ func lessThan(a interface{}, b interface{}) bool {
 	}
 	return false
 }
-*/

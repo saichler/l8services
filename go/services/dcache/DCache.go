@@ -7,13 +7,12 @@ import (
 
 	"github.com/saichler/l8reflect/go/reflect/cloning"
 	"github.com/saichler/l8reflect/go/reflect/introspecting"
-	"github.com/saichler/l8services/go/services/dcache/cache"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8utils/go/utils/strings"
 )
 
 type DCache struct {
-	cache         *cache.Cache
+	cache         *Cache
 	mtx           *sync.RWMutex
 	cond          *sync.Cond
 	listener      ifs.IServiceCacheListener
@@ -41,7 +40,7 @@ func NewDistributedCacheNoSync(serviceName string, serviceArea byte, sample inte
 func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
 	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage, noSync bool) ifs.IDistributedCache {
 	this := &DCache{}
-	this.cache = cache.NewCache()
+	this.cache = newCache()
 	this.mtx = &sync.RWMutex{}
 	this.cond = sync.NewCond(this.mtx)
 	this.listener = listener
@@ -61,7 +60,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 	if this.store != nil {
 		items := this.store.Collect(all)
 		for k, v := range items {
-			this.cache.Put(k, v)
+			this.cache.put(k, v)
 		}
 		if len(items) > 0 {
 			loadedFromStore = true
@@ -86,7 +85,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 				resources.Logger().Info(er.Error())
 				continue
 			}
-			this.cache.Put(k, item)
+			this.cache.put(k, item)
 		}
 	}
 
@@ -114,7 +113,7 @@ func (this *DCache) cacheEnabled() bool {
 func (this *DCache) Size() int {
 	this.mtx.RLock()
 	defer this.mtx.RUnlock()
-	return this.cache.Size()
+	return this.cache.size()
 }
 
 func (this *DCache) typeFor(any interface{}) (string, error) {

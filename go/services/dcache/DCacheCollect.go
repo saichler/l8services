@@ -5,7 +5,7 @@ func (this *DCache) Collect(f func(interface{}) (bool, interface{})) map[string]
 	this.mtx.RLock()
 	defer this.mtx.RUnlock()
 	if this.cacheEnabled() {
-		for k, v := range this.cache.Cache() {
+		for k, v := range this.cache.cache {
 			vClone := this.cloner.Clone(v)
 			ok, elem := f(vClone)
 			if ok {
