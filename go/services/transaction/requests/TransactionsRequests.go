@@ -51,8 +51,14 @@ func (this *Requests) reportResult(target string, tr *l8services.L8Transaction) 
 	}
 }
 
-func (this *Requests) requestFromPeer(msg *ifs.Message, target string) {
+func (this *Requests) requestFromPeer(msg *ifs.Message, target string, isReplicate bool, replicateNum byte) {
 	this.addOne(target)
+
+	if isReplicate {
+		clone := msg.Clone()
+		clone.SetTr_Replica(replicateNum)
+		msg = clone
+	}
 
 	resp := this.vnic.Forward(msg, target)
 	if resp != nil && resp.Error() != nil {
@@ -65,15 +71,15 @@ func (this *Requests) requestFromPeer(msg *ifs.Message, target string) {
 	this.reportResult(target, tr)
 }
 
-func RequestFromPeers(msg *ifs.Message, targets map[string]bool, vnic ifs.IVNic) (bool, map[string]string) {
+func RequestFromPeers(msg *ifs.Message, targets map[string]byte, vnic ifs.IVNic, isReplicate bool) (bool, map[string]string) {
 
 	this := NewRequest(vnic)
 
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
 
-	for target, _ := range targets {
-		go this.requestFromPeer(msg, target)
+	for target, replica := range targets {
+		go this.requestFromPeer(msg, target, isReplicate, replica)
 	}
 
 	if len(targets) > 0 {

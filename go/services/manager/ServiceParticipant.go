@@ -7,9 +7,9 @@ import (
 )
 
 type participantSet struct {
-	uuids   map[string]struct{}
-	rrUsed  map[string]struct{}
-	mtx     sync.RWMutex
+	uuids  map[string]struct{}
+	rrUsed map[string]struct{}
+	mtx    sync.RWMutex
 }
 
 type ParticipantRegistry struct {
@@ -106,11 +106,11 @@ func (pr *ParticipantRegistry) UnregisterParticipant(serviceName string, service
 	ps.mtx.Unlock()
 }
 
-func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]bool {
+func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]byte {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
 	if ps == nil {
-		return map[string]bool{}
+		return map[string]byte{}
 	}
 
 	ps.mtx.Lock()
@@ -118,7 +118,7 @@ func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, servic
 
 	totalParticipants := len(ps.uuids)
 	if totalParticipants == 0 {
-		return map[string]bool{}
+		return map[string]byte{}
 	}
 
 	// Initialize rrUsed map if needed
@@ -131,24 +131,28 @@ func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, servic
 		ps.rrUsed = make(map[string]struct{})
 	}
 
+	replica := byte(0)
+
 	// If replications >= total participants, return all
 	if replications >= totalParticipants {
-		result := make(map[string]bool, totalParticipants)
+		result := make(map[string]byte, totalParticipants)
 		for uuid := range ps.uuids {
-			result[uuid] = true
+			result[uuid] = replica
+			replica++
 		}
 		return result
 	}
 
 	// Select participants that haven't been used yet in this cycle
-	result := make(map[string]bool, replications)
+	result := make(map[string]byte, replications)
 	for uuid := range ps.uuids {
 		if len(result) >= replications {
 			break
 		}
 		// Skip if already used in this cycle
 		if _, used := ps.rrUsed[uuid]; !used {
-			result[uuid] = true
+			result[uuid] = replica
+			replica++
 			ps.rrUsed[uuid] = struct{}{}
 		}
 	}
@@ -156,19 +160,19 @@ func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, servic
 	return result
 }
 
-func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea byte) map[string]bool {
+func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea byte) map[string]byte {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
 	if ps == nil {
-		return map[string]bool{}
+		return map[string]byte{}
 	}
 
 	ps.mtx.RLock()
 	defer ps.mtx.RUnlock()
 
-	participants := make(map[string]bool, len(ps.uuids))
+	participants := make(map[string]byte, len(ps.uuids))
 	for uuid := range ps.uuids {
-		participants[uuid] = true
+		participants[uuid] = 0
 	}
 
 	return participants

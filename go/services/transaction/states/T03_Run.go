@@ -19,23 +19,25 @@ func (this *ServiceTransactions) run(msg *ifs.Message) {
 	msg.SetTr_State(ifs.Running)
 	this.nic.Reply(msg, L8TransactionFor(msg))
 
-	var targets map[string]bool
+	var targets map[string]byte
+	isReplicate := false
 	service, _ := this.nic.Resources().Services().ServiceHandler(msg.ServiceName(), msg.ServiceArea())
 	if service.TransactionConfig().Replication() {
 		targets = this.nic.Resources().Services().RoundRobinParticipants(msg.ServiceName(), msg.ServiceArea(),
 			service.TransactionConfig().ReplicationCount())
+		isReplicate = true
 	} else {
 		targets = this.nic.Resources().Services().GetParticipants(msg.ServiceName(), msg.ServiceArea())
 	}
 
 	this.nic.Resources().Logger().Debug("T02_Run.run: Sending to targets", msg.Tr_Id())
-	ok, peers := requests.RequestFromPeers(msg, targets, this.nic)
+	ok, peers := requests.RequestFromPeers(msg, targets, this.nic, isReplicate)
 	if !ok {
-		commitedTargets := make(map[string]bool)
+		commitedTargets := make(map[string]byte)
 		errMsg := ""
 		for k, v := range peers {
 			if v == "" {
-				commitedTargets[k] = true
+				commitedTargets[k] = targets[k]
 			} else {
 				errMsg = v
 			}
@@ -43,7 +45,7 @@ func (this *ServiceTransactions) run(msg *ifs.Message) {
 
 		// Send Rollback only to those peers that commited successfully
 		msg.SetTr_State(ifs.Rollback)
-		requests.RequestFromPeers(msg, commitedTargets, this.nic)
+		requests.RequestFromPeers(msg, commitedTargets, this.nic, isReplicate)
 
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg("T02_Run.run: Failed to commit:" + errMsg)
@@ -57,5 +59,5 @@ func (this *ServiceTransactions) run(msg *ifs.Message) {
 
 	//cleanup
 	msg.SetTr_State(ifs.Cleanup)
-	requests.RequestFromPeers(msg, targets, this.nic)
+	requests.RequestFromPeers(msg, targets, this.nic, isReplicate)
 }

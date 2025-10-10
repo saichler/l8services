@@ -257,7 +257,7 @@ func (this *ServiceManager) UnregisterParticipant(serviceName string, serviceAre
 	this.participantRegistry.UnregisterParticipant(serviceName, serviceArea, uuid)
 }
 
-func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) map[string]bool {
+func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) map[string]byte {
 	return this.participantRegistry.GetParticipants(serviceName, serviceArea)
 }
 
@@ -269,6 +269,6 @@ func (this *ServiceManager) ParticipantCount(serviceName string, serviceArea byt
 	return this.participantRegistry.ParticipantCount(serviceName, serviceArea)
 }
 
-func (this *ServiceManager) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]bool {
+func (this *ServiceManager) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]byte {
 	return this.participantRegistry.RoundRobinParticipants(serviceName, serviceArea, replications)
 }
