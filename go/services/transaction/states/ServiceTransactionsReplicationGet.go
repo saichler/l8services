@@ -42,13 +42,13 @@ func getAll(elements ifs.IElements, vnic ifs.IVNic,
 	myUuid := vnic.Resources().SysConfig().LocalUuid
 	leader := vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea())
 	isLeader := myUuid == leader
-	if !isLeader && elements.ReplicasRequest() {
+	if !isLeader && elements.Replica() == 0 {
 		return vnic.Resources().Services().TransactionHandle(elements, msg.Action(), vnic, msg)
 	} else if !isLeader {
 		return vnic.Forward(msg, leader)
 	}
 
-	request := object.NewReplicasRequest(elements)
+	request := object.NewReplicaRequest(elements, 0)
 	response := vnic.Resources().Services().TransactionHandle(elements, msg.Action(), vnic, msg)
 	remotes := collectRemote(myUuid, index)
 
