@@ -3,7 +3,6 @@ package manager
 import (
 	"bytes"
 	"strconv"
-	"time"
 
 	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8services/go/services/dcache"
@@ -114,7 +113,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 	return this.handle(h, pb, action, vnic)
 }
 
-func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, r ifs.IResources) {
+func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, replica byte, r ifs.IResources) {
 	index := replication.ReplicationIndex(serviceName, serviceArea, r)
 	if index.Keys == nil {
 		index.Keys = make(map[string]*l8services.L8ReplicationKey)
@@ -123,7 +122,7 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 		index.Keys[key] = &l8services.L8ReplicationKey{}
 		index.Keys[key].Location = make(map[string]int64)
 	}
-	index.Keys[key].Location[r.SysConfig().LocalUuid] = time.Now().UnixMilli()
+	index.Keys[key].Location[r.SysConfig().LocalUuid] = int64(replica)
 	repService := replication.Service(r)
 	repService.Patch(object.New(nil, index), nil)
 }
@@ -137,7 +136,7 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	resp := this.handle(h, pb, action, vnic)
 	if resp.Error() == nil && h.TransactionConfig().Replication() {
 		key := h.TransactionConfig().KeyOf(pb, vnic.Resources())
-		this.updateReplicationIndex(msg.ServiceName(), msg.ServiceArea(), key, vnic.Resources())
+		this.updateReplicationIndex(msg.ServiceName(), msg.ServiceArea(), key, msg.Tr_Replica(), vnic.Resources())
 	}
 	return resp
 }

@@ -57,6 +57,7 @@ func (this *Requests) requestFromPeer(msg *ifs.Message, target string, isReplica
 	if isReplicate {
 		clone := msg.Clone()
 		clone.SetTr_Replica(replicateNum)
+		clone.SetTr_IsReplica(true)
 		msg = clone
 	}
 

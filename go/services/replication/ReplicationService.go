@@ -1,6 +1,9 @@
 package replication
 
 import (
+	"errors"
+
+	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8reflect/go/reflect/introspecting"
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/ifs"
@@ -113,4 +116,26 @@ func (this *ReplicationService) KeyOf(pb ifs.IElements, r ifs.IResources) string
 }
 func (this *ReplicationService) ConcurrentGets() bool {
 	return false
+}
+
+func ReplicationFor(msg *ifs.Message, r ifs.IResources, service ifs.IServiceHandler) (map[string]byte, error) {
+	pb, err := protocol.ElementsOf(msg, r)
+	if err != nil {
+		return nil, err
+	}
+	key := service.TransactionConfig().KeyOf(pb, r)
+	repIndex := ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), r)
+	if repIndex == nil {
+		return nil, errors.New("Replication Index not found")
+	}
+	locations, ok := repIndex.Keys[key]
+	result := map[string]byte{}
+	if !ok {
+		return result, nil
+	}
+
+	for uuid, rep := range locations.Location {
+		result[uuid] = byte(rep)
+	}
+	return result, nil
 }

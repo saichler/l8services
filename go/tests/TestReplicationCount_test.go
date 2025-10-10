@@ -3,7 +3,6 @@ package tests
 import (
 	"strconv"
 	"testing"
-	"time"
 
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
@@ -11,37 +10,27 @@ import (
 	"github.com/saichler/l8types/go/testtypes"
 )
 
-func TestTransactionReplication(t *testing.T) {
-	topo.SetLogLevel(ifs.Info_Level)
-	defer reset("TestTransactionReplication")
-	//nic := topo.VnicByVnetNum(1, 1)
-
-	//time.Sleep(time.Second * 2)
-
-	/*
-		index := replication.ReplicationIndex(ServiceName, 2, nic.Resources())
-		index.
-		if len(index.EndPoints) != 9 {
-			Log.Fail(t, "Expected 9 end points, got ", len(index.EndPoints))
-			return
-		}*/
-
-	if !doRound(2, 0, t) {
+func TestReplication(t *testing.T) {
+	defer reset("TestReplication")
+	if !doRound(1, 2, t) {
 		return
 	}
-
-	time.Sleep(time.Second)
-
-	if !doRound(4, 1, t) {
+	if !doRound(1, 4, t) {
 		return
 	}
-	time.Sleep(time.Second)
+	if !doRound(2, 2, t) {
+		return
+	}
+	if !doRound(2, 4, t) {
+		return
+	}
 }
 
-func doRound(ecount, score int, t *testing.T) bool {
-	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(score)}
+func doRound(index, ecount int, t *testing.T) bool {
+	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(index)}
 	eg := topo.VnicByVnetNum(2, 1)
 	resp := eg.ProximityRequest(ServiceName, 2, ifs.POST, pb, 5)
+
 	if resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false
@@ -50,10 +39,13 @@ func doRound(ecount, score int, t *testing.T) bool {
 	count := 0
 	handlers := topo.AllRepHandlers()
 	for _, ts := range handlers {
-		count += ts.PostN()
+		v, ok := ts.PostNReplica().Load(pb.MyString)
+		if ok {
+			count += v.(int)
+		}
 	}
 	if count != ecount {
-		Log.Fail(t, "Expected count to be ", ecount, " got ", count)
+		Log.Fail(t, "Expected count 1 to be ", ecount, " got ", count)
 		return false
 	}
 	return true

@@ -20,7 +20,7 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 		return L8TransactionFor(msg)
 	}
 
-	if msg.Tr_Replica() > 0 {
+	if msg.Tr_IsReplica() {
 		pb = object.NewReplicaRequest(pb, msg.Tr_Replica())
 	}
 

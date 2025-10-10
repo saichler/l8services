@@ -1,6 +1,7 @@
 package states
 
 import (
+	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8services/go/services/transaction/requests"
 	"github.com/saichler/l8types/go/ifs"
 )
@@ -20,11 +21,24 @@ func (this *ServiceTransactions) run(msg *ifs.Message) {
 	this.nic.Reply(msg, L8TransactionFor(msg))
 
 	var targets map[string]byte
+	var err error
 	isReplicate := false
 	service, _ := this.nic.Resources().Services().ServiceHandler(msg.ServiceName(), msg.ServiceArea())
 	if service.TransactionConfig().Replication() {
-		targets = this.nic.Resources().Services().RoundRobinParticipants(msg.ServiceName(), msg.ServiceArea(),
-			service.TransactionConfig().ReplicationCount())
+		//First see if there are already replication for this item
+		targets, err = replication.ReplicationFor(msg, this.nic.Resources(), service)
+		if err != nil {
+			msg.SetTr_State(ifs.Failed)
+			msg.SetTr_ErrMsg("T04_Commit.commitInternal: Protocol Error: " + msg.Tr_Id() + " " + err.Error())
+			this.nic.Resources().Logger().Debug(msg.Tr_Id() + " " + err.Error())
+			this.nic.Reply(msg, L8TransactionFor(msg))
+			return
+		}
+		//If there are no replications, take from the roundrobin.
+		if len(targets) == 0 {
+			targets = this.nic.Resources().Services().RoundRobinParticipants(msg.ServiceName(), msg.ServiceArea(),
+				service.TransactionConfig().ReplicationCount())
+		}
 		isReplicate = true
 	} else {
 		targets = this.nic.Resources().Services().GetParticipants(msg.ServiceName(), msg.ServiceArea())
