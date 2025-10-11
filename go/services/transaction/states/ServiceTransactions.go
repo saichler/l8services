@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8services"
@@ -36,48 +35,6 @@ func newServiceTransactions(concurrentGets bool, nic ifs.IVNic) *ServiceTransact
 
 	go serviceTransactions.processTransactions()
 	return serviceTransactions
-}
-
-func (this *ServiceTransactions) shouldHandleAsTransaction(msg *ifs.Message, vnic ifs.IVNic) (ifs.IElements, bool) {
-	if msg.Action() == ifs.GET {
-		//now := time.Now().UnixMilli()
-		this.mtx.Lock()
-		defer this.mtx.Unlock()
-
-		/*@TODO
-		if this.concurrentGets {
-			for this.running {
-				t, ok := this.transactionsMap.Load(this.lockedTrId)
-				if !ok {
-					break
-				}
-				tr := t.(*transaction.Transaction)
-				if tr.Msg().Tr_StartTime() > now {
-					break
-				}
-				this.cond.Wait()
-				this.cond.Broadcast()
-			}
-		}*/
-
-		if !this.running {
-			return nil, false
-		}
-
-		pb, err := protocol.ElementsOf(msg, vnic.Resources())
-		if err != nil {
-			return object.NewError(err.Error()), false
-		}
-
-		services := vnic.Resources().Services()
-		resp := replicationGet(pb, services, msg, vnic)
-		if resp != nil {
-			return resp, false
-		}
-		resp = services.TransactionHandle(pb, msg.Action(), vnic, msg)
-		return resp, false
-	}
-	return nil, true
 }
 
 func (this *ServiceTransactions) Next() *ifs.Message {

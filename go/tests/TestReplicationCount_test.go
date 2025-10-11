@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/saichler/l8services/go/services/replication"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/ifs"
@@ -12,22 +13,36 @@ import (
 
 func TestReplication(t *testing.T) {
 	defer reset("TestReplication")
-	if !doRound(1, 2, t) {
+	if !doPostRound(1, 2, t) {
 		return
 	}
-	if !doRound(1, 4, t) {
+	if !doPostRound(1, 4, t) {
 		return
 	}
-	if !doRound(2, 2, t) {
+	if !doPostRound(2, 2, t) {
 		return
 	}
-	if !doRound(2, 4, t) {
+	if !doPostRound(2, 4, t) {
 		return
+	}
+
+	nic := topo.VnicByVnetNum(1, 1)
+
+	index := replication.ReplicationIndex("Tests", 2, nic.Resources())
+	if len(index.Keys) != 2 {
+		nic.Resources().Logger().Fail(t, "Replication Index should have 2 keys")
+		return
+	}
+
+	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(1)}
+	resp := nic.Request("", ServiceName, 2, ifs.GET, pb, 5)
+	if resp.Element().(*testtypes.TestProto).MyInt32 != 1 {
+		nic.Resources().Logger().Fail(t, "Expected Attribute to be 1")
 	}
 }
 
-func doRound(index, ecount int, t *testing.T) bool {
-	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(index)}
+func doPostRound(index, ecount int, t *testing.T) bool {
+	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(index), MyInt32: int32(index)}
 	eg := topo.VnicByVnetNum(2, 1)
 	resp := eg.ProximityRequest(ServiceName, 2, ifs.POST, pb, 5)
 
@@ -49,13 +64,4 @@ func doRound(index, ecount int, t *testing.T) bool {
 		return false
 	}
 	return true
-	/*
-		rep := hp.ReplicasFor("TestProto", 0, 2)
-		for _, r := range rep {
-			if int(r) != score {
-				Log.Fail(t, "Expected score to be ", score, " got ", r)
-				return false
-			}
-		}
-	return true*/
 }

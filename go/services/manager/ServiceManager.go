@@ -120,9 +120,9 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 	}
 	if index.Keys[key] == nil {
 		index.Keys[key] = &l8services.L8ReplicationKey{}
-		index.Keys[key].Location = make(map[string]int64)
+		index.Keys[key].Location = make(map[string]int32)
 	}
-	index.Keys[key].Location[r.SysConfig().LocalUuid] = int64(replica)
+	index.Keys[key].Location[r.SysConfig().LocalUuid] = int32(replica)
 	repService := replication.Service(r)
 	repService.Patch(object.New(nil, index), nil)
 }
