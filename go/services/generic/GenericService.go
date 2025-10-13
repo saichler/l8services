@@ -34,6 +34,7 @@ func (this *GenericService) Activate(serviceName string, serviceArea byte,
 	this.cache = cache.NewCache(this.serviceConfig.ServiceItem, this.serviceConfig.InitItems,
 		this.serviceConfig.Store, resources)
 	this.cache.SetNotificationsFor(serviceName, serviceArea)
+	this.vnic = listener.(ifs.IVNic)
 	return nil
 }
 
@@ -43,10 +44,13 @@ func (this *GenericService) DeActivate() error {
 
 func (this *GenericService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	if vnic == nil {
+		vnic = this.vnic
+	}
 	for _, elem := range pb.Elements() {
 		n, e := this.cache.Post(elem, createNotification)
 		if createNotification && e == nil && n != nil {
-			go this.vnic.PropertyChangeNotification(n)
+			go vnic.PropertyChangeNotification(n)
 		}
 	}
 	return object.New(nil, &l8web.L8Empty{})
@@ -54,10 +58,13 @@ func (this *GenericService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements
 
 func (this *GenericService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	if vnic == nil {
+		vnic = this.vnic
+	}
 	for _, elem := range pb.Elements() {
 		n, e := this.cache.Put(elem, createNotification)
 		if createNotification && e == nil && n != nil {
-			go this.vnic.PropertyChangeNotification(n)
+			go vnic.PropertyChangeNotification(n)
 		}
 	}
 	return object.New(nil, &l8web.L8Empty{})
@@ -65,10 +72,13 @@ func (this *GenericService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 
 func (this *GenericService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	if vnic == nil {
+		vnic = this.vnic
+	}
 	for _, elem := range pb.Elements() {
 		n, e := this.cache.Patch(elem, createNotification)
 		if createNotification && e == nil && n != nil {
-			go this.vnic.PropertyChangeNotification(n)
+			go vnic.PropertyChangeNotification(n)
 		}
 	}
 	return object.New(nil, &l8web.L8Empty{})
@@ -76,10 +86,13 @@ func (this *GenericService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElement
 
 func (this *GenericService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	if vnic == nil {
+		vnic = this.vnic
+	}
 	for _, elem := range pb.Elements() {
 		n, e := this.cache.Delete(elem, createNotification)
 		if createNotification && e == nil && n != nil {
-			go this.vnic.PropertyChangeNotification(n)
+			go vnic.PropertyChangeNotification(n)
 		}
 	}
 	return object.New(nil, &l8web.L8Empty{})
