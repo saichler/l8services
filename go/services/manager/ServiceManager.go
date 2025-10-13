@@ -79,7 +79,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		}
 		scache, ok := this.serviceCaches.Get(key)
 		if ok {
-			go scache.(ifs.IDistributedCache).Sync()
+			go scache.(ifs.IServiceHandlerCache).Sync()
 		}
 		return nil
 	}
