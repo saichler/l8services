@@ -91,7 +91,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 
 	h, ok := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if !ok {
-		hp := health.Health(vnic.Resources()).Health(vnic.Resources().SysConfig().LocalUuid)
+		hp := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, vnic.Resources())
 		alias := "Unknown"
 		if hp != nil {
 			alias = hp.Alias
