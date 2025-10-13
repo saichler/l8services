@@ -147,3 +147,7 @@ func (this *GenericService) ServiceName() string {
 func (this *GenericService) ServiceArea() byte {
 	return this.cache.ServiceArea()
 }
+
+func (this *GenericService) Size() int {
+	return this.cache.Size()
+}
