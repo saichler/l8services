@@ -77,6 +77,10 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		if ok {
 			go cache.(ifs.IDistributedCache).Sync()
 		}
+		scache, ok := this.serviceCaches.Get(key)
+		if ok {
+			go scache.(ifs.IDistributedCache).Sync()
+		}
 		return nil
 	}
 
