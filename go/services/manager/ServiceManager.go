@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/saichler/l8bus/go/overlay/health"
-	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8services/go/services/transaction/states"
 	"github.com/saichler/l8srlz/go/serialize/object"
@@ -14,6 +13,7 @@ import (
 	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8types/go/types/l8services"
 	"github.com/saichler/l8utils/go/utils/maps"
+	"github.com/saichler/l8utils/go/utils/notify"
 )
 
 type ServiceManager struct {
@@ -177,7 +177,7 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 	if msg != nil && msg.FailMessage() != "" {
 		return h.Failed(pb, vnic, msg)
 	}
-	item, err := dcache.ItemOf(notification, this.resources)
+	item, err := notify.ItemOf(notification, this.resources)
 	if err != nil {
 		return object.NewError(err.Error())
 	}
