@@ -135,19 +135,3 @@ func (this *GenericService) KeyOf(elems ifs.IElements, r ifs.IResources) string 
 func (this *GenericService) ConcurrentGets() bool {
 	return false
 }
-
-func (this *GenericService) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
-	return this.cache.Collect(f)
-}
-
-func (this *GenericService) ServiceName() string {
-	return this.cache.ServiceName()
-}
-
-func (this *GenericService) ServiceArea() byte {
-	return this.cache.ServiceArea()
-}
-
-func (this *GenericService) Size() int {
-	return this.cache.Size()
-}
