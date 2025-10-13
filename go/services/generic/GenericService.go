@@ -35,6 +35,9 @@ func (this *GenericService) Activate(serviceName string, serviceArea byte,
 		this.serviceConfig.Store, resources)
 	this.cache.SetNotificationsFor(serviceName, serviceArea)
 	this.vnic = listener.(ifs.IVNic)
+	if this.serviceConfig.SendNotifications {
+		resources.Services().RegisterServiceHandlerType(this)
+	}
 	return nil
 }
 
