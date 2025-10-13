@@ -139,3 +139,11 @@ func (this *GenericService) ConcurrentGets() bool {
 func (this *GenericService) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
 	return this.cache.Collect(f)
 }
+
+func (this *GenericService) ServiceName() string {
+	return this.cache.ServiceName()
+}
+
+func (this *GenericService) ServiceArea() byte {
+	return this.cache.ServiceArea()
+}

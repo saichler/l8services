@@ -20,6 +20,7 @@ type ServiceManager struct {
 	services            *ServicesMap
 	trManager           *states.TransactionManager
 	distributedCaches   *maps.SyncMap
+	serviceCaches       *maps.SyncMap
 	resources           ifs.IResources
 	leaderElection      *LeaderElection
 	participantRegistry *ParticipantRegistry
@@ -31,6 +32,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp.resources = resources
 	sp.trManager = states.NewTransactionManager(sp)
 	sp.distributedCaches = maps.NewSyncMap()
+	sp.serviceCaches = maps.NewSyncMap()
 	sp.leaderElection = NewLeaderElection()
 	sp.participantRegistry = NewParticipantRegistry()
 	_, err := sp.resources.Registry().Register(&l8notify.L8NotificationSet{})
@@ -215,6 +217,11 @@ func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea byte)
 func (this *ServiceManager) RegisterDistributedCache(cache ifs.IDistributedCache) {
 	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
 	this.distributedCaches.Put(key, cache)
+}
+
+func (this *ServiceManager) RegisterServiceCache(cache ifs.IServiceHandlerCache) {
+	key := cacheKey(cache.ServiceName(), cache.ServiceArea())
+	this.serviceCaches.Put(key, cache)
 }
 
 func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
