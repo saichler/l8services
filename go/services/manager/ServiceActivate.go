@@ -12,6 +12,7 @@ import (
 
 func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea byte,
 	r ifs.IResources, l ifs.IServiceCacheListener, args ...interface{}) (ifs.IServiceHandler, error) {
+
 	if r == nil {
 		return nil, errors.New("Resources is nil")
 	}

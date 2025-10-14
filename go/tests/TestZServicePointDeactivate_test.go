@@ -1,10 +1,11 @@
 package tests
 
 import (
+	"testing"
+
+	"github.com/saichler/l8bus/go/overlay/health"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8test/go/infra/t_service"
-	"github.com/saichler/l8bus/go/overlay/health"
-	"testing"
 )
 
 // Until i find the deactivate bug, run this test at the end
@@ -12,8 +13,7 @@ func testZServiceDeactivate(t *testing.T) {
 	nic := topo.VnicByVnetNum(2, 2)
 	nic2 := topo.VnicByVnetNum(1, 3)
 	WaitForCondition(func() bool {
-		hc := health.Health(nic.Resources())
-		hp := hc.Health(nic.Resources().SysConfig().LocalUuid)
+		hp := health.HealthOf(nic.Resources().SysConfig().LocalUuid, nic.Resources())
 		for k, _ := range hp.Services.ServiceToAreas {
 			if k == "Tests" {
 				return true
@@ -28,8 +28,7 @@ func testZServiceDeactivate(t *testing.T) {
 	}()
 
 	WaitForCondition(func() bool {
-		hc := health.Health(nic2.Resources())
-		hp := hc.Health(nic.Resources().SysConfig().LocalUuid)
+		hp := health.HealthOf(nic.Resources().SysConfig().LocalUuid, nic2.Resources())
 		for k, _ := range hp.Services.ServiceToAreas {
 			if k == "Tests" {
 				return false
