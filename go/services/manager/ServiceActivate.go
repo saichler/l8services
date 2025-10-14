@@ -2,6 +2,7 @@ package manager
 
 import (
 	"errors"
+	"time"
 
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8srlz/go/serialize/object"
@@ -106,7 +107,17 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		// Query for existing participants first
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
+		// Announce ourselves as a participant
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
+
+		// Send additional queries with delay to catch nodes that activated concurrently
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
+
+			time.Sleep(200 * time.Millisecond)
+			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
+		}()
 
 		// Trigger election for this service
 		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)

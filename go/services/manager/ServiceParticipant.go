@@ -224,14 +224,9 @@ func (pr *ParticipantRegistry) getParticipantSet(key string) *participantSet {
 }
 
 func (pr *ParticipantRegistry) getOrCreateParticipantSet(key string) *participantSet {
-	ps, ok := pr.participants.Load(key)
-	if ok {
-		return ps.(*participantSet)
-	}
-
 	newPs := &participantSet{
 		uuids: make(map[string]struct{}),
 	}
-	pr.participants.Store(key, newPs)
-	return newPs
+	actual, _ := pr.participants.LoadOrStore(key, newPs)
+	return actual.(*participantSet)
 }
