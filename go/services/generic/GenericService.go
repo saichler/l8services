@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/saichler/l8reflect/go/reflect/helping"
@@ -103,6 +104,10 @@ func (this *GenericService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElemen
 
 func (this *GenericService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	if pb.IsFilterMode() {
+		e := this.validateElem(pb)
+		if e != nil {
+			return object.New(e, &l8web.L8Empty{})
+		}
 		resp, err := this.cache.Get(pb.Element())
 		return object.New(err, resp)
 	}
@@ -150,4 +155,18 @@ func (this *GenericService) KeyOf(elems ifs.IElements, r ifs.IResources) string 
 
 func (this *GenericService) ConcurrentGets() bool {
 	return false
+}
+
+func (this *GenericService) validateElem(pb ifs.IElements) error {
+	v := reflect.ValueOf(pb.Element())
+	if !v.IsValid() {
+		return errors.New("Invalid element ")
+	}
+	if v.Kind() != reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Type().Name() != this.cache.ModelType() {
+		return errors.New("Invalid element type " + v.Type().Name())
+	}
+	return nil
 }
