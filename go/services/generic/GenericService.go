@@ -47,7 +47,7 @@ func (this *GenericService) DeActivate() error {
 
 func (this *GenericService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
-	if vnic == nil {
+	if this.vnic != nil {
 		vnic = this.vnic
 	}
 	for _, elem := range pb.Elements() {
@@ -61,7 +61,7 @@ func (this *GenericService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements
 
 func (this *GenericService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
-	if vnic == nil {
+	if this.vnic != nil {
 		vnic = this.vnic
 	}
 	for _, elem := range pb.Elements() {
@@ -75,7 +75,7 @@ func (this *GenericService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 
 func (this *GenericService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
-	if vnic == nil {
+	if this.vnic != nil {
 		vnic = this.vnic
 	}
 	for _, elem := range pb.Elements() {
@@ -89,7 +89,7 @@ func (this *GenericService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElement
 
 func (this *GenericService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
-	if vnic == nil {
+	if this.vnic != nil {
 		vnic = this.vnic
 	}
 	for _, elem := range pb.Elements() {
