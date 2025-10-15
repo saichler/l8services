@@ -162,7 +162,7 @@ func (this *GenericService) validateElem(pb ifs.IElements) error {
 	if !v.IsValid() {
 		return errors.New("Invalid element ")
 	}
-	if v.Kind() != reflect.Ptr {
+	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 	if v.Type().Name() != this.cache.ModelType() {
