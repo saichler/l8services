@@ -6,6 +6,7 @@ import (
 
 	"github.com/saichler/l8reflect/go/reflect/introspecting"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8api"
 	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8utils/go/utils/cache"
 )
@@ -14,6 +15,7 @@ func Activate(serviceConfig *ifs.ServiceConfig, vnic ifs.IVNic) error {
 	vnic.Resources().Registry().Register(&BaseService{})
 	vnic.Resources().Registry().Register(serviceConfig.ServiceItemList)
 	vnic.Resources().Registry().Register(&l8web.L8Empty{})
+	vnic.Resources().Registry().Register(&l8api.L8Query{})
 	node, _ := vnic.Resources().Introspector().Inspect(serviceConfig.ServiceItem)
 	introspecting.AddPrimaryKeyDecorator(node, serviceConfig.PrimaryKey...)
 	_, e := vnic.Resources().Services().Activate("BaseService", serviceConfig.ServiceName, serviceConfig.ServiceArea,
