@@ -6,6 +6,10 @@ func (this *BaseService) Collect(f func(interface{}) (bool, interface{})) map[st
 	return this.cache.Collect(f)
 }
 
+func (this *BaseService) All() map[string]interface{} {
+	return this.cache.Collect(all)
+}
+
 func (this *BaseService) ServiceName() string {
 	return this.cache.ServiceName()
 }

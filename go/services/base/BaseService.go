@@ -1,11 +1,9 @@
 package base
 
 import (
-	"errors"
 	"reflect"
 
 	"github.com/saichler/l8reflect/go/reflect/helping"
-	"github.com/saichler/l8reflect/go/reflect/introspecting"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8web"
@@ -16,34 +14,6 @@ type BaseService struct {
 	cache         *cache.Cache
 	vnic          ifs.IVNic
 	serviceConfig *ifs.ServiceConfig
-}
-
-func Activate(serviceConfig *ifs.ServiceConfig, vnic ifs.IVNic) error {
-	vnic.Resources().Registry().Register(&BaseService{})
-	vnic.Resources().Registry().Register(serviceConfig.ServiceItemList)
-	vnic.Resources().Registry().Register(&l8web.L8Empty{})
-	node, _ := vnic.Resources().Introspector().Inspect(serviceConfig.ServiceItem)
-	introspecting.AddPrimaryKeyDecorator(node, serviceConfig.PrimaryKey...)
-	_, e := vnic.Resources().Services().Activate("BaseService", serviceConfig.ServiceName, serviceConfig.ServiceArea,
-		vnic.Resources(), vnic, serviceConfig)
-	return e
-}
-
-func (this *BaseService) Activate(serviceName string, serviceArea byte,
-	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
-	this.serviceConfig = args[0].(*ifs.ServiceConfig)
-	this.cache = cache.NewCache(this.serviceConfig.ServiceItem, this.serviceConfig.InitItems,
-		this.serviceConfig.Store, resources)
-	this.cache.SetNotificationsFor(serviceName, serviceArea)
-	this.vnic = listener.(ifs.IVNic)
-	if this.serviceConfig.SendNotifications {
-		resources.Services().RegisterServiceCache(this)
-	}
-	return nil
-}
-
-func (this *BaseService) DeActivate() error {
-	return nil
 }
 
 func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
@@ -155,18 +125,4 @@ func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
 
 func (this *BaseService) ConcurrentGets() bool {
 	return false
-}
-
-func (this *BaseService) validateElem(pb ifs.IElements) error {
-	v := reflect.ValueOf(pb.Element())
-	if !v.IsValid() {
-		return errors.New("Invalid element ")
-	}
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	if v.Type().Name() != this.cache.ModelType() {
-		return errors.New("Invalid element type " + v.Type().Name())
-	}
-	return nil
 }
