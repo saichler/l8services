@@ -13,24 +13,21 @@ type DCache struct {
 
 func NewDistributedCache(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
 	listener ifs.IServiceCacheListener, resources ifs.IResources) ifs.IDistributedCache {
-	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil, false)
+	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil)
 }
 
 func NewDistributedCacheNoSync(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
 	listener ifs.IServiceCacheListener, resources ifs.IResources) ifs.IDistributedCache {
-	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil, true)
+	return NewDistributedCacheWithStorage(serviceName, serviceArea, sample, initElements, listener, resources, nil)
 }
 
 func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
-	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage, noSync bool) ifs.IDistributedCache {
+	listener ifs.IServiceCacheListener, resources ifs.IResources, store ifs.IStorage) ifs.IDistributedCache {
 	this := &DCache{}
 	this.cache = cache.NewCache(sample, initElements, store, resources)
 	this.listener = listener
 	this.resources = resources
 	this.cache.SetNotificationsFor(serviceName, serviceArea)
-	if listener != nil && !noSync {
-		resources.Services().RegisterDistributedCache(this)
-	}
 	return this
 }
 

@@ -20,7 +20,7 @@ func (this *ReplicationCache) Post(elem interface{}, rep int) error {
 	repCache, ok := this.cache[rep]
 	if !ok {
 		repCache = NewDistributedCacheWithStorage("", 0, elem,
-			nil, nil, this.resource, this.store, false)
+			nil, nil, this.resource, this.store)
 		this.cache[rep] = repCache
 	}
 	_, err := repCache.Post(elem, true)
@@ -31,7 +31,7 @@ func (this *ReplicationCache) Put(elem interface{}, rep int) error {
 	repCache, ok := this.cache[rep]
 	if !ok {
 		repCache = NewDistributedCacheWithStorage("", 0, elem,
-			nil, nil, this.resource, this.store, false)
+			nil, nil, this.resource, this.store)
 		this.cache[rep] = repCache
 	}
 	_, err := repCache.Put(elem, true)
@@ -42,7 +42,7 @@ func (this *ReplicationCache) Patch(elem interface{}, rep int) error {
 	repCache, ok := this.cache[rep]
 	if !ok {
 		repCache = NewDistributedCacheWithStorage("", 0, elem,
-			nil, nil, this.resource, this.store, false)
+			nil, nil, this.resource, this.store)
 		this.cache[rep] = repCache
 	}
 	_, err := repCache.Patch(elem, true)
@@ -53,7 +53,7 @@ func (this *ReplicationCache) Delete(elem interface{}, rep int) error {
 	repCache, ok := this.cache[rep]
 	if !ok {
 		repCache = NewDistributedCacheWithStorage("", 0, elem,
-			nil, nil, this.resource, this.store, false)
+			nil, nil, this.resource, this.store)
 		this.cache[rep] = repCache
 	}
 	_, err := repCache.Delete(elem, true)
@@ -64,7 +64,7 @@ func (this *ReplicationCache) Get(elem interface{}, rep int) (interface{}, error
 	repCache, ok := this.cache[rep]
 	if !ok {
 		repCache = NewDistributedCacheWithStorage("", 0, elem,
-			nil, nil, this.resource, this.store, false)
+			nil, nil, this.resource, this.store)
 		this.cache[rep] = repCache
 	}
 	return repCache.Get(elem)
