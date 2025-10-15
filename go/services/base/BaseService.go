@@ -1,4 +1,4 @@
-package generic
+package base
 
 import (
 	"errors"
@@ -12,24 +12,24 @@ import (
 	"github.com/saichler/l8utils/go/utils/cache"
 )
 
-type GenericService struct {
+type BaseService struct {
 	cache         *cache.Cache
 	vnic          ifs.IVNic
 	serviceConfig *ifs.ServiceConfig
 }
 
 func Activate(serviceConfig *ifs.ServiceConfig, vnic ifs.IVNic) error {
-	vnic.Resources().Registry().Register(&GenericService{})
+	vnic.Resources().Registry().Register(&BaseService{})
 	vnic.Resources().Registry().Register(serviceConfig.ServiceItemList)
 	vnic.Resources().Registry().Register(&l8web.L8Empty{})
 	node, _ := vnic.Resources().Introspector().Inspect(serviceConfig.ServiceItem)
 	introspecting.AddPrimaryKeyDecorator(node, serviceConfig.PrimaryKey...)
-	_, e := vnic.Resources().Services().Activate("GenericService", serviceConfig.ServiceName, serviceConfig.ServiceArea,
+	_, e := vnic.Resources().Services().Activate("BaseService", serviceConfig.ServiceName, serviceConfig.ServiceArea,
 		vnic.Resources(), vnic, serviceConfig)
 	return e
 }
 
-func (this *GenericService) Activate(serviceName string, serviceArea byte,
+func (this *BaseService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
 	this.serviceConfig = args[0].(*ifs.ServiceConfig)
 	this.cache = cache.NewCache(this.serviceConfig.ServiceItem, this.serviceConfig.InitItems,
@@ -42,11 +42,11 @@ func (this *GenericService) Activate(serviceName string, serviceArea byte,
 	return nil
 }
 
-func (this *GenericService) DeActivate() error {
+func (this *BaseService) DeActivate() error {
 	return nil
 }
 
-func (this *GenericService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
@@ -60,7 +60,7 @@ func (this *GenericService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements
 	return object.New(nil, &l8web.L8Empty{})
 }
 
-func (this *GenericService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *BaseService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
@@ -74,7 +74,7 @@ func (this *GenericService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 	return object.New(nil, &l8web.L8Empty{})
 }
 
-func (this *GenericService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *BaseService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
@@ -88,7 +88,7 @@ func (this *GenericService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElement
 	return object.New(nil, &l8web.L8Empty{})
 }
 
-func (this *GenericService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
@@ -102,7 +102,7 @@ func (this *GenericService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElemen
 	return object.New(nil, &l8web.L8Empty{})
 }
 
-func (this *GenericService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	if pb.IsFilterMode() {
 		e := this.validateElem(pb)
 		if e != nil {
@@ -119,12 +119,12 @@ func (this *GenericService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 	return object.New(nil, elems)
 }
 
-func (this *GenericService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	this.vnic.Resources().Logger().Error("Failed to deliver message")
 	return nil
 }
 
-func (this *GenericService) TransactionConfig() ifs.ITransactionConfig {
+func (this *BaseService) TransactionConfig() ifs.ITransactionConfig {
 	if this.serviceConfig.Transaction {
 		if this.serviceConfig.SendNotifications {
 			this.vnic.Resources().Logger().Warning("Both notification and transaction were enabled, diabling notifications ")
@@ -135,29 +135,29 @@ func (this *GenericService) TransactionConfig() ifs.ITransactionConfig {
 	return nil
 }
 
-func (this *GenericService) WebService() ifs.IWebService {
+func (this *BaseService) WebService() ifs.IWebService {
 	return this.serviceConfig.WebServiceDef
 }
 
-func (this *GenericService) Replication() bool {
+func (this *BaseService) Replication() bool {
 	return this.serviceConfig.Replication
 }
 
-func (this *GenericService) ReplicationCount() int {
+func (this *BaseService) ReplicationCount() int {
 	return this.serviceConfig.ReplicationCount
 }
 
-func (this *GenericService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
+func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
 	node, _ := r.Introspector().Node(this.cache.ModelType())
 	key := helping.PrimaryDecorator(node, reflect.ValueOf(elems.Element()), this.vnic.Resources().Registry())
 	return key.(string)
 }
 
-func (this *GenericService) ConcurrentGets() bool {
+func (this *BaseService) ConcurrentGets() bool {
 	return false
 }
 
-func (this *GenericService) validateElem(pb ifs.IElements) error {
+func (this *BaseService) validateElem(pb ifs.IElements) error {
 	v := reflect.ValueOf(pb.Element())
 	if !v.IsValid() {
 		return errors.New("Invalid element ")
