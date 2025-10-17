@@ -34,14 +34,6 @@ func (this *BaseService) Stats() map[string]int32 {
 	return this.cache.Stats()
 }
 
-func (this *BaseService) Sync() {
-	allItems := this.cache.Collect(all)
-	for key, item := range allItems {
-		n, _ := this.cache.CreateSyncNotification(item, key)
-		this.vnic.PropertyChangeNotification(n)
-	}
-}
-
 func all(i interface{}) (bool, interface{}) {
 	return true, i
 }

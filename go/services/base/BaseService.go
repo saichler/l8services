@@ -17,7 +17,7 @@ type BaseService struct {
 }
 
 func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	createNotification := this.serviceConfig.Voter && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -31,7 +31,7 @@ func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 }
 
 func (this *BaseService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	createNotification := this.serviceConfig.Voter && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -45,7 +45,7 @@ func (this *BaseService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 }
 
 func (this *BaseService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	createNotification := this.serviceConfig.Voter && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -59,7 +59,7 @@ func (this *BaseService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 }
 
 func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.SendNotifications && !pb.Notification()
+	createNotification := this.serviceConfig.Voter && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -96,9 +96,9 @@ func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Messa
 
 func (this *BaseService) TransactionConfig() ifs.ITransactionConfig {
 	if this.serviceConfig.Transaction {
-		if this.serviceConfig.SendNotifications {
+		if this.serviceConfig.Voter {
 			this.vnic.Resources().Logger().Warning("Both notification and transaction were enabled, diabling notifications ")
-			this.serviceConfig.SendNotifications = false
+			this.serviceConfig.Voter = false
 		}
 		return this
 	}
@@ -123,6 +123,6 @@ func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
 	return key.(string)
 }
 
-func (this *BaseService) ConcurrentGets() bool {
+func (this *BaseService) Voter() bool {
 	return false
 }
