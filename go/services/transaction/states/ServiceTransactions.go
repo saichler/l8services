@@ -11,25 +11,23 @@ import (
 )
 
 type ServiceTransactions struct {
-	mtx            *sync.Mutex
-	cond           *sync.Cond
-	queue          []*ifs.Message
-	running        bool
-	nic            ifs.IVNic
-	concurrentGets bool
+	mtx     *sync.Mutex
+	cond    *sync.Cond
+	queue   []*ifs.Message
+	running bool
+	nic     ifs.IVNic
 
 	preCommit    map[string]interface{}
 	preCommitMtx *sync.Mutex
 }
 
-func newServiceTransactions(concurrentGets bool, nic ifs.IVNic) *ServiceTransactions {
+func newServiceTransactions(nic ifs.IVNic) *ServiceTransactions {
 	serviceTransactions := &ServiceTransactions{}
 	serviceTransactions.mtx = &sync.Mutex{}
 	serviceTransactions.cond = sync.NewCond(serviceTransactions.mtx)
 	serviceTransactions.queue = make([]*ifs.Message, 0)
 	serviceTransactions.running = true
 	serviceTransactions.nic = nic
-	serviceTransactions.concurrentGets = concurrentGets
 	serviceTransactions.preCommitMtx = &sync.Mutex{}
 	serviceTransactions.preCommit = map[string]interface{}{}
 

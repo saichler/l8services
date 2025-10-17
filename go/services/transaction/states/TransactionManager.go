@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8utils/go/utils/strings"
 )
 
 type TransactionManager struct {
@@ -27,11 +26,7 @@ func (this *TransactionManager) transactionsOf(msg *ifs.Message, nic ifs.IVNic) 
 	serviceKey := ServiceKey(msg.ServiceName(), msg.ServiceArea())
 	st, ok := this.serviceTransactions[serviceKey]
 	if !ok {
-		h, ook := this.services.ServiceHandler(msg.ServiceName(), msg.ServiceArea())
-		if !ook {
-			panic(strings.New("Cannot find service handler for ", msg.ServiceName(), " - ", msg.ServiceArea()).String())
-		}
-		this.serviceTransactions[serviceKey] = newServiceTransactions(h.TransactionConfig().ConcurrentGets(), nic)
+		this.serviceTransactions[serviceKey] = newServiceTransactions(nic)
 		st = this.serviceTransactions[serviceKey]
 	}
 	return st

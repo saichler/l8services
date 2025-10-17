@@ -172,13 +172,11 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 	npb := object.NewNotify(item)
 
 	switch notification.Type {
-	case l8notify.L8NotificationType_Add:
+	case l8notify.L8NotificationType_Post:
 		return h.Post(npb, vnic)
-	case l8notify.L8NotificationType_Replace:
+	case l8notify.L8NotificationType_Put:
 		return h.Put(npb, vnic)
-	case l8notify.L8NotificationType_Sync:
-		fallthrough
-	case l8notify.L8NotificationType_Update:
+	case l8notify.L8NotificationType_Patch:
 		return h.Patch(npb, vnic)
 	case l8notify.L8NotificationType_Delete:
 		result := h.Delete(npb, vnic)
