@@ -28,7 +28,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp.services = NewServicesMap()
 	sp.resources = resources
 	sp.trManager = states.NewTransactionManager(sp)
-	sp.leaderElection = NewLeaderElection()
+	sp.leaderElection = NewLeaderElection(sp)
 	sp.participantRegistry = NewParticipantRegistry()
 	_, err := sp.resources.Registry().Register(&l8notify.L8NotificationSet{})
 	if err != nil {

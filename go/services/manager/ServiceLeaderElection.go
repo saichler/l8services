@@ -35,11 +35,14 @@ type leaderInfo struct {
 }
 
 type LeaderElection struct {
-	leaders sync.Map // key: serviceKey string -> *leaderInfo
+	leaders        sync.Map // key: serviceKey string -> *leaderInfo
+	serviceManager *ServiceManager
 }
 
-func NewLeaderElection() *LeaderElection {
-	return &LeaderElection{}
+func NewLeaderElection(sm *ServiceManager) *LeaderElection {
+	return &LeaderElection{
+		serviceManager: sm,
+	}
 }
 
 func (le *LeaderElection) handleElection(action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
@@ -67,6 +70,12 @@ func (le *LeaderElection) handleElectionRequest(vnic ifs.IVNic, msg *ifs.Message
 	senderUuid := msg.Source()
 
 	vnic.Resources().Logger().Debug("Election request from", senderUuid, "for", msg.ServiceName(), "area", msg.ServiceArea(), "local:", localUuid)
+
+	// Check if this node can participate in voting
+	if !le.canVote(msg.ServiceName(), msg.ServiceArea()) {
+		vnic.Resources().Logger().Debug("This node cannot vote for", msg.ServiceName(), "area", msg.ServiceArea())
+		return nil
+	}
 
 	// If sender has lower priority (higher UUID), respond that we're still alive
 	if senderUuid < localUuid {
@@ -148,6 +157,11 @@ func (le *LeaderElection) handleLeaderHeartbeat(vnic ifs.IVNic, msg *ifs.Message
 }
 
 func (le *LeaderElection) handleLeaderQuery(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+	// Check if this node can participate in voting
+	if !le.canVote(msg.ServiceName(), msg.ServiceArea()) {
+		return nil
+	}
+
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getLeaderInfo(key)
 
@@ -188,6 +202,11 @@ func (le *LeaderElection) handleLeaderResign(vnic ifs.IVNic, msg *ifs.Message) i
 }
 
 func (le *LeaderElection) handleLeaderChallenge(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+	// Check if this node can participate in voting
+	if !le.canVote(msg.ServiceName(), msg.ServiceArea()) {
+		return nil
+	}
+
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getLeaderInfo(key)
 
@@ -210,6 +229,12 @@ func (le *LeaderElection) handleLeaderChallenge(vnic ifs.IVNic, msg *ifs.Message
 }
 
 func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vnic ifs.IVNic) {
+	// Check if this node can participate in voting
+	if !le.canVote(serviceName, serviceArea) {
+		vnic.Resources().Logger().Debug("This node cannot vote for", serviceName, "area", serviceArea, "- skipping election")
+		return
+	}
+
 	key := makeServiceKey(serviceName, serviceArea)
 	info := le.getOrCreateLeaderInfo(key)
 
@@ -411,4 +436,23 @@ func makeServiceKey(serviceName string, serviceArea byte) string {
 	buff.WriteString("-")
 	buff.WriteString(strconv.Itoa(int(serviceArea)))
 	return buff.String()
+}
+
+// canVote checks if this node can participate in voting for the given service
+func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
+	if le.serviceManager == nil {
+		return false
+	}
+
+	handler, ok := le.serviceManager.services.get(serviceName, serviceArea)
+	if !ok {
+		return false
+	}
+
+	txConfig := handler.TransactionConfig()
+	if txConfig == nil {
+		return false
+	}
+
+	return txConfig.Voter()
 }
