@@ -11,13 +11,13 @@ import (
 )
 
 type BaseService struct {
-	cache         *cache.Cache
-	vnic          ifs.IVNic
-	serviceConfig *ifs.ServiceConfig
+	cache *cache.Cache
+	vnic  ifs.IVNic
+	sla   *ifs.ServiceLevelAgreement
 }
 
 func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.Voter && !pb.Notification()
+	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -31,7 +31,7 @@ func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 }
 
 func (this *BaseService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.Voter && !pb.Notification()
+	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -45,7 +45,7 @@ func (this *BaseService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 }
 
 func (this *BaseService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.Voter && !pb.Notification()
+	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -59,7 +59,7 @@ func (this *BaseService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 }
 
 func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.serviceConfig.Voter && !pb.Notification()
+	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
@@ -95,26 +95,25 @@ func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Messa
 }
 
 func (this *BaseService) TransactionConfig() ifs.ITransactionConfig {
-	if this.serviceConfig.Transaction {
-		if this.serviceConfig.Voter {
-			this.vnic.Resources().Logger().Warning("Both notification and transaction were enabled, diabling notifications ")
-			this.serviceConfig.Voter = false
-		}
+	if !this.sla.Stateful() {
+		return nil
+	}
+	if this.sla.Transactional() {
 		return this
 	}
 	return nil
 }
 
 func (this *BaseService) WebService() ifs.IWebService {
-	return this.serviceConfig.WebServiceDef
+	return this.sla.WebServiceDef()
 }
 
 func (this *BaseService) Replication() bool {
-	return this.serviceConfig.Replication
+	return this.sla.Replication()
 }
 
 func (this *BaseService) ReplicationCount() int {
-	return this.serviceConfig.ReplicationCount
+	return this.sla.ReplicationCount()
 }
 
 func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
