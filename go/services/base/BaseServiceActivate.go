@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8services/go/services/recovery"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8api"
 	"github.com/saichler/l8types/go/types/l8web"
@@ -18,8 +19,10 @@ func Activate(serviceConfig *ifs.ServiceConfig, vnic ifs.IVNic) error {
 	vnic.Resources().Registry().Register(&l8api.L8Query{})
 	node, _ := vnic.Resources().Introspector().Inspect(serviceConfig.ServiceItem)
 	introspecting.AddPrimaryKeyDecorator(node, serviceConfig.PrimaryKey...)
-	_, e := vnic.Resources().Services().Activate("BaseService", serviceConfig.ServiceName, serviceConfig.ServiceArea,
+	b, e := vnic.Resources().Services().Activate("BaseService", serviceConfig.ServiceName, serviceConfig.ServiceArea,
 		vnic.Resources(), vnic, serviceConfig)
+	bs := b.(*BaseService)
+	go recovery.RecoveryCheck(serviceConfig.ServiceName, serviceConfig.ServiceArea, bs.cache, vnic)
 	return e
 }
 
