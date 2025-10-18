@@ -30,7 +30,7 @@ func (this *BaseService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
 	this.sla = args[0].(*ifs.ServiceLevelAgreement)
 	if this.sla.Stateful() {
-		this.cache = cache.NewCache(this.sla.ServiceItem, this.sla.InitItems(),
+		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
 			this.sla.Store(), resources)
 	}
 	this.cache.SetNotificationsFor(serviceName, serviceArea)
