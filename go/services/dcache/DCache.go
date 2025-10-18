@@ -42,3 +42,7 @@ func (this *DCache) ServiceArea() byte {
 func (this *DCache) Size() int {
 	return this.cache.Size()
 }
+
+func (this *DCache) Cache() *cache.Cache {
+	return this.cache
+}
