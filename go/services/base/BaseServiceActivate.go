@@ -14,10 +14,10 @@ import (
 
 func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	vnic.Resources().Registry().Register(&BaseService{})
-	vnic.Resources().Registry().Register(sla.ServiceItemList)
+	vnic.Resources().Registry().Register(sla.ServiceItemList())
 	vnic.Resources().Registry().Register(&l8web.L8Empty{})
 	vnic.Resources().Registry().Register(&l8api.L8Query{})
-	node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem)
+	node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem())
 	introspecting.AddPrimaryKeyDecorator(node, sla.PrimaryKeys()...)
 	b, e := vnic.Resources().Services().Activate("BaseService", sla.ServiceName(), sla.ServiceArea(),
 		vnic.Resources(), vnic, sla)
