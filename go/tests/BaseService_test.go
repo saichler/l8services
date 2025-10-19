@@ -13,12 +13,11 @@ import (
 )
 
 func TestBaseService(t *testing.T) {
-	sc := &ifs.ServiceConfig{}
-	sc.ServiceName = "base"
-	sc.ServiceItem = &testtypes.TestProto{}
-	sc.ServiceItemList = &testtypes.TestProtoList{}
-	sc.PrimaryKey = []string{"MyString"}
-	sc.Voter = true
+	sc := ifs.NewServiceLevelAgreement(&base.BaseService{}, "base", 0, true, nil)
+	sc.SetServiceItem(&testtypes.TestProto{})
+	sc.SetServiceItemList(&testtypes.TestProtoList{})
+	sc.SetPrimaryKeys([]string{"MyString"})
+	sc.SetVoter(true)
 
 	for vnet := 1; vnet <= 3; vnet++ {
 		for vnic := 1; vnic <= 3; vnic++ {
@@ -31,7 +30,7 @@ func TestBaseService(t *testing.T) {
 	nic := topo.VnicByVnetNum(1, 1)
 	for i := 0; i < 10; i++ {
 		elem := utils.CreateTestModelInstance(i)
-		h, _ := nic.Resources().Services().ServiceHandler(sc.ServiceName, 0)
+		h, _ := nic.Resources().Services().ServiceHandler(sc.ServiceName(), 0)
 		h.Post(object.New(nil, elem), nic)
 	}
 
@@ -40,7 +39,7 @@ func TestBaseService(t *testing.T) {
 	for vnet := 1; vnet <= 3; vnet++ {
 		for vnic := 1; vnic <= 3; vnic++ {
 			nic = topo.VnicByVnetNum(vnet, vnic)
-			h, _ := nic.Resources().Services().ServiceHandler(sc.ServiceName, 0)
+			h, _ := nic.Resources().Services().ServiceHandler(sc.ServiceName(), 0)
 			hb := h.(*base.BaseService)
 			if hb.Size() != 10 {
 				fmt.Println(nic.Resources().SysConfig().LocalAlias, " does not have 10 items ", hb.Size())
@@ -60,7 +59,7 @@ func TestBaseService(t *testing.T) {
 	time.Sleep(time.Second * 10)
 
 	nic = topo.VnicByVnetNum(2, 3)
-	h, _ := nic.Resources().Services().ServiceHandler(sc.ServiceName, 0)
+	h, _ := nic.Resources().Services().ServiceHandler(sc.ServiceName(), 0)
 	hb := h.(*base.BaseService)
 	if hb.Size() != 10 {
 		fmt.Println("recover ", nic.Resources().SysConfig().LocalAlias, " does not have 10 items ", hb.Size())
