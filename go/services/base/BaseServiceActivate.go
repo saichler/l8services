@@ -20,6 +20,9 @@ func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem())
 	introspecting.AddPrimaryKeyDecorator(node, sla.PrimaryKeys()...)
 	b, e := vnic.Resources().Services().Activate(sla, vnic)
+	if e != nil {
+		panic(e)
+	}
 	bs := b.(*BaseService)
 	go recovery.RecoveryCheck(sla.ServiceName(), sla.ServiceArea(), bs.cache, vnic)
 	return e
