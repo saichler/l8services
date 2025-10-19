@@ -105,7 +105,7 @@ func (this *BaseService) TransactionConfig() ifs.ITransactionConfig {
 }
 
 func (this *BaseService) WebService() ifs.IWebService {
-	return this.sla.WebServiceDef()
+	return this.sla.WebService()
 }
 
 func (this *BaseService) Replication() bool {

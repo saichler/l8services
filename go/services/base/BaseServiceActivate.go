@@ -19,22 +19,20 @@ func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	vnic.Resources().Registry().Register(&l8api.L8Query{})
 	node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem())
 	introspecting.AddPrimaryKeyDecorator(node, sla.PrimaryKeys()...)
-	b, e := vnic.Resources().Services().Activate("BaseService", sla.ServiceName(), sla.ServiceArea(),
-		vnic.Resources(), vnic, sla)
+	b, e := vnic.Resources().Services().Activate(sla, vnic)
 	bs := b.(*BaseService)
 	go recovery.RecoveryCheck(sla.ServiceName(), sla.ServiceArea(), bs.cache, vnic)
 	return e
 }
 
-func (this *BaseService) Activate(serviceName string, serviceArea byte,
-	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
-	this.sla = args[0].(*ifs.ServiceLevelAgreement)
+func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
+	this.sla = sla
 	if this.sla.Stateful() {
 		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
-			this.sla.Store(), resources)
+			this.sla.Store(), vnic.Resources())
 	}
-	this.cache.SetNotificationsFor(serviceName, serviceArea)
-	this.vnic = listener.(ifs.IVNic)
+	this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
+	this.vnic = vnic
 	return nil
 }
 

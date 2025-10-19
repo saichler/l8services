@@ -2,6 +2,7 @@ package manager
 
 import (
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/saichler/l8services/go/services/replication"
@@ -11,95 +12,104 @@ import (
 	"github.com/saichler/l8types/go/types/l8system"
 )
 
-func (this *ServiceManager) Activate(typeName string, serviceName string, serviceArea byte,
-	r ifs.IResources, l ifs.IServiceCacheListener, args ...interface{}) (ifs.IServiceHandler, error) {
+func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandler, error) {
 
-	if r == nil {
-		return nil, errors.New("Resources is nil")
+	if vnic == nil {
+		return nil, errors.New("Vnic cannot be nil when activating")
 	}
-	r.Logger().Debug("[Activate]", r.SysConfig().LocalUuid, "-", serviceName, "-", serviceArea, "-", l != nil)
-	if typeName == "" {
-		return nil, errors.New("typeName is empty")
-	}
+	vnic.Resources().Logger().Debug("[Activate]", vnic.Resources().SysConfig().LocalUuid, "-",
+		sla.ServiceName(), " ", sla.ServiceArea(), " ", vnic.Resources().SysConfig().LocalAlias)
 
-	if serviceName == "" {
-		return nil, errors.New("Service name is empty")
+	if sla.ServiceHandlerInstance() == nil {
+		return nil, errors.New("SLA does not contain a service instance")
 	}
 
-	if len(serviceName) > 10 {
-		panic("Service name " + serviceName + " must be less than 10 characters long")
-		return nil, errors.New("Service name " + serviceName + " must be less than 10 characters long")
+	if sla.ServiceName() == "" {
+		return nil, errors.New("SLA Service name is empty")
 	}
 
-	handler, ok := this.services.get(serviceName, serviceArea)
+	if len(sla.ServiceName()) > 10 {
+		panic("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
+		return nil, errors.New("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
+	}
+
+	handler, ok := this.services.get(sla.ServiceName(), sla.ServiceArea())
 	if ok {
 		return handler, nil
 	}
 
-	info, err := this.resources.Registry().Info(typeName)
-	if err != nil {
-		return nil, errors.New("Activate: " + err.Error())
-	}
-	h, err := info.NewInstance()
-	if err != nil {
-		return nil, errors.New("Activate: " + err.Error())
-	}
+	h := vnic.Resources().Registry().NewOf(sla.ServiceHandlerInstance())
 	handler = h.(ifs.IServiceHandler)
-	err = handler.Activate(serviceName, serviceArea, r, l, args...)
+
+	err := handler.Activate(sla, vnic)
 	if err != nil {
 		return nil, errors.New("Activate: " + err.Error())
 	}
-	this.services.put(serviceName, serviceArea, handler)
-	ifs.AddService(this.resources.SysConfig(), serviceName, int32(serviceArea))
-	vnic, ok := l.(ifs.IVNic)
+	this.services.put(sla.ServiceName(), sla.ServiceArea(), handler)
+	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()))
 
-	if ok {
-		serviceData := &l8system.L8ServiceData{}
-		serviceData.ServiceName = serviceName
-		serviceData.ServiceArea = int32(serviceArea)
-		serviceData.ServiceUuid = this.resources.SysConfig().LocalUuid
-		data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
-		sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
-		sysmsg.Publish = true
-		vnic.Multicast(ifs.SysMsg, ifs.SysArea, ifs.POST, sysmsg)
-	}
+	//Publish the serivce to all vnets
+	this.publishService(sla, vnic)
 
-	serviceNames := []string{serviceName}
-
-	if ok && typeName != replication.ServiceType {
-		err = vnic.NotifyServiceAdded(serviceNames, serviceArea)
+	//Notify Health of service
+	err = vnic.NotifyServiceAdded([]string{sla.ServiceName()}, sla.ServiceArea())
+	if err != nil {
+		return nil, err
 	}
 
 	webService := handler.WebService()
 
 	if ok && webService != nil {
-		vnic.Resources().Logger().Debug("Sent Webservice multicast for ", serviceName, " area ", serviceArea)
+		vnic.Resources().Logger().Debug("Sent Webservice multicast for ", sla.ServiceName(), " area ", sla.ServiceArea())
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
 	}
 
+	err = this.registerForReplication(sla.ServiceName(), sla.ServiceArea(), handler, vnic)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only trigger election and participant registration for services with TransactionConfig
+	this.triggerElections(sla.ServiceName(), sla.ServiceArea(), handler, vnic)
+
+	return handler, err
+}
+
+func (this *ServiceManager) publishService(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) {
+	serviceData := &l8system.L8ServiceData{}
+	serviceData.ServiceName = sla.ServiceName()
+	serviceData.ServiceArea = int32(sla.ServiceArea())
+	serviceData.ServiceUuid = this.resources.SysConfig().LocalUuid
+	data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
+	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
+	sysmsg.Publish = true
+	vnic.Multicast(ifs.SysMsg, ifs.SysArea, ifs.POST, sysmsg)
+}
+
+func (this *ServiceManager) registerForReplication(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) error {
 	if handler.TransactionConfig() != nil && handler.TransactionConfig().Replication() {
 		if handler.TransactionConfig().ReplicationCount() == 0 {
-			r.Logger().Error("Service point ", typeName, " has replication set to true with 0 replication count!")
+			return errors.New("Service Handler " + reflect.ValueOf(handler).Elem().Type().Name() + " has replication set to true with 0 replication count!")
 		} else {
-			repService := replication.Service(r)
+			repService := replication.Service(vnic.Resources())
 			if repService == nil {
-				this.Activate(replication.ServiceType, replication.ServiceName, replication.ServiceArea, r, l)
-				repService = replication.Service(r)
+				sla := ifs.NewServiceLevelAgreement(&replication.ReplicationService{}, replication.ServiceName, replication.ServiceArea, true, nil)
+				repService, _ = this.Activate(sla, vnic)
 			}
 
 			index := &l8services.L8ReplicationIndex{}
 			index.ServiceName = serviceName
 			index.ServiceArea = int32(serviceArea)
 			index.Keys = make(map[string]*l8services.L8ReplicationKey)
-
-			if vnic != nil {
-				repService.Post(object.New(nil, index), vnic)
-			}
+			repService.Post(object.New(nil, index), vnic)
 		}
 	}
+	return nil
+}
 
+func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) {
 	// Only trigger election and participant registration for services with TransactionConfig
-	if ok && handler.TransactionConfig() != nil {
+	if handler.TransactionConfig() != nil {
 		// Register as participant for this service
 		localUuid := this.resources.SysConfig().LocalUuid
 		this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
@@ -122,6 +132,4 @@ func (this *ServiceManager) Activate(typeName string, serviceName string, servic
 		// Trigger election for this service
 		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 	}
-
-	return handler, err
 }

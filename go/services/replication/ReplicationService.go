@@ -20,18 +20,11 @@ type ReplicationService struct {
 	cache ifs.IDistributedCache
 }
 
-func (this *ReplicationService) Activate(serviceName string, serviceArea byte, resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
-
-	node, _ := resources.Introspector().Inspect(&l8services.L8ReplicationIndex{})
+func (this *ReplicationService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
+	node, _ := vnic.Resources().Introspector().Inspect(&l8services.L8ReplicationIndex{})
 	introspecting.AddPrimaryKeyDecorator(node, "ServiceName", "ServiceArea")
-	/*
-		index := &l8services.L8ReplicationIndex{}
-		index.ServiceName = serviceName
-		index.ServiceArea = int32(serviceArea)
-		index.Keys = make(map[string]*l8services.L8ReplicationKey)
-	*/
-	this.cache = dcache.NewDistributedCache(serviceName, serviceArea, &l8services.L8ReplicationIndex{}, nil, listener, resources)
-
+	this.cache = dcache.NewDistributedCache(sla.ServiceName(), sla.ServiceArea(), &l8services.L8ReplicationIndex{},
+		nil, vnic, vnic.Resources())
 	return nil
 }
 
