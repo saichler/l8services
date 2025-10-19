@@ -13,15 +13,18 @@ import (
 )
 
 func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandler, error) {
+	var handler ifs.IServiceHandler
+	var ok bool
+	var err error
 
 	if vnic == nil {
-		return nil, errors.New("Vnic cannot be nil when activating")
+		return handler, errors.New("Vnic cannot be nil when activating")
 	}
 	vnic.Resources().Logger().Debug("[Activate]", vnic.Resources().SysConfig().LocalUuid, "-",
 		sla.ServiceName(), " ", sla.ServiceArea(), " ", vnic.Resources().SysConfig().LocalAlias)
 
 	if sla.ServiceHandlerInstance() == nil {
-		return nil, errors.New("SLA does not contain a service instance")
+		return handler, errors.New("SLA does not contain a service instance")
 	}
 
 	if sla.ServiceName() == "" {
@@ -30,10 +33,10 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 
 	if len(sla.ServiceName()) > 10 {
 		panic("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
-		return nil, errors.New("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
+		return handler, errors.New("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
 	}
 
-	handler, ok := this.services.get(sla.ServiceName(), sla.ServiceArea())
+	handler, ok = this.services.get(sla.ServiceName(), sla.ServiceArea())
 	if ok {
 		return handler, nil
 	}
@@ -41,10 +44,8 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	h := vnic.Resources().Registry().NewOf(sla.ServiceHandlerInstance())
 	handler = h.(ifs.IServiceHandler)
 
-	err := handler.Activate(sla, vnic)
-	if err != nil {
-		return nil, errors.New("Activate: " + err.Error())
-	}
+	err = handler.Activate(sla, vnic)
+
 	this.services.put(sla.ServiceName(), sla.ServiceArea(), handler)
 	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()))
 
@@ -52,9 +53,9 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	this.publishService(sla, vnic)
 
 	//Notify Health of service
-	err = vnic.NotifyServiceAdded([]string{sla.ServiceName()}, sla.ServiceArea())
-	if err != nil {
-		return nil, err
+	e := vnic.NotifyServiceAdded([]string{sla.ServiceName()}, sla.ServiceArea())
+	if e != nil && err == nil {
+		err = e
 	}
 
 	webService := handler.WebService()
@@ -64,9 +65,9 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
 	}
 
-	err = this.registerForReplication(sla.ServiceName(), sla.ServiceArea(), handler, vnic)
-	if err != nil {
-		return nil, err
+	e = this.registerForReplication(sla.ServiceName(), sla.ServiceArea(), handler, vnic)
+	if e != nil && err == nil {
+		err = e
 	}
 
 	// Only trigger election and participant registration for services with TransactionConfig
