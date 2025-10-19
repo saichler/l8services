@@ -28,6 +28,9 @@ func RecoveryCheck(serviceName string, serviceArea byte, cache *cache.Cache, nic
 	}
 
 	list, _ := resp.AsList(nic.Resources().Registry())
+	if list == nil {
+		return
+	}
 	v := reflect.ValueOf(list)
 	v = v.Elem()
 	stats := v.FieldByName("Stats")
