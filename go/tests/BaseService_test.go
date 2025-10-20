@@ -16,7 +16,7 @@ func TestBaseService(t *testing.T) {
 	sc := ifs.NewServiceLevelAgreement(&base.BaseService{}, "base", 0, true, nil)
 	sc.SetServiceItem(&testtypes.TestProto{})
 	sc.SetServiceItemList(&testtypes.TestProtoList{})
-	sc.SetPrimaryKeys([]string{"MyString"})
+	sc.SetPrimaryKeys("MyString")
 	sc.SetVoter(true)
 
 	for vnet := 1; vnet <= 3; vnet++ {
