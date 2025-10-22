@@ -84,7 +84,7 @@ func (this *ServiceManager) publishService(sla *ifs.ServiceLevelAgreement, vnic 
 	data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
-	vnic.Multicast(ifs.SysMsg, ifs.SysArea, ifs.POST, sysmsg)
+	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
 }
 
 func (this *ServiceManager) registerForReplication(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) error {

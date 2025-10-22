@@ -8,10 +8,10 @@ Layer 8 Services is a high-performance distributed services framework built on t
 
 - **Advanced Distributed Cache**: Thread-safe, synchronized distributed caching with persistent storage support and optimized data fetching
 - **Enhanced Transaction Management**: ACID transaction support across distributed services with improved 2-phase commit protocol and optimized state management
-- **Service Management**: Registration, activation, and lifecycle management of microservices with enhanced service point handling
-- **Replication Services**: Data replication and synchronization across service instances with improved counting and sorting mechanisms
+- **Service Management**: Registration, activation, and lifecycle management of microservices with SLA-based architecture and improved error handling
+- **Replication Services**: Data replication and synchronization across service instances with deterministic round-robin load balancing
 - **Notification System**: Event-driven notifications for cache updates and service state changes
-- **Performance Optimizations**: Recent improvements in store loading, sorting algorithms, and fetch operations
+- **Performance Optimizations**: Recent improvements in service activation, error recovery, and transaction rollback mechanisms
 
 ## Architecture
 
@@ -38,10 +38,74 @@ The framework is organized into several core components:
 - **Health Monitoring**: Service health tracking and reporting with enhanced service point deactivation
 - **Web Service Integration**: RESTful API endpoints for external service interaction
 
+## Recent Updates (October 2025)
+
+### Service Activation Improvements
+- **SLA-Based Architecture**: Refactored service activation to use Service Level Agreements (SLA) for better service management
+- **Enhanced Error Handling**: Fixed panic conditions on nil responses from handlers
+- **Improved Error Recovery**: Better error propagation and handling during service activation
+- **Graceful Failure Handling**: Services now continue activation even if non-critical operations fail
+
+### Transaction System Enhancements
+- **Optimized Rollback Logic**: Only sends rollback to peers that successfully committed
+- **Memory Management**: Fixed memory leaks in PreCommit map with proper cleanup on all paths
+- **Deterministic Round-Robin**: Replaced index-based approach with UUID tracking for true round-robin distribution
+- **2-Phase Commit Improvements**: Better handling of edge cases in distributed transactions
+
+### Performance & Stability Fixes
+- **Crash Prevention**: Fixed multiple crash scenarios in service activation and handler responses
+- **Test Coverage**: Improved test reliability and coverage reporting
+- **Resource Cleanup**: Enhanced cleanup mechanisms for transaction states and service deactivation
+
+### Known Issues & Future Work
+- **Single-threaded Transaction Processing**: Currently processes transactions sequentially per service (optimization planned)
+- **Concurrent GET Operations**: Implementation for concurrent reads during long transactions (in progress)
+- **Graceful Shutdown**: Improved resource lifecycle management and goroutine cleanup (planned)
+
 ## Installation
 
 ```bash
 go mod download
+```
+
+## Quick Start
+
+```go
+package main
+
+import (
+    "github.com/saichler/l8services/go/services/manager"
+    "github.com/saichler/l8services/go/services/dcache"
+    // Import your Layer8 dependencies
+)
+
+func main() {
+    // Initialize resources and VNIC
+    resources := // ... initialize Layer8 resources
+    vnic := // ... initialize VNIC
+
+    // Create service manager
+    serviceManager := manager.NewServices(resources)
+
+    // Setup a distributed cache
+    cache := dcache.NewDistributedCache(
+        "CacheService", 1, "MyDataModel", "source1",
+        cacheListener, resources,
+    )
+
+    // Create and activate a service with SLA
+    sla := ifs.NewServiceLevelAgreement()
+    sla.SetServiceName("MyService")
+    sla.SetServiceArea(1)
+    sla.SetServiceHandlerInstance(myServiceHandler)
+
+    handler, err := serviceManager.Activate(sla, vnic)
+    if err != nil {
+        log.Fatal("Failed to activate service:", err)
+    }
+
+    // Service is now ready to handle requests
+}
 ```
 
 ## Dependencies
@@ -85,8 +149,14 @@ import "github.com/saichler/l8services/go/services/manager"
 // Create service manager
 services := manager.NewServices(resources)
 
-// Register a service handler
-services.RegisterServiceHandlerType(myHandler)
+// Create Service Level Agreement for service activation
+sla := ifs.NewServiceLevelAgreement()
+sla.SetServiceName("MyService")
+sla.SetServiceArea(1)
+sla.SetServiceHandlerInstance(myHandler)
+
+// Activate service with SLA
+handler, err := services.Activate(sla, vnic)
 
 // Handle service requests
 result := services.Handle(payload, action, vnic, message)
@@ -135,18 +205,27 @@ View coverage report:
 ## Project Structure
 
 ```
-go/
-├── services/
-│   ├── dcache/          # Distributed caching implementation
-│   ├── manager/         # Service lifecycle management
-│   ├── replication/     # Data replication services
-│   └── transaction/     # Transaction management
-│       ├── states/      # Transaction state management (refactored)
-│       └── requests/    # Transaction request handling
-├── tests/               # Comprehensive test suite
-├── vendor/              # Vendored dependencies
-├── go.mod              # Go module definition
-└── test.sh             # Test execution script
+l8services/
+├── go/
+│   ├── services/
+│   │   ├── dcache/          # Distributed caching implementation
+│   │   ├── manager/         # Service lifecycle management with SLA
+│   │   ├── replication/     # Data replication services
+│   │   ├── recovery/        # Service recovery mechanisms
+│   │   ├── base/            # Base service implementations
+│   │   └── transaction/     # Transaction management
+│   │       ├── states/      # Transaction state management (refactored)
+│   │       └── requests/    # Transaction request handling
+│   ├── tests/               # Comprehensive test suite
+│   ├── vendor/              # Vendored dependencies
+│   ├── go.mod              # Go module definition
+│   ├── go.sum              # Go module checksums
+│   ├── cover.html          # Test coverage report
+│   └── test.sh             # Test execution script
+├── services.md             # Performance & concurrency analysis document
+├── todo.txt               # Development tasks and improvements tracking
+├── web.html               # Web service interface
+└── README.md              # This file
 ```
 
 ## API Reference
@@ -170,6 +249,23 @@ Services must implement the `IServiceHandler` interface:
 - `Delete(payload, vnic)`: Remove resources
 - `Get(payload, vnic)`: Retrieve resources
 - `Failed(payload, vnic, message)`: Handle failure scenarios
+
+## Documentation
+
+### Performance Analysis
+A comprehensive performance and concurrency analysis is available in `services.md` which covers:
+- Memory management patterns and optimization opportunities
+- Concurrency bottlenecks and synchronization issues
+- Transaction processing architecture recommendations
+- Resource lifecycle management improvements
+- Critical metrics and monitoring recommendations
+
+### Todo Tracking
+Active development tasks and improvements are tracked in `todo.txt` with:
+- High priority fixes for transaction mechanism
+- Medium priority performance enhancements
+- Future architectural improvements
+- Current implementation status for each item
 
 ## Contributing
 

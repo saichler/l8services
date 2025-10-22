@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Layer 8 Services, API, Concurrency & Caching</title>
+    <link rel="icon" type="image/gif" href="Layer8Logo.gif">
     <style>
         * {
             margin: 0;
@@ -26,7 +27,7 @@
 
         /* Header */
         header {
-            background: linear-gradient(135deg, #2E8B57 0%, #20B2AA 100%);
+            background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 50%, #4a5568 100%);
             color: white;
             padding: 0;
             position: relative;
@@ -89,7 +90,7 @@
 
         .cta-button {
             display: inline-block;
-            background: #FF6347;
+            background: linear-gradient(135deg, #d4af37 0%, #b8960f 100%);
             color: white;
             padding: 1.2rem 2.5rem;
             text-decoration: none;
@@ -97,11 +98,15 @@
             font-weight: 600;
             font-size: 1.1rem;
             transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
             box-shadow: 0 6px 20px rgba(255, 99, 71, 0.3);
         }
 
         .cta-button:hover {
-            background: #FF4500;
+            background: #d4af37;
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(255, 99, 71, 0.4);
         }
@@ -145,7 +150,7 @@
         }
 
         nav a:hover {
-            background: #2E8B57;
+            background: #b8960f;
             color: white;
         }
 
@@ -168,7 +173,7 @@
         }
 
         h2 {
-            color: #2E8B57;
+            color: #d4af37;
             font-size: 2.5rem;
             margin-bottom: 1.5rem;
             position: relative;
@@ -213,7 +218,7 @@
         }
 
         .feature-card h4 {
-            color: #2E8B57;
+            color: #d4af37;
             font-size: 1.3rem;
             margin-bottom: 1rem;
         }
@@ -233,7 +238,7 @@
             position: absolute;
             top: 0.5rem;
             right: 1rem;
-            background: #2E8B57;
+            background: #b8960f;
             color: white;
             padding: 0.25rem 0.75rem;
             border-radius: 15px;
@@ -305,7 +310,7 @@
         }
 
         .api-section h4 {
-            color: #2E8B57;
+            color: #d4af37;
             margin-bottom: 1rem;
         }
 
@@ -327,7 +332,7 @@
             background: #e2e8f0;
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
-            color: #2E8B57;
+            color: #d4af37;
             font-weight: bold;
         }
 
@@ -455,8 +460,51 @@
         <div class="parallax-bg"></div>
         <div class="container">
             <div class="hero">
+                <img src="Layer8Logo.gif" alt="Layer 8 Logo" style="width: 75px; height: 75px; margin-bottom: 2rem; border-radius: 50%; box-shadow: 0 8px 25px rgba(0,0,0,0.3);">
                 <h1>Layer 8 Services</h1>
-                <p>High-performance distributed services framework with advanced API, concurrency management, and intelligent caching capabilities for modern applications.</p>
+                <p>High-performance distributed services framework featuring SLA-based architecture, optimized transaction management, and intelligent caching. Recently enhanced with improved error handling, memory management fixes, and deterministic load balancing.</p>
+
+                <!-- Custom Services Illustration -->
+                <div style="margin: 2rem 0;">
+                    <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" style="width: 500px; height: 150px; opacity: 0.8;">
+                        <defs>
+                            <linearGradient id="serviceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d4af37;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#b8960f;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Service Components -->
+                        <rect x="50" y="60" width="100" height="60" fill="url(#serviceGrad)" rx="8" opacity="0.9"/>
+                        <text x="100" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">API Layer</text>
+
+                        <rect x="200" y="40" width="100" height="60" fill="url(#serviceGrad)" rx="8" opacity="0.9"/>
+                        <text x="250" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Concurrency</text>
+
+                        <rect x="350" y="80" width="100" height="60" fill="url(#serviceGrad)" rx="8" opacity="0.9"/>
+                        <text x="400" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Caching</text>
+
+                        <rect x="500" y="50" width="80" height="60" fill="url(#serviceGrad)" rx="8" opacity="0.9"/>
+                        <text x="540" y="85" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Services</text>
+
+                        <!-- Connection Lines -->
+                        <path d="M 150 90 L 200 70" stroke="#3b82f6" stroke-width="2" opacity="0.7"/>
+                        <path d="M 300 70 L 350 110" stroke="#3b82f6" stroke-width="2" opacity="0.7"/>
+                        <path d="M 450 110 L 500 80" stroke="#3b82f6" stroke-width="2" opacity="0.7"/>
+
+                        <!-- Data Flow Arrows -->
+                        <path d="M 175 90 L 185 90" stroke="#1d4ed8" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.8"/>
+                        <path d="M 325 70 L 335 70" stroke="#1d4ed8" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.8"/>
+                        <path d="M 475 110 L 485 110" stroke="#1d4ed8" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.8"/>
+
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#1d4ed8"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+
                 <a href="#installation" class="cta-button">Explore the Framework</a>
             </div>
         </div>
@@ -471,6 +519,7 @@
                 <li><a href="#usage">Usage</a></li>
                 <li><a href="#api">API Reference</a></li>
                 <li><a href="#testing">Testing</a></li>
+                <li><a href="#documentation">Documentation</a></li>
                 <li><a href="#contributing">Contributing</a></li>
             </ul>
         </div>
@@ -479,7 +528,7 @@
     <main class="container">
         <section id="overview">
             <h2>Overview</h2>
-            <p>Layer 8 Services is a high-performance distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications with advanced API management, concurrency control, and intelligent caching.</p>
+            <p>Layer 8 Services is a high-performance distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications. Recently enhanced with SLA-based service activation architecture, improved error handling, and optimized transaction management, it delivers advanced API management, concurrency control, and intelligent caching for scalable distributed systems.</p>
 
             <div class="features-grid">
                 <div class="feature-card">
@@ -494,13 +543,13 @@
                 </div>
                 <div class="feature-card">
                     <div class="illustration service"></div>
-                    <h4>Advanced Service Management</h4>
-                    <p>Registration, activation, and lifecycle management of microservices with enhanced service point handling, health monitoring, and intelligent discovery.</p>
+                    <h4>SLA-Based Service Management</h4>
+                    <p>Registration, activation, and lifecycle management using Service Level Agreements. Enhanced with improved error handling, crash prevention, and graceful failure recovery.</p>
                 </div>
                 <div class="feature-card">
                     <div class="illustration replication"></div>
                     <h4>Intelligent Replication Services</h4>
-                    <p>Data replication and synchronization across service instances with improved counting, sorting mechanisms, conflict resolution, and eventual consistency.</p>
+                    <p>Data replication and synchronization with deterministic round-robin load balancing. Features UUID-based tracking for true fair distribution across service replicas.</p>
                 </div>
                 <div class="feature-card">
                     <div class="illustration notification"></div>
@@ -514,31 +563,59 @@
                 </div>
             </div>
 
-            <h3>🚀 Latest Improvements & Performance Optimizations</h3>
+            <h3>🚀 Recent Updates (October 2025)</h3>
             <div class="features-grid">
                 <div class="feature-card">
-                    <h4>⚡ Enhanced Store Operations</h4>
-                    <p>Improved store loading mechanisms with better error handling, performance optimizations, and enhanced reliability for distributed data management.</p>
+                    <h4>🏗️ SLA-Based Architecture</h4>
+                    <p>Refactored service activation to use Service Level Agreements (SLA) for better service management, improved contract definition, and enhanced service governance.</p>
                 </div>
                 <div class="feature-card">
-                    <h4>🎯 Advanced Sorting Algorithms</h4>
-                    <p>Optimized sorting operations for better data organization, retrieval performance, and improved efficiency in distributed environments.</p>
+                    <h4>🛡️ Enhanced Error Handling</h4>
+                    <p>Fixed panic conditions on nil responses from handlers. Improved error propagation and handling during service activation with graceful failure recovery.</p>
                 </div>
                 <div class="feature-card">
-                    <h4>🏗️ Improved Fetch Operations</h4>
-                    <p>Enhanced data fetching with better reliability, performance improvements, and optimized network communication for distributed services.</p>
+                    <h4>♻️ Optimized Rollback Logic</h4>
+                    <p>Transaction system now only sends rollback to peers that successfully committed, preventing unnecessary network traffic and improving 2-phase commit protocol efficiency.</p>
                 </div>
                 <div class="feature-card">
-                    <h4>🌐 IP Comparison Utilities</h4>
-                    <p>Advanced networking utilities for distributed service coordination, improved peer discovery, and enhanced network topology management.</p>
+                    <h4>🧹 Memory Management</h4>
+                    <p>Fixed memory leaks in PreCommit map with proper cleanup on all paths including commit, rollback, and failure scenarios.</p>
                 </div>
                 <div class="feature-card">
-                    <h4>🔧 Service Point Management</h4>
-                    <p>Enhanced service point deactivation mechanisms with better lifecycle management and improved resource cleanup for optimal performance.</p>
+                    <h4>⚖️ Deterministic Round-Robin</h4>
+                    <p>Replaced index-based approach with UUID tracking for true round-robin distribution across service replicas, ensuring fair load distribution.</p>
                 </div>
                 <div class="feature-card">
-                    <h4>📊 Replication Counting</h4>
-                    <p>Improved replication counting mechanisms for better data consistency tracking and enhanced distributed state management.</p>
+                    <h4>🚨 Crash Prevention</h4>
+                    <p>Fixed multiple crash scenarios in service activation and handler responses, improving overall system stability and reliability.</p>
+                </div>
+            </div>
+
+            <h3>🔧 Performance Optimizations & Enhancements</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>📈 Improved Test Coverage</h4>
+                    <p>Enhanced test reliability and comprehensive coverage reporting with automated testing infrastructure and continuous integration improvements.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔄 Resource Cleanup</h4>
+                    <p>Enhanced cleanup mechanisms for transaction states and service deactivation, preventing resource leaks and improving system longevity.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚡ Service Activation</h4>
+                    <p>Services now continue activation even if non-critical operations fail, improving system resilience and deployment reliability.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎯 2-Phase Commit</h4>
+                    <p>Better handling of edge cases in distributed transactions with improved state management and coordination protocols.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📝 Documentation</h4>
+                    <p>Comprehensive performance analysis (services.md) and active development tracking (todo.txt) for transparency and collaboration.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚀 Future Work</h4>
+                    <p>Planned improvements include concurrent GET operations, graceful shutdown mechanisms, and multi-threaded transaction processing.</p>
                 </div>
             </div>
         </section>
@@ -597,7 +674,46 @@
 
         <section id="usage">
             <h2>Usage</h2>
-            
+
+            <h3>Quick Start Example</h3>
+            <div class="code-container">
+                <pre><code><span class="keyword">package</span> main
+
+<span class="keyword">import</span> (
+    <span class="string">"github.com/saichler/l8services/go/services/manager"</span>
+    <span class="string">"github.com/saichler/l8services/go/services/dcache"</span>
+    <span class="comment">// Import your Layer8 dependencies</span>
+)
+
+<span class="keyword">func</span> <span class="function">main</span>() {
+    <span class="comment">// Initialize resources and VNIC</span>
+    resources := <span class="comment">// ... initialize Layer8 resources</span>
+    vnic := <span class="comment">// ... initialize VNIC</span>
+
+    <span class="comment">// Create service manager</span>
+    serviceManager := manager.<span class="function">NewServices</span>(resources)
+
+    <span class="comment">// Setup a distributed cache</span>
+    cache := dcache.<span class="function">NewDistributedCache</span>(
+        <span class="string">"CacheService"</span>, <span class="type">1</span>, <span class="string">"MyDataModel"</span>, <span class="string">"source1"</span>,
+        cacheListener, resources,
+    )
+
+    <span class="comment">// Create and activate a service with SLA</span>
+    sla := ifs.<span class="function">NewServiceLevelAgreement</span>()
+    sla.<span class="function">SetServiceName</span>(<span class="string">"MyService"</span>)
+    sla.<span class="function">SetServiceArea</span>(<span class="type">1</span>)
+    sla.<span class="function">SetServiceHandlerInstance</span>(myServiceHandler)
+
+    handler, err := serviceManager.<span class="function">Activate</span>(sla, vnic)
+    <span class="keyword">if</span> err != <span class="keyword">nil</span> {
+        log.<span class="function">Fatal</span>(<span class="string">"Failed to activate service:"</span>, err)
+    }
+
+    <span class="comment">// Service is now ready to handle requests</span>
+}</code></pre>
+            </div>
+
             <h3>Creating a Distributed Cache</h3>
             <div class="code-container">
                 <pre><code><span class="keyword">import</span> <span class="string">"github.com/saichler/l8services/go/services/dcache"</span>
@@ -619,15 +735,24 @@
 )</code></pre>
             </div>
 
-            <h3>Service Management</h3>
+            <h3>Service Management (SLA-Based)</h3>
             <div class="code-container">
                 <pre><code><span class="keyword">import</span> <span class="string">"github.com/saichler/l8services/go/services/manager"</span>
 
 <span class="comment">// Create service manager</span>
 <span class="function">services</span> := manager.<span class="function">NewServices</span>(resources)
 
-<span class="comment">// Register a service handler</span>
-services.<span class="function">RegisterServiceHandlerType</span>(myHandler)
+<span class="comment">// Create Service Level Agreement for service activation</span>
+<span class="function">sla</span> := ifs.<span class="function">NewServiceLevelAgreement</span>()
+sla.<span class="function">SetServiceName</span>(<span class="string">"MyService"</span>)
+sla.<span class="function">SetServiceArea</span>(<span class="type">1</span>)
+sla.<span class="function">SetServiceHandlerInstance</span>(myHandler)
+
+<span class="comment">// Activate service with SLA</span>
+<span class="function">handler</span>, <span class="function">err</span> := services.<span class="function">Activate</span>(sla, vnic)
+<span class="keyword">if</span> err != <span class="keyword">nil</span> {
+    log.<span class="function">Fatal</span>(<span class="string">"Failed to activate service:"</span>, err)
+}
 
 <span class="comment">// Handle service requests</span>
 <span class="function">result</span> := services.<span class="function">Handle</span>(payload, action, vnic, message)</code></pre>
@@ -675,18 +800,27 @@ services.<span class="function">RegisterServiceHandlerType</span>(myHandler)
 
             <h3>Project Structure</h3>
             <div class="structure-tree">
-go/<br>
-├── services/<br>
-│   ├── dcache/          # Distributed caching implementation<br>
-│   ├── manager/         # Service lifecycle management<br>
-│   ├── replication/     # Data replication services<br>
-│   └── transaction/     # Transaction management<br>
-│       ├── states/      # Transaction state management (refactored)<br>
-│       └── requests/    # Transaction request handling<br>
-├── tests/               # Comprehensive test suite<br>
-├── vendor/              # Vendored dependencies<br>
-├── go.mod              # Go module definition<br>
-└── test.sh             # Test execution script
+l8services/<br>
+├── go/<br>
+│   ├── services/<br>
+│   │   ├── dcache/          # Distributed caching implementation<br>
+│   │   ├── manager/         # Service lifecycle management with SLA<br>
+│   │   ├── replication/     # Data replication services<br>
+│   │   ├── recovery/        # Service recovery mechanisms<br>
+│   │   ├── base/            # Base service implementations<br>
+│   │   └── transaction/     # Transaction management<br>
+│   │       ├── states/      # Transaction state management (refactored)<br>
+│   │       └── requests/    # Transaction request handling<br>
+│   ├── tests/               # Comprehensive test suite<br>
+│   ├── vendor/              # Vendored dependencies<br>
+│   ├── go.mod              # Go module definition<br>
+│   ├── go.sum              # Go module checksums<br>
+│   ├── cover.html          # Test coverage report<br>
+│   └── test.sh             # Test execution script<br>
+├── services.md             # Performance & concurrency analysis<br>
+├── todo.txt               # Development tasks tracking<br>
+├── web.html               # Project website (this page)<br>
+└── README.md              # Project documentation
             </div>
         </section>
 
@@ -721,10 +855,67 @@ go/<br>
             </div>
         </section>
 
+        <section id="documentation">
+            <h2>Documentation & Resources</h2>
+
+            <div class="api-grid">
+                <div class="api-section">
+                    <h4>📊 Performance Analysis</h4>
+                    <p><strong>services.md</strong> provides a comprehensive analysis of the system including:</p>
+                    <ul class="api-list">
+                        <li>Memory management patterns and optimizations</li>
+                        <li>Concurrency bottlenecks and solutions</li>
+                        <li>Transaction processing architecture</li>
+                        <li>Resource lifecycle management</li>
+                        <li>Critical metrics and monitoring</li>
+                        <li>Performance recommendations</li>
+                    </ul>
+                </div>
+
+                <div class="api-section">
+                    <h4>✅ Development Tracking</h4>
+                    <p><strong>todo.txt</strong> tracks active development including:</p>
+                    <ul class="api-list">
+                        <li>High priority transaction improvements</li>
+                        <li>Memory management fixes (mostly complete)</li>
+                        <li>Rollback retry logic enhancements</li>
+                        <li>Round-robin distribution (fixed)</li>
+                        <li>Future architectural improvements</li>
+                        <li>Known issues and edge cases</li>
+                    </ul>
+                </div>
+
+                <div class="api-section">
+                    <h4>📚 Project Documentation</h4>
+                    <p><strong>README.md</strong> contains:</p>
+                    <ul class="api-list">
+                        <li>Quick start guide</li>
+                        <li>Installation instructions</li>
+                        <li>API reference</li>
+                        <li>Usage examples with SLA patterns</li>
+                        <li>Latest updates and changes</li>
+                        <li>Contributing guidelines</li>
+                    </ul>
+                </div>
+
+                <div class="api-section">
+                    <h4>🧪 Test Coverage</h4>
+                    <p><strong>go/cover.html</strong> provides:</p>
+                    <ul class="api-list">
+                        <li>Comprehensive test coverage report</li>
+                        <li>Line-by-line coverage analysis</li>
+                        <li>Package coverage statistics</li>
+                        <li>Untested code identification</li>
+                        <li>Coverage trends and metrics</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
         <section id="contributing">
             <h2>Contributing</h2>
             <p>We welcome contributions to L8Services! Here's how you can help:</p>
-            
+
             <ol>
                 <li><strong>Fork the repository</strong> - Create your own copy of the project</li>
                 <li><strong>Create a feature branch</strong> - Work on your changes in a separate branch</li>
@@ -733,7 +924,7 @@ go/<br>
                 <li><strong>Submit a pull request</strong> - Describe your changes and their benefits</li>
             </ol>
 
-            <p>Please make sure to follow the existing code style and include appropriate tests for any new functionality.</p>
+            <p>Please make sure to follow the existing code style and include appropriate tests for any new functionality. Review the performance analysis in <code>services.md</code> and development tasks in <code>todo.txt</code> for areas that need improvement.</p>
         </section>
     </main>
 
@@ -749,6 +940,9 @@ go/<br>
                     <p><a href="#api">API Documentation</a></p>
                     <p><a href="#testing">Testing Guide</a></p>
                     <p><a href="#usage">Usage Examples</a></p>
+                    <p><a href="#documentation">Project Docs</a></p>
+                    <p><a href="services.md">Performance Analysis</a></p>
+                    <p><a href="todo.txt">Development Tasks</a></p>
                 </div>
                 <div class="footer-section">
                     <h4>Community</h4>
