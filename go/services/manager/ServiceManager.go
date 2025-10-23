@@ -98,12 +98,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		defer vnic.Resources().Logger().Debug("Defer Running transaction")
 		return this.trManager.Run(msg, vnic)
 	}
-
-	resp := this.handle(h, pb, action, vnic)
-	if resp == nil {
-		panic("Handler " + reflect.ValueOf(h).Elem().Type().Name() + " action " + strconv.Itoa(int(action)) + " resp is nil")
-	}
-	return resp
+	return this.handle(h, pb, action, vnic)
 }
 
 func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, replica byte, r ifs.IResources) {
