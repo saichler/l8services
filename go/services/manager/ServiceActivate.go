@@ -110,7 +110,7 @@ func (this *ServiceManager) registerForReplication(serviceName string, serviceAr
 
 func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) {
 	_, isMapReduceService := handler.(ifs.IMapReduceService)
-	shouldTriggerParticipant := isMapReduceService || handler.TransactionConfig().Replication()
+	shouldTriggerParticipant := isMapReduceService || handler.TransactionConfig() != nil
 	if shouldTriggerParticipant {
 		// Register as participant for this service
 		localUuid := this.resources.SysConfig().LocalUuid
