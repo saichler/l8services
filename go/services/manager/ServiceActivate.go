@@ -124,10 +124,10 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 
 		// Send additional queries with delay to catch nodes that activated concurrently
 		go func() {
-			time.Sleep(300 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
-			time.Sleep(time.Second)
+			time.Sleep(200 * time.Millisecond)
 			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 		}()
 	}
