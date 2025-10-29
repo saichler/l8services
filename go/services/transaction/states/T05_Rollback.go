@@ -17,7 +17,7 @@ func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) ifs.IElement
 	defer this.preCommitMtx.Unlock()
 
 	elem := this.preCommitObject(msg)
-	resp := this.nic.Resources().Services().TransactionHandle(elem, msg.Action(), this.nic, msg)
+	resp := this.nic.Resources().Services().TransactionHandle(elem, msg.Action(), msg, this.nic)
 	if resp != nil && resp.Error() != nil {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg("T05_Rollback.rollbackInternal: Handle Error: " + msg.Tr_Id() + " " + resp.Error().Error())

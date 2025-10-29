@@ -109,8 +109,9 @@ func (this *ServiceManager) registerForReplication(serviceName string, serviceAr
 }
 
 func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) {
-	// Only trigger election and participant registration for services with TransactionConfig
-	if handler.TransactionConfig() != nil {
+	_, isMapReduceService := handler.(ifs.IMapReduceService)
+	shouldTriggerParticipant := isMapReduceService || handler.TransactionConfig().Replication()
+	if shouldTriggerParticipant {
 		// Register as participant for this service
 		localUuid := this.resources.SysConfig().LocalUuid
 		this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
@@ -123,13 +124,15 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 
 		// Send additional queries with delay to catch nodes that activated concurrently
 		go func() {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(300 * time.Millisecond)
 			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(time.Second)
 			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 		}()
-
+	}
+	// Only trigger election and participant registration for services with TransactionConfig
+	if handler.TransactionConfig() != nil {
 		// Trigger election for this service
 		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 	}

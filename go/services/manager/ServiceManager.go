@@ -44,27 +44,27 @@ func (this *ServiceManager) RegisterServiceHandlerType(handler ifs.IServiceHandl
 	this.resources.Registry().Register(handler)
 }
 
-func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+func (this *ServiceManager) Handle(pb ifs.IElements, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
 	}
 	if msg == nil {
 		return object.NewError("Handle: message cannot be nil")
 	}
-	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().SysConfig().LocalUuid, "")
+	err := vnic.Resources().Security().CanDoAction(msg.Action(), pb, vnic.Resources().SysConfig().LocalUuid, "")
 	if err != nil {
 		return object.NewError(err.Error())
 	}
 
 	// Handle participant registry actions
-	if action >= ifs.ServiceRegister && action <= ifs.ServiceQuery {
-		vnic.Resources().Logger().Debug("Routing to participant registry, action:", action)
-		return this.participantRegistry.handleRegistry(action, vnic, msg)
+	if msg.Action() >= ifs.ServiceRegister && msg.Action() <= ifs.ServiceQuery {
+		vnic.Resources().Logger().Debug("Routing to participant registry, action:", msg.Action())
+		return this.participantRegistry.handleRegistry(msg.Action(), vnic, msg)
 	}
 
 	// Handle leader election actions
-	if action >= ifs.ElectionRequest && action <= ifs.LeaderChallenge {
-		return this.leaderElection.handleElection(action, vnic, msg)
+	if msg.Action() >= ifs.ElectionRequest && msg.Action() <= ifs.LeaderChallenge {
+		return this.leaderElection.handleElection(msg.Action(), vnic, msg)
 	}
 
 	if msg.Action() == ifs.EndPoints {
@@ -98,7 +98,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, vnic ifs
 		defer vnic.Resources().Logger().Debug("Defer Running transaction")
 		return this.trManager.Run(msg, vnic)
 	}
-	return this.handle(h, pb, action, vnic)
+	return this.handle(h, pb, msg, vnic)
 }
 
 func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, replica byte, r ifs.IResources) {
@@ -115,13 +115,13 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 	repService.Patch(object.New(nil, index), nil)
 }
 
-func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	this.resources.Logger().Info("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if h == nil {
 		this.resources.Logger().Info("Transaction Handle: No handler for service "+msg.ServiceName(), "-", msg.ServiceArea())
 	}
-	resp := this.handle(h, pb, action, vnic)
+	resp := this.handle(h, pb, msg, vnic)
 	if resp == nil {
 		panic("Transaction Handler " + reflect.ValueOf(h).Elem().Type().Name() + " action " + strconv.Itoa(int(action)) + " resp is nil")
 	}
@@ -132,13 +132,13 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	return resp
 }
 
-func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, vnic ifs.IVNic) ifs.IElements {
+func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
 	}
 
-	switch action {
+	switch msg.Action() {
 	case ifs.POST:
 		return h.Post(pb, vnic)
 	case ifs.PUT:

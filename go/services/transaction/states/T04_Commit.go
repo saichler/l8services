@@ -33,7 +33,7 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 	}
 
 	this.nic.Resources().Logger().Debug("T04_Commit.commitInternal: Before Transaction Handle ", msg.Tr_Id())
-	resp := this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), this.nic, msg)
+	resp := this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 	if resp != nil && resp.Error() != nil {
 		this.preCommitMtx.Lock()
 		delete(this.preCommit, msg.Tr_Id())
@@ -62,7 +62,7 @@ func (this *ServiceTransactions) setPreCommitObject(msg *ifs.Message) error {
 		msg.Action() == ifs.PATCH {
 		//Get the object before performing the action so we could rollback
 		//if necessary.
-		resp := this.nic.Resources().Services().TransactionHandle(pb, ifs.GET, this.nic, msg)
+		resp := this.nic.Resources().Services().TransactionHandle(pb, ifs.GET, msg, this.nic)
 		if resp != nil && resp.Error() != nil {
 			return resp.Error()
 		}

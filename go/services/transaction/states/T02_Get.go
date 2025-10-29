@@ -21,7 +21,7 @@ func (this *ServiceTransactions) internalGet(msg *ifs.Message) ifs.IElements {
 		return this.replicationGet(pb, msg, service)
 	}
 
-	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), this.nic, msg)
+	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 }
 
 func (this *ServiceTransactions) replicationGet(pb ifs.IElements, msg *ifs.Message, service ifs.IServiceHandler) ifs.IElements {
@@ -29,7 +29,7 @@ func (this *ServiceTransactions) replicationGet(pb ifs.IElements, msg *ifs.Messa
 	//This is the node that has the requested replica
 	if msg.Tr_IsReplica() {
 		pb = object.NewReplicaRequest(pb, msg.Tr_Replica())
-		return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), this.nic, msg)
+		return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 	}
 
 	//if this a filter mode
@@ -39,7 +39,7 @@ func (this *ServiceTransactions) replicationGet(pb ifs.IElements, msg *ifs.Messa
 
 	//@TODO replication get query
 
-	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), this.nic, msg)
+	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 }
 
 func (this ServiceTransactions) replicationGetFilter(pb ifs.IElements, msg *ifs.Message, service ifs.IServiceHandler) ifs.IElements {
@@ -64,5 +64,5 @@ func (this ServiceTransactions) replicationGetFilter(pb ifs.IElements, msg *ifs.
 		return object.NewError("Replica for key " + key + " Not found")
 	}
 
-	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), this.nic, msg)
+	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 }
