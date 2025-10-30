@@ -102,10 +102,3 @@ func RequestFromPeers(msg *ifs.Message, targets map[string]byte, vnic ifs.IVNic,
 
 	return true, this.pending
 }
-
-/*
-func IsLeader(resourcs ifs.IResources, localUuid, topic string, serviceArea byte) (bool, string) {
-	hc := health.Health(resourcs)
-	leader := hc.LeaderFor(topic, serviceArea)
-	return leader == localUuid, leader
-}*/

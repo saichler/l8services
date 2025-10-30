@@ -98,7 +98,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 		defer vnic.Resources().Logger().Debug("Defer Running transaction")
 		return this.trManager.Run(msg, vnic)
 	}
-	return this.handle(h, pb, action, vnic)
+	return this.handle(h, pb, action, msg, vnic)
 }
 
 func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, replica byte, r ifs.IResources) {
@@ -121,7 +121,7 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	if h == nil {
 		this.resources.Logger().Info("Transaction Handle: No handler for service "+msg.ServiceName(), "-", msg.ServiceArea())
 	}
-	resp := this.handle(h, pb, action, vnic)
+	resp := this.handle(h, pb, action, msg, vnic)
 	if resp == nil {
 		panic("Transaction Handler " + reflect.ValueOf(h).Elem().Type().Name() + " action " + strconv.Itoa(int(action)) + " resp is nil")
 	}
@@ -132,12 +132,12 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	return resp
 }
 
-func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, vnic ifs.IVNic) ifs.IElements {
+func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 
 	if h == nil {
 		return object.New(nil, pb)
 	}
-
+	_, isMapReduce := h.(ifs.IMapReduceService)
 	switch action {
 	case ifs.POST:
 		return h.Post(pb, vnic)
@@ -150,6 +150,9 @@ func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, acti
 	case ifs.GET:
 		return h.Get(pb, vnic)
 	default:
+		if isMapReduce {
+			return this.MapReduce(h, pb, action, msg, vnic)
+		}
 		return object.NewError("invalid action, ignoring")
 	}
 }

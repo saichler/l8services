@@ -2,6 +2,7 @@ package manager
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -110,6 +111,9 @@ func (this *ServiceManager) registerForReplication(serviceName string, serviceAr
 
 func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) {
 	_, isMapReduceService := handler.(ifs.IMapReduceService)
+	if isMapReduceService {
+		fmt.Println("Map Reduce Service:", reflect.ValueOf(handler).Elem().Type().Name())
+	}
 	shouldTriggerParticipant := isMapReduceService || handler.TransactionConfig() != nil
 	if shouldTriggerParticipant {
 		// Register as participant for this service
