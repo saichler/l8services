@@ -35,10 +35,11 @@ func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[str
 	wg := sync.WaitGroup{}
 	mtx := sync.Mutex{}
 	results := make(map[string]ifs.IElements)
+	wg.Add(len(edges))
 	for uuid, _ := range edges {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			fmt.Println("Edges Forwarding to ", uuid)
 			resp := nic.Forward(msg, uuid)
 			mtx.Lock()
 			results[uuid] = resp
@@ -46,5 +47,6 @@ func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[str
 		}()
 	}
 	wg.Wait()
+	fmt.Println("Edges result:", len(results))
 	return results
 }
