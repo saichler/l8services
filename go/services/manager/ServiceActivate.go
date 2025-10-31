@@ -53,7 +53,7 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()))
 
 	//Publish the serivce to all vnets
-	this.publishService(sla, vnic)
+	this.publishService(sla.ServiceName(), sla.ServiceArea(), vnic)
 
 	//Notify Health of service
 	e := vnic.NotifyServiceAdded([]string{sla.ServiceName()}, sla.ServiceArea())
@@ -79,10 +79,10 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	return handler, err
 }
 
-func (this *ServiceManager) publishService(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) {
+func (this *ServiceManager) publishService(serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	serviceData := &l8system.L8ServiceData{}
-	serviceData.ServiceName = sla.ServiceName()
-	serviceData.ServiceArea = int32(sla.ServiceArea())
+	serviceData.ServiceName = serviceName
+	serviceData.ServiceArea = int32(serviceArea)
 	serviceData.ServiceUuid = this.resources.SysConfig().LocalUuid
 	data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
@@ -159,6 +159,8 @@ func (this *ServiceManager) TriggerElections(vnic ifs.IVNic) {
 	})
 	for k, h := range services {
 		serviceName, serviceArea := serviceNameArea(k)
+		this.publishService(serviceName, serviceArea, vnic)
+		time.Sleep(time.Second)
 		this.triggerElections(serviceName, serviceArea, h, vnic)
 	}
 }
