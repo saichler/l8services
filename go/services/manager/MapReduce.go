@@ -37,14 +37,14 @@ func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[str
 	results := make(map[string]ifs.IElements)
 	wg.Add(len(edges))
 	for uuid, _ := range edges {
-		go func() {
+		go func(uuid string) {
 			defer wg.Done()
 			fmt.Println("Edges Forwarding to ", uuid)
 			resp := nic.Forward(msg, uuid)
 			mtx.Lock()
 			results[uuid] = resp
 			mtx.Unlock()
-		}()
+		}(uuid)
 	}
 	wg.Wait()
 	fmt.Println("Edges result:", len(results))
