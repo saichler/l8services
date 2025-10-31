@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 
@@ -30,6 +31,7 @@ func (this *ServiceManager) MapReduce(h ifs.IServiceHandler, pb ifs.IElements, a
 
 func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[string]ifs.IElements {
 	edges := this.GetParticipants(msg.ServiceName(), msg.ServiceArea())
+	fmt.Println("Edges for map reduce:", len(edges))
 	wg := sync.WaitGroup{}
 	mtx := sync.Mutex{}
 	results := make(map[string]ifs.IElements)
