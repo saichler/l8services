@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -31,7 +30,7 @@ func (this *ServiceManager) MapReduce(h ifs.IServiceHandler, pb ifs.IElements, a
 
 func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[string]ifs.IElements {
 	edges := this.GetParticipants(msg.ServiceName(), msg.ServiceArea())
-	fmt.Println("Edges for map reduce:", len(edges))
+	this.resources.Logger().Debug("Edges for ", msg.ServiceName(), " area ", msg.ServiceArea(), " ", len(edges))
 	wg := sync.WaitGroup{}
 	mtx := sync.Mutex{}
 	results := make(map[string]ifs.IElements)
@@ -39,7 +38,6 @@ func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[str
 	for uuid, _ := range edges {
 		go func(uuid string) {
 			defer wg.Done()
-			fmt.Println("Edges Forwarding to ", uuid)
 			resp := nic.Forward(msg, uuid)
 			mtx.Lock()
 			results[uuid] = resp
@@ -47,6 +45,5 @@ func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[str
 		}(uuid)
 	}
 	wg.Wait()
-	fmt.Println("Edges result:", len(results))
 	return results
 }
