@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/saichler/l8services/go/services/replication"
@@ -140,4 +142,31 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 		// Trigger election for this service
 		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 	}
+}
+
+func (this *ServiceManager) TriggerElections(vnic ifs.IVNic) {
+	services := map[string]ifs.IServiceHandler{}
+	this.services.services.Range(func(key, value interface{}) bool {
+		h := value.(ifs.IServiceHandler)
+		if h.TransactionConfig() != nil {
+			services[key.(string)] = h
+		}
+		_, ok := value.(ifs.IMapReduceService)
+		if ok {
+			services[key.(string)] = h
+		}
+		return true
+	})
+	for k, h := range services {
+		serviceName, serviceArea := serviceNameArea(k)
+		this.triggerElections(serviceName, serviceArea, h, vnic)
+	}
+}
+
+func serviceNameArea(key string) (string, byte) {
+	index := strings.Index(key, "--")
+	serviceName := key[:index]
+	sArea := key[index+2:]
+	i, _ := strconv.Atoi(sArea)
+	return serviceName, byte(i)
 }
