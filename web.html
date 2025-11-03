@@ -462,7 +462,7 @@
             <div class="hero">
                 <img src="Layer8Logo.gif" alt="Layer 8 Logo" style="width: 75px; height: 75px; margin-bottom: 2rem; border-radius: 50%; box-shadow: 0 8px 25px rgba(0,0,0,0.3);">
                 <h1>Layer 8 Services</h1>
-                <p>High-performance distributed services framework featuring SLA-based architecture, optimized transaction management, and intelligent caching. Recently enhanced with improved error handling, memory management fixes, and deterministic load balancing.</p>
+                <p>High-performance distributed services framework featuring SLA-based architecture, optimized transaction management, and intelligent caching. Recently enhanced with Map-Reduce pattern implementation, improved error handling, memory management fixes, and deterministic load balancing.</p>
 
                 <!-- Custom Services Illustration -->
                 <div style="margin: 2rem 0;">
@@ -528,7 +528,7 @@
     <main class="container">
         <section id="overview">
             <h2>Overview</h2>
-            <p>Layer 8 Services is a high-performance distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications. Recently enhanced with SLA-based service activation architecture, improved error handling, and optimized transaction management, it delivers advanced API management, concurrency control, and intelligent caching for scalable distributed systems.</p>
+            <p>Layer 8 Services is a high-performance distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications. Recently enhanced with Map-Reduce distributed processing pattern, SLA-based service activation architecture, improved error handling, and optimized transaction management, it delivers advanced API management, concurrency control, and intelligent caching for scalable distributed systems.</p>
 
             <div class="features-grid">
                 <div class="feature-card">
@@ -561,10 +561,19 @@
                     <h4>Comprehensive Security Integration</h4>
                     <p>Built-in security checks for all service operations with authentication, authorization support, and advanced IP comparison utilities.</p>
                 </div>
+                <div class="feature-card">
+                    <div class="illustration transaction"></div>
+                    <h4>Map-Reduce Pattern Support</h4>
+                    <p>Distributed Map-Reduce processing for parallel data operations across service nodes. Enables efficient distributed computing with automatic result merging and aggregation.</p>
+                </div>
             </div>
 
-            <h3>🚀 Recent Updates (October 2025)</h3>
+            <h3>🚀 Recent Updates (November 2025)</h3>
             <div class="features-grid">
+                <div class="feature-card">
+                    <h4>🗺️ Map-Reduce Implementation</h4>
+                    <p>New distributed Map-Reduce pattern for parallel processing across service nodes. Supports POST, PUT, DELETE, PATCH, and GET operations with automatic result merging.</p>
+                </div>
                 <div class="feature-card">
                     <h4>🏗️ SLA-Based Architecture</h4>
                     <p>Refactored service activation to use Service Level Agreements (SLA) for better service management, improved contract definition, and enhanced service governance.</p>
@@ -850,6 +859,19 @@ l8services/<br>
                         <li><span class="api-method">Delete(payload, vnic)</span> - Remove resources</li>
                         <li><span class="api-method">Get(payload, vnic)</span> - Retrieve resources</li>
                         <li><span class="api-method">Failed(payload, vnic, message)</span> - Handle failure scenarios</li>
+                    </ul>
+                </div>
+
+                <div class="api-section">
+                    <h4>Map-Reduce Operations</h4>
+                    <p>Distributed processing with the <code>IMapReduceService</code> interface:</p>
+                    <ul class="api-list">
+                        <li><span class="api-method">MapReduce(handler, payload, action)</span> - Execute distributed operation</li>
+                        <li><span class="api-method">PeerRequest(msg, vnic)</span> - Send parallel requests to peers</li>
+                        <li><span class="api-method">Merge(results)</span> - Aggregate results from distributed nodes</li>
+                        <li><span class="api-method">MapR_POST</span> - Distributed create operation</li>
+                        <li><span class="api-method">MapR_GET</span> - Distributed query operation</li>
+                        <li><span class="api-method">MapR_PUT/PATCH/DELETE</span> - Distributed update operations</li>
                     </ul>
                 </div>
             </div>

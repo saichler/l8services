@@ -6,6 +6,7 @@ A comprehensive Go-based distributed services framework providing distributed ca
 
 Layer 8 Services is a high-performance distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications:
 
+- **Map-Reduce Pattern Support**: Distributed Map-Reduce processing for parallel data operations across service nodes with automatic result merging
 - **Advanced Distributed Cache**: Thread-safe, synchronized distributed caching with persistent storage support and optimized data fetching
 - **Enhanced Transaction Management**: ACID transaction support across distributed services with improved 2-phase commit protocol and optimized state management
 - **Service Management**: Registration, activation, and lifecycle management of microservices with SLA-based architecture and improved error handling
@@ -38,13 +39,20 @@ The framework is organized into several core components:
 - **Health Monitoring**: Service health tracking and reporting with enhanced service point deactivation
 - **Web Service Integration**: RESTful API endpoints for external service interaction
 
-## Recent Updates (October 2025)
+## Recent Updates (November 2025)
+
+### Map-Reduce Implementation
+- **New Distributed Processing Pattern**: Added Map-Reduce support for parallel operations across service nodes
+- **Automatic Result Merging**: Built-in aggregation of results from distributed nodes
+- **Support for All CRUD Operations**: MapR_POST, MapR_GET, MapR_PUT, MapR_PATCH, MapR_DELETE actions
+- **Parallel Request Processing**: Concurrent execution with synchronized result collection
 
 ### Service Activation Improvements
 - **SLA-Based Architecture**: Refactored service activation to use Service Level Agreements (SLA) for better service management
 - **Enhanced Error Handling**: Fixed panic conditions on nil responses from handlers
 - **Improved Error Recovery**: Better error propagation and handling during service activation
 - **Graceful Failure Handling**: Services now continue activation even if non-critical operations fail
+- **Election Triggers**: Added capability to trigger leader elections in distributed services
 
 ### Transaction System Enhancements
 - **Optimized Rollback Logic**: Only sends rollback to peers that successfully committed
@@ -162,6 +170,33 @@ handler, err := services.Activate(sla, vnic)
 result := services.Handle(payload, action, vnic, message)
 ```
 
+### Map-Reduce Operations
+
+```go
+import "github.com/saichler/l8services/go/services/manager"
+
+// Implement the IMapReduceService interface
+type MyMapReduceService struct {
+    // Your service implementation
+}
+
+func (s *MyMapReduceService) Merge(results map[string]ifs.IElements) ifs.IElements {
+    // Custom logic to merge results from all nodes
+    merged := // ... merge logic
+    return merged
+}
+
+// Execute distributed Map-Reduce operation
+serviceManager := manager.NewServices(resources)
+results := serviceManager.MapReduce(
+    handler,    // IMapReduceService handler
+    payload,    // Input data
+    ifs.MapR_GET,  // Action type (MapR_POST, MapR_GET, etc.)
+    message,    // Message context
+    vnic,       // Virtual NIC
+)
+```
+
 ### Transaction Management
 
 ```go
@@ -173,7 +208,7 @@ result := services.Handle(payload, action, vnic, message)
 // - Lock: Acquire distributed locks across services
 // - Commit: Commit changes across all participants
 // - Rollback: Rollback changes on failure with state cleanup
-// 
+//
 // Recent optimizations include:
 // - Improved state management architecture
 // - Enhanced transaction coordination
@@ -249,6 +284,15 @@ Services must implement the `IServiceHandler` interface:
 - `Delete(payload, vnic)`: Remove resources
 - `Get(payload, vnic)`: Retrieve resources
 - `Failed(payload, vnic, message)`: Handle failure scenarios
+
+### Map-Reduce Interface
+
+Services can implement the `IMapReduceService` interface for distributed processing:
+
+- `MapReduce(handler, payload, action, msg, vnic)`: Execute distributed operation
+- `PeerRequest(msg, vnic)`: Send parallel requests to all service peers
+- `Merge(results)`: Aggregate results from distributed nodes
+- Supported actions: `MapR_POST`, `MapR_GET`, `MapR_PUT`, `MapR_PATCH`, `MapR_DELETE`
 
 ## Documentation
 
