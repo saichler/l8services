@@ -2,13 +2,16 @@ package dcache
 
 import (
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8utils/go/utils/cache"
+	"github.com/saichler/l8utils/go/utils/queues"
 )
 
 type DCache struct {
 	cache     *cache.Cache
 	listener  ifs.IServiceCacheListener
 	resources ifs.IResources
+	nQueue    *queues.Queue
 }
 
 func NewDistributedCache(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
@@ -28,7 +31,20 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 	this.listener = listener
 	this.resources = resources
 	this.cache.SetNotificationsFor(serviceName, serviceArea)
+	this.nQueue = queues.NewQueue("Nitifiction Queue", 50000)
+	if this.listener != nil {
+		go this.processNotificationQueue()
+	}
 	return this
+}
+
+func (this *DCache) processNotificationQueue() {
+	for {
+		set, ok := this.nQueue.Next().(*l8notify.L8NotificationSet)
+		if ok {
+			this.listener.PropertyChangeNotification(set)
+		}
+	}
 }
 
 func (this *DCache) ServiceName() string {

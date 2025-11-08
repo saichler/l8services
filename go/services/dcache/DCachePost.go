@@ -8,7 +8,7 @@ func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*l8notify.L
 	createNotification := !(sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 	n, e := this.cache.Post(v, createNotification)
 	if this.listener != nil && createNotification && e == nil && n != nil {
-		go this.listener.PropertyChangeNotification(n)
+		this.nQueue.Add(n)
 	}
 	return n, e
 }
