@@ -12,6 +12,7 @@ type DCache struct {
 	listener  ifs.IServiceCacheListener
 	resources ifs.IResources
 	nQueue    *queues.Queue
+	running   bool
 }
 
 func NewDistributedCache(serviceName string, serviceArea byte, sample interface{}, initElements []interface{},
@@ -32,6 +33,7 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 	this.resources = resources
 	this.cache.SetNotificationsFor(serviceName, serviceArea)
 	this.nQueue = queues.NewQueue("Nitifiction Queue", 50000)
+	this.running = true
 	if this.listener != nil {
 		go this.processNotificationQueue()
 	}
@@ -39,12 +41,17 @@ func NewDistributedCacheWithStorage(serviceName string, serviceArea byte, sample
 }
 
 func (this *DCache) processNotificationQueue() {
-	for {
+	for this.running {
 		set, ok := this.nQueue.Next().(*l8notify.L8NotificationSet)
 		if ok {
 			this.listener.PropertyChangeNotification(set)
 		}
 	}
+}
+
+func (this *DCache) Shutdown() {
+	this.running = false
+	this.nQueue.Add(nil)
 }
 
 func (this *DCache) ServiceName() string {
