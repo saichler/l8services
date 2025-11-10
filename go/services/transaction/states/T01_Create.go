@@ -1,7 +1,9 @@
 package states
 
 import (
-	"sync"
+	"context"
+	"runtime"
+	"time"
 
 	"github.com/saichler/l8types/go/ifs"
 )
@@ -17,19 +19,45 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 	//Create the new transaction inside the message
 	createTransaction(msg)
 
-	mtx := sync.Mutex{}
-	mtx.Lock()
-	defer mtx.Unlock()
 	//To Keep the same flow, we are going to forward the transaction to the leader
 	//even if this is the leader
 	go func() {
-		mtx.Lock()
-		defer mtx.Unlock()
+		runtime.Gosched()
 		leader := vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea())
 		leaderResponse := vnic.Forward(msg, leader)
 		//Send the final resulth to the initiator.
 		vnic.Reply(msg, leaderResponse)
 	}()
+
 	//Return the temporary response as the transaction state created
+	return L8TransactionFor(msg)
+}
+
+func (this *TransactionManager) Create2(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
+	createTransaction(msg)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+	go func() {
+		defer cancel()
+
+		select {
+		case <-ctx.Done():
+			vnic.Resources().Logger().Warning("Transaction forwarding cancelled")
+			return
+		default:
+			leader := vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea())
+			if leader == "" {
+				vnic.Resources().Logger().Error("No leader found for service")
+				return
+			}
+
+			leaderResponse := vnic.Forward(msg, leader)
+			if err := vnic.Reply(msg, leaderResponse); err != nil {
+				vnic.Resources().Logger().Error("Failed to reply:", err)
+			}
+		}
+	}()
+
 	return L8TransactionFor(msg)
 }
