@@ -3,6 +3,7 @@ package tests
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/saichler/l8services/go/services/replication"
 	. "github.com/saichler/l8test/go/infra/t_resources"
@@ -13,6 +14,12 @@ import (
 
 func TestReplication(t *testing.T) {
 	defer reset("TestReplication")
+
+	// Wait for services to be ready for area 2
+	if !waitForReplicationServices(t) {
+		return
+	}
+
 	if !doPostRound(1, 2, t) {
 		return
 	}
@@ -36,9 +43,56 @@ func TestReplication(t *testing.T) {
 
 	pb := &testtypes.TestProto{MyString: "test" + strconv.Itoa(1)}
 	resp := nic.Request("", ServiceName, 2, ifs.GET, pb, 5)
-	if resp.Element().(*testtypes.TestProto).MyInt32 != 1 {
-		nic.Resources().Logger().Fail(t, "Expected Attribute to be 1")
+	if resp.Error() != nil {
+		nic.Resources().Logger().Fail(t, "GET request failed: ", resp.Error().Error())
+		return
 	}
+	if resp.Element() == nil {
+		nic.Resources().Logger().Fail(t, "GET request returned nil element")
+		return
+	}
+	result, ok := resp.Element().(*testtypes.TestProto)
+	if !ok {
+		nic.Resources().Logger().Fail(t, "Element is not *testtypes.TestProto, got: ", resp.Element())
+		return
+	}
+	if result.MyInt32 != 1 {
+		nic.Resources().Logger().Fail(t, "Expected Attribute to be 1, got: ", result.MyInt32)
+		return
+	}
+}
+
+func waitForReplicationServices(t *testing.T) bool {
+	// Wait for services to be ready on area 2
+	for i := 0; i < 10; i++ {
+		ok := true
+		// Check if we have enough participants for area 2
+		for vnet := 1; vnet <= 3; vnet++ {
+			for vnic := 1; vnic <= 3; vnic++ {
+				nic := topo.VnicByVnetNum(vnet, vnic)
+				if nic == nil {
+					continue
+				}
+				// Check if we have participants for Tests service area 2
+				participants := nic.Resources().Services().GetParticipants(ServiceName, 2)
+				if len(participants) < 2 {
+					ok = false
+					break
+				}
+			}
+			if !ok {
+				break
+			}
+		}
+		if ok {
+			// Give a bit more time for services to fully initialize
+			time.Sleep(200 * time.Millisecond)
+			return true
+		}
+		time.Sleep(time.Second)
+	}
+	Log.Fail(t, "Timeout waiting for replication services to be ready")
+	return false
 }
 
 func doPostRound(index, ecount int, t *testing.T) bool {

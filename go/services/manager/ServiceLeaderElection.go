@@ -2,6 +2,7 @@ package manager
 
 import (
 	"bytes"
+	"context"
 	"strconv"
 	"sync"
 	"time"
@@ -25,23 +26,33 @@ const (
 )
 
 type leaderInfo struct {
-	leaderUuid      string
-	lastHeartbeat   time.Time
-	state           electionState
-	electionTimer   *time.Timer
-	heartbeatTicker *time.Ticker
-	stopChan        chan struct{}
-	mtx             sync.RWMutex
+	leaderUuid        string
+	lastHeartbeat     time.Time
+	state             electionState
+	electionTimer     *time.Timer
+	ctx               context.Context
+	cancel            context.CancelFunc
+	wg                sync.WaitGroup
+	electionRunning   bool // Prevents concurrent elections
+	heartbeatRunning  bool // Prevents concurrent heartbeat goroutines
+	monitorRunning    bool // Prevents concurrent monitor goroutines
+	mtx               sync.RWMutex
 }
 
 type LeaderElection struct {
 	leaders        sync.Map // key: serviceKey string -> *leaderInfo
 	serviceManager *ServiceManager
+	ctx            context.Context
+	cancel         context.CancelFunc
+	wg             sync.WaitGroup
 }
 
 func NewLeaderElection(sm *ServiceManager) *LeaderElection {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &LeaderElection{
 		serviceManager: sm,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 }
 
@@ -129,11 +140,13 @@ func (le *LeaderElection) handleLeaderAnnouncement(vnic ifs.IVNic, msg *ifs.Mess
 		vnic.Resources().Logger().Debug("I am the leader")
 		info.state = isLeader
 		info.mtx.Unlock()
+		// Don't stop timers here - let startHeartbeat handle it
 		le.startHeartbeat(key, msg.ServiceName(), msg.ServiceArea(), vnic)
 	} else {
 		vnic.Resources().Logger().Debug("Following leader:", senderUuid)
 		info.state = hasLeader
 		info.mtx.Unlock()
+		// Don't stop timers here - let startHeartbeatMonitor handle it
 		le.startHeartbeatMonitor(key, msg.ServiceName(), msg.ServiceArea(), vnic)
 	}
 
@@ -186,13 +199,18 @@ func (le *LeaderElection) handleLeaderResign(vnic ifs.IVNic, msg *ifs.Message) i
 	info := le.getLeaderInfo(key)
 
 	if info != nil {
+		shouldStopTimers := false
 		info.mtx.Lock()
 		if info.leaderUuid == msg.Source() {
 			info.leaderUuid = ""
 			info.state = idle
-			le.stopTimers(info)
+			shouldStopTimers = true
 		}
 		info.mtx.Unlock()
+
+		if shouldStopTimers {
+			le.stopTimers(info)
+		}
 
 		// Start new election
 		go le.startElection(msg.ServiceName(), msg.ServiceArea(), vnic)
@@ -235,6 +253,11 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 		return
 	}
 
+	// Check global context
+	if le.ctx.Err() != nil {
+		return
+	}
+
 	key := makeServiceKey(serviceName, serviceArea)
 	info := le.getOrCreateLeaderInfo(key)
 
@@ -244,8 +267,27 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 		info.mtx.Unlock()
 		return
 	}
+	// Prevent concurrent elections
+	if info.electionRunning {
+		vnic.Resources().Logger().Debug("Election goroutine already running for", serviceName, "area", serviceArea)
+		info.mtx.Unlock()
+		return
+	}
 	info.state = electing
+	info.electionRunning = true
+	ctx := info.ctx
 	info.mtx.Unlock()
+
+	// Track goroutine
+	le.wg.Add(1)
+	info.wg.Add(1)
+	defer func() {
+		le.wg.Done()
+		info.wg.Done()
+		info.mtx.Lock()
+		info.electionRunning = false
+		info.mtx.Unlock()
+	}()
 
 	vnic.Resources().Logger().Debug("Starting election for", serviceName, "area", serviceArea)
 
@@ -254,13 +296,21 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 
 	vnic.Resources().Logger().Debug("Waiting", electionTimeout, "for election responses")
 
-	// Wait for responses
+	// Wait for responses or context cancellation
 	timer := time.NewTimer(electionTimeout)
+	defer timer.Stop()
+
 	info.mtx.Lock()
 	info.electionTimer = timer
 	info.mtx.Unlock()
 
-	<-timer.C
+	select {
+	case <-timer.C:
+		// Timeout - check if we should become leader
+	case <-ctx.Done():
+		vnic.Resources().Logger().Debug("Election cancelled for", serviceName, "area", serviceArea)
+		return
+	}
 
 	info.mtx.Lock()
 	currentState := info.state
@@ -289,12 +339,36 @@ func (le *LeaderElection) startHeartbeat(key string, serviceName string, service
 	}
 
 	info.mtx.Lock()
-	le.stopTimers(info)
-	info.stopChan = make(chan struct{})
-	stopChan := info.stopChan
+	// Check if heartbeat is already running
+	if info.heartbeatRunning {
+		info.mtx.Unlock()
+		return
+	}
+	info.heartbeatRunning = true
+	ctx := info.ctx
 	info.mtx.Unlock()
 
+	// Check if context is still valid
+	if ctx.Err() != nil {
+		info.mtx.Lock()
+		info.heartbeatRunning = false
+		info.mtx.Unlock()
+		return
+	}
+
+	// Track goroutine
+	le.wg.Add(1)
+	info.wg.Add(1)
+
 	go func() {
+		defer le.wg.Done()
+		defer info.wg.Done()
+		defer func() {
+			info.mtx.Lock()
+			info.heartbeatRunning = false
+			info.mtx.Unlock()
+		}()
+
 		ticker := time.NewTicker(heartbeatPeriod)
 		defer ticker.Stop()
 
@@ -302,14 +376,15 @@ func (le *LeaderElection) startHeartbeat(key string, serviceName string, service
 			select {
 			case <-ticker.C:
 				info.mtx.RLock()
-				if info.state != isLeader {
-					info.mtx.RUnlock()
-					return
-				}
+				state := info.state
 				info.mtx.RUnlock()
 
+				if state != isLeader {
+					return
+				}
+
 				vnic.Multicast(serviceName, serviceArea, ifs.LeaderHeartbeat, nil)
-			case <-stopChan:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -323,12 +398,36 @@ func (le *LeaderElection) startHeartbeatMonitor(key string, serviceName string, 
 	}
 
 	info.mtx.Lock()
-	le.stopTimers(info)
-	info.stopChan = make(chan struct{})
-	stopChan := info.stopChan
+	// Check if monitor is already running
+	if info.monitorRunning {
+		info.mtx.Unlock()
+		return
+	}
+	info.monitorRunning = true
+	ctx := info.ctx
 	info.mtx.Unlock()
 
+	// Check if context is still valid
+	if ctx.Err() != nil {
+		info.mtx.Lock()
+		info.monitorRunning = false
+		info.mtx.Unlock()
+		return
+	}
+
+	// Track goroutine
+	le.wg.Add(1)
+	info.wg.Add(1)
+
 	go func() {
+		defer le.wg.Done()
+		defer info.wg.Done()
+		defer func() {
+			info.mtx.Lock()
+			info.monitorRunning = false
+			info.mtx.Unlock()
+		}()
+
 		ticker := time.NewTicker(heartbeatTimeout)
 		defer ticker.Stop()
 
@@ -350,10 +449,10 @@ func (le *LeaderElection) startHeartbeatMonitor(key string, serviceName string, 
 					info.state = idle
 					info.leaderUuid = ""
 					info.mtx.Unlock()
-					le.startElection(serviceName, serviceArea, vnic)
+					go le.startElection(serviceName, serviceArea, vnic)
 					return
 				}
-			case <-stopChan:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -361,18 +460,20 @@ func (le *LeaderElection) startHeartbeatMonitor(key string, serviceName string, 
 }
 
 func (le *LeaderElection) stopTimers(info *leaderInfo) {
+	// Simplified version - only stop the election timer
+	// Don't cancel contexts or wait for goroutines to avoid disrupting services
+	info.mtx.Lock()
+	defer info.mtx.Unlock()
+
 	if info.electionTimer != nil {
 		info.electionTimer.Stop()
 		info.electionTimer = nil
 	}
-	if info.heartbeatTicker != nil {
-		info.heartbeatTicker.Stop()
-		info.heartbeatTicker = nil
-	}
-	if info.stopChan != nil {
-		close(info.stopChan)
-		info.stopChan = nil
-	}
+
+	// Reset running flags to allow new goroutines to start
+	info.electionRunning = false
+	info.heartbeatRunning = false
+	info.monitorRunning = false
 }
 
 func (le *LeaderElection) getLeaderInfo(key string) *leaderInfo {
@@ -384,17 +485,30 @@ func (le *LeaderElection) getLeaderInfo(key string) *leaderInfo {
 }
 
 func (le *LeaderElection) getOrCreateLeaderInfo(key string) *leaderInfo {
-	info, ok := le.leaders.Load(key)
-	if ok {
+	// Try to load existing info first
+	if info, ok := le.leaders.Load(key); ok {
 		return info.(*leaderInfo)
 	}
 
+	// Create new info
+	ctx, cancel := context.WithCancel(le.ctx)
 	newInfo := &leaderInfo{
 		state:         idle,
 		lastHeartbeat: time.Now(),
+		ctx:           ctx,
+		cancel:        cancel,
 	}
-	le.leaders.Store(key, newInfo)
-	return newInfo
+
+	// Use LoadOrStore to handle concurrent creation attempts
+	actual, _ := le.leaders.LoadOrStore(key, newInfo)
+	actualInfo := actual.(*leaderInfo)
+
+	// If we didn't win the race, cancel our context
+	if actualInfo != newInfo {
+		cancel()
+	}
+
+	return actualInfo
 }
 
 func (le *LeaderElection) StartElectionForService(serviceName string, serviceArea byte, vnic ifs.IVNic) {
@@ -455,4 +569,32 @@ func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
 	}
 
 	return txConfig.Voter()
+}
+
+// Shutdown gracefully stops all leader election activities and waits for goroutines to exit
+func (le *LeaderElection) Shutdown() {
+	// Cancel global context to signal all goroutines to stop
+	if le.cancel != nil {
+		le.cancel()
+	}
+
+	// Cancel all per-service contexts and stop timers
+	le.leaders.Range(func(key, value interface{}) bool {
+		info := value.(*leaderInfo)
+		info.mtx.Lock()
+		if info.cancel != nil {
+			info.cancel()
+		}
+		if info.electionTimer != nil {
+			info.electionTimer.Stop()
+		}
+		info.mtx.Unlock()
+
+		// Wait for this service's goroutines to finish
+		info.wg.Wait()
+		return true
+	})
+
+	// Wait for all global goroutines to complete
+	le.wg.Wait()
 }
