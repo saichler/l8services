@@ -14,7 +14,7 @@ import (
 
 func doTransaction(action ifs.Action, vnic ifs.IVNic, expected int, t *testing.T, failure bool) bool {
 	pb := &testtypes.TestProto{MyString: "test"}
-	resp := vnic.ProximityRequest(ServiceName, 1, action, pb, 60)
+	resp := vnic.ProximityRequest(ServiceName, 1, action, pb, 5)
 	if resp != nil && resp.Error() != nil {
 		Log.Fail(t, resp.Error().Error())
 		return false

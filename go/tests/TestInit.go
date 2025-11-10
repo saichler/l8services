@@ -8,7 +8,7 @@ import (
 )
 
 var topo *TestTopology
-var globals, alias = CreateResources(50000, 1, Trace_Level)
+var globals, alias = CreateResources(50000, 1, Info_Level)
 
 func init() {
 	Log.SetLogLevel(Trace_Level)
