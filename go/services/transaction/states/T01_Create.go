@@ -24,7 +24,7 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 	//even if this is the leader
 	go func() {
 		mtx.Lock()
-		mtx.Unlock()
+		defer mtx.Unlock()
 		leader := vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea())
 		leaderResponse := vnic.Forward(msg, leader)
 		//Send the final resulth to the initiator.
