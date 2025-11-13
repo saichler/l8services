@@ -8,68 +8,31 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8utils/go/utils/cache"
+	"github.com/saichler/l8utils/go/utils/queues"
 )
 
 type BaseService struct {
-	cache *cache.Cache
-	vnic  ifs.IVNic
-	sla   *ifs.ServiceLevelAgreement
+	cache   *cache.Cache
+	vnic    ifs.IVNic
+	sla     *ifs.ServiceLevelAgreement
+	nQueue  *queues.Queue
+	running bool
 }
 
 func (this *BaseService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
-	if this.vnic != nil {
-		vnic = this.vnic
-	}
-	for _, elem := range pb.Elements() {
-		n, e := this.cache.Post(elem, createNotification)
-		if createNotification && e == nil && n != nil {
-			go vnic.PropertyChangeNotification(n)
-		}
-	}
-	return object.New(nil, &l8web.L8Empty{})
+	return this.do(ifs.POST, pb, vnic)
 }
 
 func (this *BaseService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
-	if this.vnic != nil {
-		vnic = this.vnic
-	}
-	for _, elem := range pb.Elements() {
-		n, e := this.cache.Put(elem, createNotification)
-		if createNotification && e == nil && n != nil {
-			go vnic.PropertyChangeNotification(n)
-		}
-	}
-	return object.New(nil, &l8web.L8Empty{})
+	return this.do(ifs.PUT, pb, vnic)
 }
 
 func (this *BaseService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
-	if this.vnic != nil {
-		vnic = this.vnic
-	}
-	for _, elem := range pb.Elements() {
-		n, e := this.cache.Patch(elem, createNotification)
-		if createNotification && e == nil && n != nil {
-			go vnic.PropertyChangeNotification(n)
-		}
-	}
-	return object.New(nil, &l8web.L8Empty{})
+	return this.do(ifs.PATCH, pb, vnic)
 }
 
 func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
-	if this.vnic != nil {
-		vnic = this.vnic
-	}
-	for _, elem := range pb.Elements() {
-		n, e := this.cache.Delete(elem, createNotification)
-		if createNotification && e == nil && n != nil {
-			go vnic.PropertyChangeNotification(n)
-		}
-	}
-	return object.New(nil, &l8web.L8Empty{})
+	return this.do(ifs.DELETE, pb, vnic)
 }
 
 func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {

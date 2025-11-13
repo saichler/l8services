@@ -10,6 +10,7 @@ import (
 	"github.com/saichler/l8types/go/types/l8api"
 	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8utils/go/utils/cache"
+	"github.com/saichler/l8utils/go/utils/queues"
 )
 
 func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
@@ -27,16 +28,20 @@ func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 
 func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.sla = sla
+	this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
+	this.running = true
 	if this.sla.Stateful() {
 		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
 			this.sla.Store(), vnic.Resources())
 	}
 	this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
 	this.vnic = vnic
+	go this.processNotificationQueue()
 	return nil
 }
 
 func (this *BaseService) DeActivate() error {
+	this.Shutdown()
 	return nil
 }
 
