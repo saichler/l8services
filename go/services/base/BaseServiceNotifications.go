@@ -10,9 +10,6 @@ import (
 )
 
 func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	if pb.Notification() {
-		fmt.Println("Received notification")
-	}
 	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
@@ -34,7 +31,6 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 			fmt.Println("Error in notification: ", e.Error())
 		}
 		if createNotification && e == nil && n != nil {
-			fmt.Println("Adding health notification")
 			this.nQueue.Add(n)
 		}
 	}
