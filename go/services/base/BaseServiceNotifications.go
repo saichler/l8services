@@ -1,6 +1,8 @@
 package base
 
 import (
+	"fmt"
+
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8notify"
@@ -8,6 +10,9 @@ import (
 )
 
 func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+	if pb.Notification() {
+		fmt.Println("Received notification")
+	}
 	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
 		vnic = this.vnic
@@ -25,7 +30,11 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		case ifs.DELETE:
 			n, e = this.cache.Delete(elem, createNotification)
 		}
+		if e != nil {
+			fmt.Println("Error in notification: ", e.Error())
+		}
 		if createNotification && e == nil && n != nil {
+			fmt.Println("Adding health notification")
 			this.nQueue.Add(n)
 		}
 	}
