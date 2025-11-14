@@ -41,7 +41,7 @@ func (this *BaseService) processNotificationQueue() {
 	for this.running {
 		set, ok := this.nQueue.Next().(*l8notify.L8NotificationSet)
 		if ok {
-			this.vnic.Multicast(set.ServiceName, byte(set.ServiceArea), ifs.Notify, set)
+			this.vnic.PropertyChangeNotification(set)
 		}
 	}
 }
