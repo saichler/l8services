@@ -48,8 +48,8 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	if e != nil {
 		return object.NewError(e.Error())
 	}
-	elems := this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
-	return object.NewQueryResult(elems, this.cache.Stats())
+	elems, counts := this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
+	return object.NewQueryResult(elems, counts)
 }
 
 func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
