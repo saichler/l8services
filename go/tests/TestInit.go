@@ -11,7 +11,7 @@ var topo *TestTopology
 var globals, alias = CreateResources(50000, 1, Info_Level)
 
 func init() {
-	Log.SetLogLevel(Trace_Level)
+	Log.SetLogLevel(Info_Level)
 }
 
 func setup() {
@@ -25,7 +25,7 @@ func tear() {
 func reset(name string) {
 	Log.Info("*** ", name, " end ***")
 	topo.ResetHandlers()
-	Log.SetLogLevel(Trace_Level)
+	Log.SetLogLevel(Info_Level)
 }
 
 func setupTopology() {

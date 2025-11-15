@@ -36,6 +36,7 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 	}
 	this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
 	this.vnic = vnic
+	
 	go this.processNotificationQueue()
 	return nil
 }
