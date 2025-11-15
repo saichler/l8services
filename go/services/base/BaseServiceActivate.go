@@ -33,10 +33,15 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 	if this.sla.Stateful() {
 		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
 			this.sla.Store(), vnic.Resources())
+		if sla.MetadataFunc() != nil {
+			for name, f := range sla.MetadataFunc() {
+				this.cache.AddMetadataFunc(name, f)
+			}
+		}
 	}
 	this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
 	this.vnic = vnic
-	
+
 	go this.processNotificationQueue()
 	return nil
 }
