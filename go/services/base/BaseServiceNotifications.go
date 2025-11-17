@@ -15,6 +15,9 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		vnic = this.vnic
 	}
 	for _, elem := range pb.Elements() {
+		if elem == nil {
+			continue
+		}
 		var n *l8notify.L8NotificationSet
 		var e error
 		switch action {
