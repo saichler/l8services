@@ -22,13 +22,49 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		var e error
 		switch action {
 		case ifs.POST:
+			if this.sla.Callback() != nil {
+				beforElem := this.sla.Callback().BeforePost(elem, vnic)
+				if beforElem != nil {
+					elem = beforElem
+				}
+			}
 			n, e = this.cache.Post(elem, createNotification)
+			if this.sla.Callback() != nil {
+				this.sla.Callback().AfterPost(elem, vnic)
+			}
 		case ifs.PUT:
+			if this.sla.Callback() != nil {
+				beforElem := this.sla.Callback().BeforePut(elem, vnic)
+				if beforElem != nil {
+					elem = beforElem
+				}
+			}
 			n, e = this.cache.Put(elem, createNotification)
+			if this.sla.Callback() != nil {
+				this.sla.Callback().AfterPut(elem, vnic)
+			}
 		case ifs.PATCH:
+			if this.sla.Callback() != nil {
+				beforElem := this.sla.Callback().BeforePatch(elem, vnic)
+				if beforElem != nil {
+					elem = beforElem
+				}
+			}
 			n, e = this.cache.Patch(elem, createNotification)
+			if this.sla.Callback() != nil {
+				this.sla.Callback().AfterPatch(elem, vnic)
+			}
 		case ifs.DELETE:
+			if this.sla.Callback() != nil {
+				beforElem := this.sla.Callback().BeforeDelete(elem, vnic)
+				if beforElem != nil {
+					elem = beforElem
+				}
+			}
 			n, e = this.cache.Delete(elem, createNotification)
+			if this.sla.Callback() != nil {
+				this.sla.Callback().AfterDelete(elem, vnic)
+			}
 		}
 		if e != nil {
 			fmt.Println("Error in notification: ", e.Error())
