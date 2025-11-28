@@ -7,6 +7,7 @@ import (
 	"github.com/saichler/l8utils/go/utils/logger"
 	"github.com/saichler/l8utils/go/utils/registry"
 	"github.com/saichler/l8utils/go/utils/resources"
+	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8reflect/go/reflect/introspecting"
 	"github.com/saichler/l8reflect/go/reflect/updating"
 	"testing"
@@ -23,7 +24,7 @@ func TestSubStructProperty(t *testing.T) {
 		Log.Fail(t, "failed with inspect: ", err.Error())
 		return
 	}
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	aside := &testtypes.TestProto{MyString: "Hello"}
 	zside := &testtypes.TestProto{MyString: "Hello"}

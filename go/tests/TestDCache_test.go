@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8reflect/go/tests/utils"
 	"github.com/saichler/l8services/go/services/dcache"
 	. "github.com/saichler/l8test/go/infra/t_resources"
@@ -18,7 +18,7 @@ import (
 func TestDCacheBasicPost(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -41,7 +41,7 @@ func TestDCacheBasicPost(t *testing.T) {
 func TestDCacheBasicGet(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -75,7 +75,7 @@ func TestDCacheBasicGet(t *testing.T) {
 func TestDCacheGetNonExistent(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -99,7 +99,7 @@ func TestDCacheGetNonExistent(t *testing.T) {
 func TestDCachePut(t *testing.T) {
 	item1 := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item1)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -146,7 +146,7 @@ func TestDCachePut(t *testing.T) {
 func TestDCachePatch(t *testing.T) {
 	item1 := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item1)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -186,7 +186,7 @@ func TestDCachePatch(t *testing.T) {
 func TestDCacheDelete(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -227,7 +227,7 @@ func TestDCacheDelete(t *testing.T) {
 func TestDCacheCloning(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -269,7 +269,7 @@ func TestDCacheCloning(t *testing.T) {
 func TestDCacheMultipleItems(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -310,7 +310,7 @@ func TestDCacheMultipleItems(t *testing.T) {
 func TestDCacheConcurrentAccess(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -387,7 +387,7 @@ func (l *TestDCacheListener) GetCount() int {
 func TestDCacheNotifications(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	listener := &TestDCacheListener{}
 	cache := dcache.NewDistributedCacheNoSync("TestService", 0, &testtypes.TestProto{}, nil, listener, globals)
@@ -463,7 +463,7 @@ func TestDCacheNotifications(t *testing.T) {
 func TestDCacheNilInputs(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -509,7 +509,7 @@ func TestDCacheNilInputs(t *testing.T) {
 func TestDCacheInitialElements(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	// Create initial elements
 	initElements := make([]interface{}, 5)
@@ -546,7 +546,7 @@ func TestDCacheInitialElements(t *testing.T) {
 func TestDCacheStressTest(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 

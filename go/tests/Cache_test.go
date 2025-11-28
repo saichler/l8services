@@ -7,14 +7,14 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8test/go/infra/t_service"
 	"github.com/saichler/l8types/go/testtypes"
-	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8reflect/go/tests/utils"
 )
 
 func TestCacheListener(t *testing.T) {
 	item1 := utils.CreateTestModelInstance(1)
 	node, _ := globals.Introspector().Inspect(item1)
-	introspecting.AddPrimaryKeyDecorator(node, "MyString")
+	helping.AddPrimaryKeyDecorator(node, "MyString")
 	
 	c := dcache.NewDistributedCache(ServiceName, 0, &testtypes.TestProto{}, nil, nil, globals)
 
