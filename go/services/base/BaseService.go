@@ -81,7 +81,7 @@ func (this *BaseService) ReplicationCount() int {
 
 func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
 	node, _ := r.Introspector().Node(this.cache.ModelType())
-	key := helping.PrimaryDecorator(node, reflect.ValueOf(elems.Element()), this.vnic.Resources().Registry())
+	key := helping.PrimaryKeyDecoratorValue(node, reflect.ValueOf(elems.Element()), this.vnic.Resources().Registry())
 	return key.(string)
 }
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/saichler/l8bus/go/overlay/protocol"
-	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8services/go/services/dcache"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8services"
@@ -22,7 +22,7 @@ type ReplicationService struct {
 
 func (this *ReplicationService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	node, _ := vnic.Resources().Introspector().Inspect(&l8services.L8ReplicationIndex{})
-	introspecting.AddPrimaryKeyDecorator(node, "ServiceName", "ServiceArea")
+	helping.AddPrimaryKeyDecorator(node, "ServiceName", "ServiceArea")
 	this.cache = dcache.NewDistributedCache(sla.ServiceName(), sla.ServiceArea(), &l8services.L8ReplicationIndex{},
 		nil, vnic, vnic.Resources())
 	return nil
