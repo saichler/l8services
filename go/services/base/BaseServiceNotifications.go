@@ -20,50 +20,32 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		}
 		var n *l8notify.L8NotificationSet
 		var e error
+		if this.sla.Callback() != nil {
+			beforElem, err := this.sla.Callback().Before(elem, action, pb.Notification(), vnic)
+			if err != nil {
+				return object.NewError(err.Error())
+			}
+			if beforElem != nil {
+				elem = beforElem
+			}
+		}
 		switch action {
 		case ifs.POST:
-			if this.sla.Callback() != nil {
-				beforElem := this.sla.Callback().BeforePost(elem, vnic)
-				if beforElem != nil {
-					elem = beforElem
-				}
-			}
 			n, e = this.cache.Post(elem, createNotification)
-			if this.sla.Callback() != nil {
-				this.sla.Callback().AfterPost(elem, vnic)
-			}
 		case ifs.PUT:
-			if this.sla.Callback() != nil {
-				beforElem := this.sla.Callback().BeforePut(elem, vnic)
-				if beforElem != nil {
-					elem = beforElem
-				}
-			}
 			n, e = this.cache.Put(elem, createNotification)
-			if this.sla.Callback() != nil {
-				this.sla.Callback().AfterPut(elem, vnic)
-			}
 		case ifs.PATCH:
-			if this.sla.Callback() != nil {
-				beforElem := this.sla.Callback().BeforePatch(elem, vnic)
-				if beforElem != nil {
-					elem = beforElem
-				}
-			}
 			n, e = this.cache.Patch(elem, createNotification)
-			if this.sla.Callback() != nil {
-				this.sla.Callback().AfterPatch(elem, vnic)
-			}
 		case ifs.DELETE:
-			if this.sla.Callback() != nil {
-				beforElem := this.sla.Callback().BeforeDelete(elem, vnic)
-				if beforElem != nil {
-					elem = beforElem
-				}
-			}
 			n, e = this.cache.Delete(elem, createNotification)
-			if this.sla.Callback() != nil {
-				this.sla.Callback().AfterDelete(elem, vnic)
+		}
+		if this.sla.Callback() != nil {
+			afterElem, err := this.sla.Callback().After(elem, action, pb.Notification(), vnic)
+			if err != nil {
+				return object.NewError(err.Error())
+			}
+			if afterElem != nil {
+				elem = afterElem
 			}
 		}
 		if e != nil {
