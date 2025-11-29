@@ -40,6 +40,9 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 			n, e = this.cache.Delete(elem, createNotification)
 		}
 		if this.sla.Callback() != nil {
+			if action == ifs.PATCH {
+				elem, _ = this.cache.Get(elem)
+			}
 			afterElem, err := this.sla.Callback().After(elem, action, pb.Notification(), vnic)
 			if err != nil {
 				return object.NewError(err.Error())
