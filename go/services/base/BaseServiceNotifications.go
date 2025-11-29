@@ -9,6 +9,22 @@ import (
 	"github.com/saichler/l8types/go/types/l8web"
 )
 
+func (this *BaseService) applyCallback(elems []interface{}, vnic ifs.IVNic) []interface{} {
+	if this.sla.Callback() == nil {
+		return elems
+	}
+	result := make([]interface{}, len(elems))
+	for i, elem := range elems {
+		newElem, _ := this.sla.Callback().Before(elem, ifs.POST, false, vnic)
+		if newElem != nil {
+			result[i] = newElem
+		} else {
+			result[i] = elem
+		}
+	}
+	return result
+}
+
 func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {

@@ -31,7 +31,8 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 	this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
 	this.running = true
 	if this.sla.Stateful() {
-		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
+		initElements := this.applyCallback(this.sla.InitItems(), vnic)
+		this.cache = cache.NewCache(this.sla.ServiceItem(), initElements,
 			this.sla.Store(), vnic.Resources())
 		if sla.MetadataFunc() != nil {
 			for name, f := range sla.MetadataFunc() {
