@@ -51,7 +51,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 	if msg == nil {
 		return object.NewError("Handle: message cannot be nil")
 	}
-	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().SysConfig().LocalUuid, "")
+	err := vnic.Resources().Security().CanDoAction(action, pb, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 	if err != nil {
 		return object.NewError(err.Error())
 	}
