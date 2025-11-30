@@ -98,7 +98,12 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 		defer vnic.Resources().Logger().Debug("Defer Running transaction")
 		return this.trManager.Run(msg, vnic)
 	}
-	return this.handle(h, pb, action, msg, vnic)
+	resp := this.handle(h, pb, action, msg, vnic)
+	scope := vnic.Resources().Security().ScopeView(resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
+	if scope != nil {
+		return scope
+	}
+	return resp
 }
 
 func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, replica byte, r ifs.IResources) {
