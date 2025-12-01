@@ -29,18 +29,20 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 				elem = beforElem
 			}
 		}
-		switch action {
-		case ifs.POST:
-			n, e = this.cache.Post(elem, createNotification)
-		case ifs.PUT:
-			n, e = this.cache.Put(elem, createNotification)
-		case ifs.PATCH:
-			n, e = this.cache.Patch(elem, createNotification)
-		case ifs.DELETE:
-			n, e = this.cache.Delete(elem, createNotification)
+		if this.cache != nil {
+			switch action {
+			case ifs.POST:
+				n, e = this.cache.Post(elem, createNotification)
+			case ifs.PUT:
+				n, e = this.cache.Put(elem, createNotification)
+			case ifs.PATCH:
+				n, e = this.cache.Patch(elem, createNotification)
+			case ifs.DELETE:
+				n, e = this.cache.Delete(elem, createNotification)
+			}
 		}
 		if this.sla.Callback() != nil {
-			if action == ifs.PATCH {
+			if action == ifs.PATCH && this.cache != nil {
 				elem, _ = this.cache.Get(elem)
 			}
 			afterElem, err := this.sla.Callback().After(elem, action, pb.Notification(), vnic)
@@ -72,5 +74,7 @@ func (this *BaseService) processNotificationQueue() {
 
 func (this *BaseService) Shutdown() {
 	this.running = false
-	this.nQueue.Add(nil)
+	if this.cache != nil {
+		this.nQueue.Add(nil)
+	}
 }

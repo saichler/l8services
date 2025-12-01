@@ -36,20 +36,32 @@ func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 }
 
 func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	if pb.IsFilterMode() {
-		e := this.validateElem(pb)
-		if e != nil {
-			return object.New(e, &l8web.L8Empty{})
+	if this.sla.Callback() != nil {
+		elem, err := this.sla.Callback().Before(pb, ifs.GET, false, vnic)
+		if err != nil {
+			return object.NewError(err.Error())
 		}
-		resp, err := this.cache.Get(pb.Element())
-		return object.New(err, resp)
+		if elem != nil {
+			pb = elem.(ifs.IElements)
+		}
 	}
-	q, e := pb.Query(this.vnic.Resources())
-	if e != nil {
-		return object.NewError(e.Error())
+	if this.cache != nil {
+		if pb.IsFilterMode() {
+			e := this.validateElem(pb)
+			if e != nil {
+				return object.New(e, &l8web.L8Empty{})
+			}
+			resp, err := this.cache.Get(pb.Element())
+			return object.New(err, resp)
+		}
+		q, e := pb.Query(this.vnic.Resources())
+		if e != nil {
+			return object.NewError(e.Error())
+		}
+		elems, counts := this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
+		return object.NewQueryResult(elems, counts)
 	}
-	elems, counts := this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
-	return object.NewQueryResult(elems, counts)
+	return pb
 }
 
 func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {

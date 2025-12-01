@@ -19,9 +19,12 @@ func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandl
 
 func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.sla = sla
-	this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
 	this.running = true
+	if !sla.Stateful() && sla.Callback() == nil {
+		panic("Nothing to do when stateless and no callback")
+	}
 	if this.sla.Stateful() {
+		this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
 		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
 			this.sla.Store(), vnic.Resources())
 		if sla.MetadataFunc() != nil {
@@ -29,10 +32,8 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 				this.cache.AddMetadataFunc(name, f)
 			}
 		}
-	}
-	this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
-	this.vnic = vnic
-	if this.sla.Stateful() {
+		this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
+		this.vnic = vnic
 		go this.processNotificationQueue()
 	}
 	return nil
