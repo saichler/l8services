@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
@@ -37,6 +38,16 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	if len(sla.ServiceName()) > 10 {
 		panic("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
 		return handler, errors.New("SLA Service name " + sla.ServiceName() + " must be less than 10 characters long")
+	}
+
+	if sla.ServiceItemList() != nil {
+		vnic.Resources().Registry().Register(sla.ServiceItemList())
+	}
+
+	if sla.ServiceItem() != nil {
+		node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem())
+		helping.AddPrimaryKeyDecorator(node, sla.PrimaryKeys()...)
+		helping.AddUniqueKeyDecorator(node, sla.UniqueKeys()...)
 	}
 
 	handler, ok = this.services.get(sla.ServiceName(), sla.ServiceArea())

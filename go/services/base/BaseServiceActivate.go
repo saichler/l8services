@@ -4,26 +4,17 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types/l8api"
-	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8utils/go/utils/cache"
 	"github.com/saichler/l8utils/go/utils/queues"
 )
 
-func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
+func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandler, error) {
 	vnic.Resources().Registry().Register(&BaseService{})
-	vnic.Resources().Registry().Register(sla.ServiceItemList())
-	vnic.Resources().Registry().Register(&l8web.L8Empty{})
-	vnic.Resources().Registry().Register(&l8api.L8Query{})
-	node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem())
-	helping.AddPrimaryKeyDecorator(node, sla.PrimaryKeys()...)
-	helping.AddUniqueKeyDecorator(node, sla.UniqueKeys()...)
-	/*b, e :=*/ vnic.Resources().Services().Activate(sla, vnic)
+	return vnic.Resources().Services().Activate(sla, vnic)
+	//b, e := vnic.Resources().Services().Activate(sla, vnic)
 	//bs := b.(*BaseService)
 	//go recovery.RecoveryCheck(sla.ServiceName(), sla.ServiceArea(), bs.cache, vnic)
-	return nil
 }
 
 func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
