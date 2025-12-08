@@ -6,19 +6,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8reflect/go/tests/utils"
 	"github.com/saichler/l8services/go/services/dcache"
 	. "github.com/saichler/l8test/go/infra/t_resources"
+	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/testtypes"
 	"github.com/saichler/l8types/go/types/l8notify"
 )
 
+func AddPrimaryKey(r ifs.IResources) {
+	r.Introspector().Decorators().AddPrimaryKeyDecorator(&testtypes.TestProto{}, "MyString")
+}
+
 // TestDCacheBasicPost tests basic POST operation
 func TestDCacheBasicPost(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -40,8 +43,7 @@ func TestDCacheBasicPost(t *testing.T) {
 // TestDCacheBasicGet tests basic GET operation
 func TestDCacheBasicGet(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -73,9 +75,8 @@ func TestDCacheBasicGet(t *testing.T) {
 
 // TestDCacheGetNonExistent tests GET for non-existent item
 func TestDCacheGetNonExistent(t *testing.T) {
-	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -98,8 +99,7 @@ func TestDCacheGetNonExistent(t *testing.T) {
 // TestDCachePut tests PUT operation (replace)
 func TestDCachePut(t *testing.T) {
 	item1 := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item1)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -145,8 +145,7 @@ func TestDCachePut(t *testing.T) {
 // TestDCachePatch tests PATCH operation (partial update)
 func TestDCachePatch(t *testing.T) {
 	item1 := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item1)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -185,8 +184,7 @@ func TestDCachePatch(t *testing.T) {
 // TestDCacheDelete tests DELETE operation
 func TestDCacheDelete(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -226,8 +224,7 @@ func TestDCacheDelete(t *testing.T) {
 // TestDCacheCloning verifies that returned items are clones, not original references
 func TestDCacheCloning(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -267,9 +264,8 @@ func TestDCacheCloning(t *testing.T) {
 
 // TestDCacheMultipleItems tests cache with multiple items
 func TestDCacheMultipleItems(t *testing.T) {
-	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -308,9 +304,8 @@ func TestDCacheMultipleItems(t *testing.T) {
 
 // TestDCacheConcurrentAccess tests thread-safety with concurrent operations
 func TestDCacheConcurrentAccess(t *testing.T) {
-	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -386,8 +381,7 @@ func (l *TestDCacheListener) GetCount() int {
 // TestDCacheNotifications tests notification callbacks
 func TestDCacheNotifications(t *testing.T) {
 	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(globals)
 
 	listener := &TestDCacheListener{}
 	cache := dcache.NewDistributedCacheNoSync("TestService", 0, &testtypes.TestProto{}, nil, listener, globals)
@@ -461,9 +455,8 @@ func TestDCacheNotifications(t *testing.T) {
 
 // TestDCacheNilInputs tests error handling for nil inputs
 func TestDCacheNilInputs(t *testing.T) {
-	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 
@@ -507,9 +500,8 @@ func TestDCacheNilInputs(t *testing.T) {
 
 // TestDCacheInitialElements tests cache initialization with initial elements
 func TestDCacheInitialElements(t *testing.T) {
-	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+
+	AddPrimaryKey(globals)
 
 	// Create initial elements
 	initElements := make([]interface{}, 5)
@@ -544,9 +536,8 @@ func TestDCacheInitialElements(t *testing.T) {
 
 // TestDCacheStressTest performs a stress test with many operations
 func TestDCacheStressTest(t *testing.T) {
-	item := utils.CreateTestModelInstance(1)
-	node, _ := globals.Introspector().Inspect(item)
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+
+	AddPrimaryKey(globals)
 
 	cache := dcache.NewDistributedCache("TestService", 0, &testtypes.TestProto{}, nil, nil, globals)
 

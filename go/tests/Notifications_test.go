@@ -1,30 +1,24 @@
 package tests
 
 import (
+	"testing"
+	"time"
+
+	"github.com/saichler/l8reflect/go/reflect/introspecting"
+	"github.com/saichler/l8reflect/go/reflect/updating"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8types/go/testtypes"
 	"github.com/saichler/l8utils/go/utils/logger"
 	"github.com/saichler/l8utils/go/utils/registry"
 	"github.com/saichler/l8utils/go/utils/resources"
-	"github.com/saichler/l8reflect/go/reflect/helping"
-	"github.com/saichler/l8reflect/go/reflect/introspecting"
-	"github.com/saichler/l8reflect/go/reflect/updating"
-	"testing"
-	"time"
 )
 
 func TestSubStructProperty(t *testing.T) {
 	res := resources.NewResources(logger.NewLoggerDirectImpl(&logger.FmtLogMethod{}))
 	_introspect := introspecting.NewIntrospect(registry.NewRegistry())
 	res.Set(_introspect)
-
-	node, err := _introspect.Inspect(&testtypes.TestProto{})
-	if err != nil {
-		Log.Fail(t, "failed with inspect: ", err.Error())
-		return
-	}
-	helping.AddPrimaryKeyDecorator(node, "MyString")
+	AddPrimaryKey(res)
 
 	aside := &testtypes.TestProto{MyString: "Hello"}
 	zside := &testtypes.TestProto{MyString: "Hello"}
@@ -39,7 +33,7 @@ func TestSubStructProperty(t *testing.T) {
 
 	for _, change := range changes {
 		obj := object.NewEncode()
-		err = obj.Add(change.NewValue())
+		err := obj.Add(change.NewValue())
 		if err != nil {
 			Log.Fail(t, "failed with inspect: ", err.Error())
 		}
