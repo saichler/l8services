@@ -57,6 +57,9 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	handler = h.(ifs.IServiceHandler)
 
 	err = handler.Activate(sla, vnic)
+	if err != nil {
+		panic(err)
+	}
 
 	this.services.put(sla.ServiceName(), sla.ServiceArea(), handler)
 	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()))
