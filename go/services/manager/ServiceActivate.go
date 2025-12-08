@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8services/go/services/replication"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
@@ -45,9 +44,8 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.ServiceItem() != nil {
-		node, _ := vnic.Resources().Introspector().Inspect(sla.ServiceItem())
-		helping.AddPrimaryKeyDecorator(node, sla.PrimaryKeys()...)
-		helping.AddUniqueKeyDecorator(node, sla.UniqueKeys()...)
+		vnic.Resources().Introspector().Decorators().AddPrimaryKeyDecorator(sla.ServiceItem(), sla.PrimaryKeys()...)
+		vnic.Resources().Introspector().Decorators().AddUniqueKeyDecorator(sla.ServiceItem(), sla.UniqueKeys()...)
 	}
 
 	handler, ok = this.services.get(sla.ServiceName(), sla.ServiceArea())

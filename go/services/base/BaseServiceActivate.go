@@ -24,6 +24,10 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 		panic("Nothing to do when stateless and no callback")
 	}
 	if this.sla.Stateful() {
+		err := vnic.Resources().Introspector().Decorators().AddPrimaryKeyDecorator(sla.ServiceItem(), sla.PrimaryKeys()...)
+		if err != nil {
+			return err
+		}
 		this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
 		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
 			this.sla.Store(), vnic.Resources())

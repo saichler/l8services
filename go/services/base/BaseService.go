@@ -1,9 +1,6 @@
 package base
 
 import (
-	"reflect"
-
-	"github.com/saichler/l8reflect/go/reflect/helping"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8web"
@@ -92,9 +89,8 @@ func (this *BaseService) ReplicationCount() int {
 }
 
 func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
-	node, _ := r.Introspector().Node(this.cache.ModelType())
-	key := helping.PrimaryKeyDecoratorValue(node, reflect.ValueOf(elems.Element()), this.vnic.Resources().Registry())
-	return key.(string)
+	key, _, _ := r.Introspector().Decorators().PrimaryKeyDecoratorValue(elems.Element())
+	return key
 }
 
 func (this *BaseService) Voter() bool {
