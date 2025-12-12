@@ -10,10 +10,8 @@ import (
 	"github.com/saichler/l8services/go/services/transaction/states"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types/l8health"
 	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8types/go/types/l8services"
-	"github.com/saichler/l8utils/go/utils/notify"
 )
 
 type ServiceManager struct {
@@ -135,69 +133,6 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 		this.updateReplicationIndex(msg.ServiceName(), msg.ServiceArea(), key, msg.Tr_Replica(), vnic.Resources())
 	}
 	return resp
-}
-
-func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
-
-	if h == nil {
-		return object.New(nil, pb)
-	}
-	_, isMapReduce := h.(ifs.IMapReduceService)
-	switch action {
-	case ifs.POST:
-		return h.Post(pb, vnic)
-	case ifs.PUT:
-		return h.Put(pb, vnic)
-	case ifs.PATCH:
-		return h.Patch(pb, vnic)
-	case ifs.DELETE:
-		return h.Delete(pb, vnic)
-	case ifs.GET:
-		return h.Get(pb, vnic)
-	default:
-		if isMapReduce {
-			return this.MapReduce(h, pb, action, msg, vnic)
-		}
-		return object.NewError("invalid action, ignoring")
-	}
-}
-
-func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message, isTransaction bool) ifs.IElements {
-	if vnic.Resources().SysConfig().LocalUuid == msg.Source() {
-		return object.New(nil, nil)
-	}
-	notification := pb.Element().(*l8notify.L8NotificationSet)
-	h, ok := this.services.get(notification.ServiceName, byte(notification.ServiceArea))
-	if !ok {
-		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
-			" area " + strconv.Itoa(int(msg.ServiceArea())))
-	}
-
-	if msg != nil && msg.FailMessage() != "" {
-		return h.Failed(pb, vnic, msg)
-	}
-	item, err := notify.ItemOf(notification, this.resources)
-	if err != nil {
-		return object.NewError(err.Error())
-	}
-	npb := object.NewNotify(item)
-
-	switch notification.Type {
-	case l8notify.L8NotificationType_Post:
-		return h.Post(npb, vnic)
-	case l8notify.L8NotificationType_Put:
-		return h.Put(npb, vnic)
-	case l8notify.L8NotificationType_Patch:
-		return h.Patch(npb, vnic)
-	case l8notify.L8NotificationType_Delete:
-		result := h.Delete(npb, vnic)
-		if notification.ServiceName == health.ServiceName {
-			this.onNodeDelete(item.(*l8health.L8Health).AUuid)
-		}
-		return result
-	default:
-		return object.NewError("invalid notification type, ignoring")
-	}
 }
 
 func (this *ServiceManager) onNodeDelete(uuid string) {
