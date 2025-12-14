@@ -129,7 +129,7 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 		panic("Transaction Handler " + reflect.ValueOf(h).Elem().Type().Name() + " action " + strconv.Itoa(int(action)) + " resp is nil")
 	}
 	if resp.Error() == nil && h.TransactionConfig().Replication() {
-		key := h.TransactionConfig().KeyOf(pb, vnic.Resources())
+		key := h.TransactionConfig().KeyOf(resp, vnic.Resources())
 		this.updateReplicationIndex(msg.ServiceName(), msg.ServiceArea(), key, msg.Tr_Replica(), vnic.Resources())
 	}
 	return resp
