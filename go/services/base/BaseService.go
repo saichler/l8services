@@ -34,9 +34,12 @@ func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 
 func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	if this.sla.Callback() != nil {
-		elem, err := this.sla.Callback().Before(pb, ifs.GET, false, vnic)
+		elem, cont, err := this.sla.Callback().Before(pb, ifs.GET, false, vnic)
 		if err != nil {
 			return object.NewError(err.Error())
+		}
+		if !cont {
+			return object.New(nil, &l8web.L8Empty{})
 		}
 		if elem != nil {
 			pb = elem.(ifs.IElements)

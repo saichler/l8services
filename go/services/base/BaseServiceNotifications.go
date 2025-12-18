@@ -21,9 +21,12 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		var n *l8notify.L8NotificationSet
 		var e error
 		if this.sla.Callback() != nil {
-			beforElem, err := this.sla.Callback().Before(elem, action, pb.Notification(), vnic)
+			beforElem, cont, err := this.sla.Callback().Before(elem, action, pb.Notification(), vnic)
 			if err != nil {
 				return object.NewError(err.Error())
+			}
+			if !cont {
+				return object.New(nil, &l8web.L8Empty{})
 			}
 			if beforElem != nil {
 				elem = beforElem
@@ -45,9 +48,12 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 			if action == ifs.PATCH && this.cache != nil {
 				elem, _ = this.cache.Get(elem)
 			}
-			afterElem, err := this.sla.Callback().After(elem, action, pb.Notification(), vnic)
+			afterElem, cont, err := this.sla.Callback().After(elem, action, pb.Notification(), vnic)
 			if err != nil {
 				return object.NewError(err.Error())
+			}
+			if !cont {
+				return object.New(nil, &l8web.L8Empty{})
 			}
 			if afterElem != nil {
 				elem = afterElem
