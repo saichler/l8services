@@ -2,6 +2,7 @@ package base
 
 import (
 	"errors"
+	"github.com/saichler/l8services/go/services/recovery"
 	"reflect"
 
 	"github.com/saichler/l8types/go/ifs"
@@ -11,10 +12,11 @@ import (
 
 func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandler, error) {
 	vnic.Resources().Registry().Register(&BaseService{})
-	return vnic.Resources().Services().Activate(sla, vnic)
-	//b, e := vnic.Resources().Services().Activate(sla, vnic)
-	//bs := b.(*BaseService)
-	//go recovery.RecoveryCheck(sla.ServiceName(), sla.ServiceArea(), bs.cache, vnic)
+	//return vnic.Resources().Services().Activate(sla, vnic)
+	b, e := vnic.Resources().Services().Activate(sla, vnic)
+	bs := b.(*BaseService)
+	go recovery.RecoveryCheck(sla.ServiceName(), sla.ServiceArea(), bs.cache.ModelType(), vnic)
+	return b, e
 }
 
 func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {

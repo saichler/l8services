@@ -18,6 +18,7 @@ echo "* Shallow Security exist in https://github.com/saichler/l8utils/tree/main/
 echo "******************************************************"
 read -n 1 -s -r -p "Press any key to continue..."
 # Run unit tests with coverage
+go clean -testcache
 go test -tags=unit -v -coverpkg=./services/... -coverprofile=cover.html ./... --failfast
 
 # Open the coverage report in a browser
