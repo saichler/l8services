@@ -47,6 +47,14 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 		vnic.Resources().Introspector().Decorators().AddPrimaryKeyDecorator(sla.ServiceItem(), sla.PrimaryKeys()...)
 		vnic.Resources().Introspector().Decorators().AddUniqueKeyDecorator(sla.ServiceItem(), sla.UniqueKeys()...)
 		vnic.Resources().Introspector().Decorators().AddNonUniqueKeyDecorator(sla.ServiceItem(), sla.NonUniqueKeys()...)
+		if sla.AlwaysOverwrite() != nil {
+			for _, alwaysOverwriteAttr := range sla.AlwaysOverwrite() {
+				e := vnic.Resources().Introspector().Decorators().AddAlwayOverwriteDecorator(alwaysOverwriteAttr)
+				if e != nil {
+					panic(e)
+				}
+			}
+		}
 	}
 
 	handler, ok = this.services.get(sla.ServiceName(), sla.ServiceArea())
