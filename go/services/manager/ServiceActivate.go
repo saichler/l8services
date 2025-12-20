@@ -3,6 +3,7 @@ package manager
 import (
 	"errors"
 	"fmt"
+	"github.com/saichler/l8bus/go/overlay/health"
 	"reflect"
 	"strconv"
 	"strings"
@@ -110,6 +111,12 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
 	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
+
+	hs := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, vnic.Resources())
+	if hs != nil {
+		hs.Services = vnic.Resources().Services().Services()
+		vnic.Multicast(health.ServiceName, 0, ifs.PATCH, hs)
+	}
 }
 
 func (this *ServiceManager) registerForReplication(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) error {
