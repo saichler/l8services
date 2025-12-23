@@ -23,6 +23,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8services"
 )
 
+// ServiceTransactions manages the transaction queue for a single service.
+// It processes transactions sequentially using a condition variable for
+// blocking queue operations and maintains pre-commit state for rollback.
 type ServiceTransactions struct {
 	mtx     *sync.Mutex
 	cond    *sync.Cond
@@ -34,6 +37,7 @@ type ServiceTransactions struct {
 	preCommitMtx *sync.Mutex
 }
 
+// newServiceTransactions creates a new transaction queue and starts its processor.
 func newServiceTransactions(nic ifs.IVNic) *ServiceTransactions {
 	serviceTransactions := &ServiceTransactions{}
 	serviceTransactions.mtx = &sync.Mutex{}
@@ -48,6 +52,8 @@ func newServiceTransactions(nic ifs.IVNic) *ServiceTransactions {
 	return serviceTransactions
 }
 
+// Next blocks until a transaction is available and returns it.
+// Returns nil if the service is shutting down.
 func (this *ServiceTransactions) Next() *ifs.Message {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
@@ -64,6 +70,7 @@ func (this *ServiceTransactions) Next() *ifs.Message {
 	return msg
 }
 
+// processTransactions is the background goroutine that dequeues and runs transactions.
 func (this *ServiceTransactions) processTransactions() {
 	for this.running {
 		tr := this.Next()
@@ -74,6 +81,7 @@ func (this *ServiceTransactions) processTransactions() {
 	}
 }
 
+// ServiceKey creates a unique key from service name and area for map indexing.
 func ServiceKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
@@ -81,6 +89,7 @@ func ServiceKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
+// L8TransactionOf creates an L8Transaction protobuf from message transaction state.
 func L8TransactionOf(msg *ifs.Message) *l8services.L8Transaction {
 	return &l8services.L8Transaction{State: int32(msg.Tr_State()),
 		Id:      msg.Tr_Id(),
@@ -92,6 +101,7 @@ func L8TransactionOf(msg *ifs.Message) *l8services.L8Transaction {
 	}
 }
 
+// L8TransactionFor wraps L8TransactionOf result as IElements for responses.
 func L8TransactionFor(msg *ifs.Message) ifs.IElements {
 	return object.New(nil, L8TransactionOf(msg))
 }

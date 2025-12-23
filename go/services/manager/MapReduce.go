@@ -20,6 +20,9 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// MapReduce implements the Map-Reduce pattern for distributed processing.
+// It converts Map-Reduce actions to standard CRUD actions, distributes requests
+// to all participants, and merges the results using the service's Merge method.
 func (this *ServiceManager) MapReduce(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	cMsg := msg.Clone()
 	switch action {
@@ -41,6 +44,8 @@ func (this *ServiceManager) MapReduce(h ifs.IServiceHandler, pb ifs.IElements, a
 	return mh.Merge(results)
 }
 
+// PeerRequest sends a message to all participants of a service concurrently
+// and collects their responses. Returns a map of UUID to response elements.
 func (this *ServiceManager) PeerRequest(msg *ifs.Message, nic ifs.IVNic) map[string]ifs.IElements {
 	edges := this.GetParticipants(msg.ServiceName(), msg.ServiceArea())
 	this.resources.Logger().Debug("Edges for ", msg.ServiceName(), " area ", msg.ServiceArea(), " ", len(edges))

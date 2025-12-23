@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package recovery provides data recovery and synchronization functionality
+// for Layer 8 services. It ensures data consistency across distributed nodes
+// by synchronizing service data from the leader when a node starts.
 package recovery
 
 import (
@@ -21,6 +24,9 @@ import (
 	"github.com/saichler/l8utils/go/utils/strings"
 )
 
+// RecoveryCheck initiates the recovery process for a service after a brief delay.
+// It triggers synchronization to ensure the local cache matches the leader's data.
+// This is called automatically when a service is activated.
 func RecoveryCheck(serviceName string, serviceArea byte, modelType string, nic ifs.IVNic) {
 	time.Sleep(time.Second * 5)
 	Sync(serviceName, serviceArea, modelType, nic)
@@ -60,6 +66,9 @@ func RecoveryCheck(serviceName string, serviceArea byte, modelType string, nic i
 		}*/
 }
 
+// Sync synchronizes service data from the leader to the local cache.
+// It fetches data in pages of 500 elements from the leader and posts
+// them to the local service handler. Continues until no more data is available.
 func Sync(serviceName string, serviceArea byte, modelType string, nic ifs.IVNic) {
 	leader := nic.Resources().Services().GetLeader(serviceName, serviceArea)
 	handler, _ := nic.Resources().Services().ServiceHandler(serviceName, serviceArea)

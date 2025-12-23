@@ -22,6 +22,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8web"
 )
 
+// do executes a CRUD action (POST, PUT, PATCH, DELETE) on the provided elements.
+// It invokes the SLA callback's Before and After hooks, performs the cache operation,
+// and queues notifications for property changes when the service is stateful and voting.
 func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
 	if this.vnic != nil {
@@ -82,6 +85,9 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 	return object.New(nil, &l8web.L8Empty{})
 }
 
+// processNotificationQueue runs as a background goroutine that continuously
+// processes notification sets from the queue and broadcasts property change
+// notifications via the virtual NIC. Stops when this.running becomes false.
 func (this *BaseService) processNotificationQueue() {
 	for this.running {
 		set, ok := this.nQueue.Next().(*l8notify.L8NotificationSet)
@@ -91,6 +97,8 @@ func (this *BaseService) processNotificationQueue() {
 	}
 }
 
+// Shutdown stops the service by setting running to false and adding a nil
+// element to the notification queue to unblock the processNotificationQueue goroutine.
 func (this *BaseService) Shutdown() {
 	this.running = false
 	if this.cache != nil {

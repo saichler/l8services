@@ -21,6 +21,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// createTransaction initializes a new transaction in the message if not already set.
+// Generates a unique ID and sets the state to Created.
 func createTransaction(msg *ifs.Message) {
 	if msg.Tr_State() == ifs.NotATransaction {
 		msg.SetTr_Id(ifs.NewUuid())
@@ -28,6 +30,8 @@ func createTransaction(msg *ifs.Message) {
 	}
 }
 
+// Create initiates a new transaction by creating its ID and forwarding to the leader.
+// Returns immediately with Created state while the actual work continues asynchronously.
 func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	//Create the new transaction inside the message
 	createTransaction(msg)
@@ -46,6 +50,8 @@ func (this *TransactionManager) Create(msg *ifs.Message, vnic ifs.IVNic) ifs.IEl
 	return L8TransactionFor(msg)
 }
 
+// Create2 is an alternative Create implementation with timeout support.
+// Uses context with 30-second timeout for the forwarding operation.
 func (this *TransactionManager) Create2(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	createTransaction(msg)
 

@@ -18,6 +18,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// rollbackInternal reverts a committed transaction using the saved pre-commit state.
+// Converts the action type to its inverse operation (POST->DELETE, etc.).
 func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) ifs.IElements {
 
 	if msg.Action() == ifs.Notify {
@@ -41,6 +43,8 @@ func (this *ServiceTransactions) rollbackInternal(msg *ifs.Message) ifs.IElement
 	return L8TransactionFor(msg)
 }
 
+// setRollbackAction converts the original action to its inverse for rollback.
+// POST becomes DELETE, DELETE becomes POST, PUT/PATCH become PUT.
 func (this *ServiceTransactions) setRollbackAction(msg *ifs.Message) {
 	switch msg.Action() {
 	case ifs.POST:
@@ -54,6 +58,7 @@ func (this *ServiceTransactions) setRollbackAction(msg *ifs.Message) {
 	}
 }
 
+// preCommitObject retrieves the saved pre-commit state for rollback.
 func (this *ServiceTransactions) preCommitObject(msg *ifs.Message) ifs.IElements {
 	item := this.preCommit[msg.Tr_Id()]
 	elem, ok := item.(ifs.IElements)

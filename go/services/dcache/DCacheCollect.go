@@ -13,6 +13,9 @@
 
 package dcache
 
+// Collect iterates over all cached elements and applies the filter function f.
+// The filter function returns (include, transformedValue) for each element.
+// Returns a map of primary keys to elements that passed the filter.
 func (this *DCache) Collect(f func(interface{}) (bool, interface{})) map[string]interface{} {
 	return this.cache.Collect(f)
 }

@@ -20,6 +20,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// internalGet handles GET operations within a transaction, routing to replication
+// handlers if the service has replication enabled.
 func (this *ServiceTransactions) internalGet(msg *ifs.Message) ifs.IElements {
 	pb, err := protocol.ElementsOf(msg, this.nic.Resources())
 	if err != nil {
@@ -37,6 +39,7 @@ func (this *ServiceTransactions) internalGet(msg *ifs.Message) ifs.IElements {
 	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 }
 
+// replicationGet handles GET with replication, routing to the appropriate replica node.
 func (this *ServiceTransactions) replicationGet(pb ifs.IElements, msg *ifs.Message, service ifs.IServiceHandler) ifs.IElements {
 
 	//This is the node that has the requested replica
@@ -55,6 +58,8 @@ func (this *ServiceTransactions) replicationGet(pb ifs.IElements, msg *ifs.Messa
 	return this.nic.Resources().Services().TransactionHandle(pb, msg.Action(), msg, this.nic)
 }
 
+// replicationGetFilter handles filter-mode GET with replication by looking up the
+// replica location in the replication index and forwarding to the appropriate node.
 func (this ServiceTransactions) replicationGetFilter(pb ifs.IElements, msg *ifs.Message, service ifs.IServiceHandler) ifs.IElements {
 	index := replication.ReplicationIndex(msg.ServiceName(), msg.ServiceArea(), this.nic.Resources())
 

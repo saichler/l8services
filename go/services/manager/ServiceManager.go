@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package manager provides the central orchestration layer for Layer 8 services.
+// It handles service registration, activation, request routing, leader election,
+// participant management, transaction coordination, and Map-Reduce operations.
 package manager
 
 import (
@@ -27,6 +30,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8services"
 )
 
+// ServiceManager is the central coordinator for all services in a Layer 8 node.
+// It manages service lifecycle, routes requests to appropriate handlers, coordinates
+// distributed transactions, handles leader election, and tracks service participants.
 type ServiceManager struct {
 	services            *ServicesMap
 	trManager           *states.TransactionManager
@@ -35,6 +41,9 @@ type ServiceManager struct {
 	participantRegistry *ParticipantRegistry
 }
 
+// NewServices creates a new ServiceManager with all required subsystems initialized.
+// It sets up the services map, transaction manager, leader election, participant registry,
+// and registers required protocol types with the registry.
 func NewServices(resources ifs.IResources) ifs.IServices {
 	sp := &ServiceManager{}
 	sp.services = NewServicesMap()
@@ -51,10 +60,15 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	return sp
 }
 
+// RegisterServiceHandlerType registers a service handler type with the type registry
+// to enable dynamic instantiation of handlers during service activation.
 func (this *ServiceManager) RegisterServiceHandlerType(handler ifs.IServiceHandler) {
 	this.resources.Registry().Register(handler)
 }
 
+// Handle is the main entry point for processing incoming service requests.
+// It performs security checks, routes to participant registry or leader election handlers,
+// initiates transactions for stateful services, and delegates to service handlers.
 func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	if vnic == nil {
 		return object.NewError("Handle: vnic cannot be nil")
@@ -117,6 +131,8 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 	return resp
 }
 
+// updateReplicationIndex updates the replication index for a service element,
+// recording which replica stores which key for data distribution tracking.
 func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceArea byte, key string, replica byte, r ifs.IResources) {
 	index := replication.ReplicationIndex(serviceName, serviceArea, r)
 	if index.Keys == nil {
@@ -131,6 +147,9 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 	repService.Patch(object.New(nil, index), nil)
 }
 
+// TransactionHandle processes requests within a transaction context.
+// It delegates to the service handler and updates the replication index
+// on successful operations for services with replication enabled.
 func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	this.resources.Logger().Info("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
@@ -148,15 +167,21 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	return resp
 }
 
+// onNodeDelete handles cleanup when a node is removed from the cluster,
+// unregistering the node from all service participant lists.
 func (this *ServiceManager) onNodeDelete(uuid string) {
 	this.participantRegistry.UnregisterParticipantFromAll(uuid)
 	this.resources.Logger().Info("Unregistered all services for failed node", uuid)
 }
 
+// ServiceHandler retrieves the registered handler for a specific service and area.
+// Returns the handler and true if found, nil and false otherwise.
 func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
 	return this.services.get(serviceName, serviceArea)
 }
 
+// sendEndPoints broadcasts all registered web service endpoints to the network
+// via multicast, enabling service discovery for HTTP/REST endpoints.
 func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
 	webServices := this.services.webServices()
 	for _, ws := range webServices {
@@ -165,6 +190,7 @@ func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
 	}
 }
 
+// cacheKey generates a unique key for caching by combining service name and area.
 func cacheKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
@@ -172,42 +198,54 @@ func cacheKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
+// Services returns a structured list of all registered services and their areas.
 func (this *ServiceManager) Services() *l8services.L8Services {
 	return this.services.serviceList()
 }
 
+// StartElection triggers a leader election for the specified service and area.
 func (this *ServiceManager) StartElection(serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 }
 
+// GetLeader returns the UUID of the current leader for the specified service and area.
+// Returns empty string if no leader is elected.
 func (this *ServiceManager) GetLeader(serviceName string, serviceArea byte) string {
 	return this.leaderElection.GetLeader(serviceName, serviceArea)
 }
 
+// IsLeader checks if the specified UUID is the current leader for the service and area.
 func (this *ServiceManager) IsLeader(serviceName string, serviceArea byte, uuid string) bool {
 	return this.leaderElection.IsLeader(serviceName, serviceArea, uuid)
 }
 
+// RegisterParticipant adds a node to the participant list for a service and area.
 func (this *ServiceManager) RegisterParticipant(serviceName string, serviceArea byte, uuid string) {
 	this.participantRegistry.RegisterParticipant(serviceName, serviceArea, uuid)
 }
 
+// UnregisterParticipant removes a node from the participant list for a service and area.
 func (this *ServiceManager) UnregisterParticipant(serviceName string, serviceArea byte, uuid string) {
 	this.participantRegistry.UnregisterParticipant(serviceName, serviceArea, uuid)
 }
 
+// GetParticipants returns a map of all participant UUIDs for the service and area.
 func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) map[string]byte {
 	return this.participantRegistry.GetParticipants(serviceName, serviceArea)
 }
 
+// IsParticipant checks if a UUID is registered as a participant for the service and area.
 func (this *ServiceManager) IsParticipant(serviceName string, serviceArea byte, uuid string) bool {
 	return this.participantRegistry.IsParticipant(serviceName, serviceArea, uuid)
 }
 
+// ParticipantCount returns the number of registered participants for the service and area.
 func (this *ServiceManager) ParticipantCount(serviceName string, serviceArea byte) int {
 	return this.participantRegistry.ParticipantCount(serviceName, serviceArea)
 }
 
+// RoundRobinParticipants selects participants in round-robin fashion for load distribution.
+// Returns a map of selected participant UUIDs to their replica numbers.
 func (this *ServiceManager) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]byte {
 	return this.participantRegistry.RoundRobinParticipants(serviceName, serviceArea, replications)
 }

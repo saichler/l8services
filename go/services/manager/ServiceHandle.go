@@ -18,6 +18,9 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// handle dispatches requests to the appropriate handler method based on action type.
+// For CRUD actions (POST, PUT, PATCH, DELETE, GET), it calls the corresponding handler method.
+// For Map-Reduce actions, it delegates to the MapReduce method.
 func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	if h == nil {
 		return object.New(nil, pb)

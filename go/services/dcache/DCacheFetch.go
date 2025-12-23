@@ -18,6 +18,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8api"
 )
 
+// Fetch retrieves a paginated subset of elements from the cache.
+// Parameters: start (offset index), blockSize (page size), q (query filter).
+// Returns matching elements and metadata containing total counts.
 func (this *DCache) Fetch(start, blockSize int, q ifs.IQuery) ([]interface{}, *l8api.L8MetaData) {
 	return this.cache.Fetch(start, blockSize, q)
 }

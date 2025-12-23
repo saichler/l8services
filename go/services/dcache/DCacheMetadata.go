@@ -13,6 +13,9 @@
 
 package dcache
 
+// AddMetadataFunc registers a metadata extraction function with the given name.
+// The function is applied to elements to extract indexed metadata values.
+// Used for building secondary indexes and enabling filtered queries.
 func (this *DCache) AddMetadataFunc(name string, f func(interface{}) (bool, string)) {
 	this.cache.AddMetadataFunc(name, f)
 }

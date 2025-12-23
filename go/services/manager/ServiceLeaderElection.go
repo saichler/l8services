@@ -23,21 +23,24 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// Election timing constants
 const (
-	electionTimeout  = 3 * time.Second
-	heartbeatTimeout = 5 * time.Second
-	heartbeatPeriod  = 2 * time.Second
+	electionTimeout  = 3 * time.Second // Time to wait for election responses
+	heartbeatTimeout = 5 * time.Second // Time before leader is considered dead
+	heartbeatPeriod  = 2 * time.Second // Interval between leader heartbeats
 )
 
+// electionState represents the current state of a node in the election process.
 type electionState byte
 
 const (
-	idle      electionState = 0
-	electing  electionState = 1
-	isLeader  electionState = 2
-	hasLeader electionState = 3
+	idle      electionState = 0 // No election activity
+	electing  electionState = 1 // Currently running an election
+	isLeader  electionState = 2 // This node is the leader
+	hasLeader electionState = 3 // Another node is the leader
 )
 
+// leaderInfo holds the election state and timing information for a service.
 type leaderInfo struct {
 	leaderUuid        string
 	lastHeartbeat     time.Time
@@ -52,6 +55,9 @@ type leaderInfo struct {
 	mtx               sync.RWMutex
 }
 
+// LeaderElection manages distributed leader election using a bully algorithm.
+// Each service can have its own leader, tracked separately by service key.
+// Higher UUID values have higher priority in elections.
 type LeaderElection struct {
 	leaders        sync.Map // key: serviceKey string -> *leaderInfo
 	serviceManager *ServiceManager
@@ -60,6 +66,7 @@ type LeaderElection struct {
 	wg             sync.WaitGroup
 }
 
+// NewLeaderElection creates a new LeaderElection instance with a cancellable context.
 func NewLeaderElection(sm *ServiceManager) *LeaderElection {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &LeaderElection{
@@ -69,6 +76,8 @@ func NewLeaderElection(sm *ServiceManager) *LeaderElection {
 	}
 }
 
+// handleElection routes election-related messages to the appropriate handler
+// based on the action type (request, response, announcement, heartbeat, etc.).
 func (le *LeaderElection) handleElection(action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	switch action {
 	case ifs.ElectionRequest:
@@ -89,6 +98,8 @@ func (le *LeaderElection) handleElection(action ifs.Action, vnic ifs.IVNic, msg 
 	return nil
 }
 
+// handleElectionRequest processes an incoming election request from another node.
+// If this node has higher priority (higher UUID), it responds and starts its own election.
 func (le *LeaderElection) handleElectionRequest(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	localUuid := vnic.Resources().SysConfig().LocalUuid
 	senderUuid := msg.Source()
@@ -112,6 +123,8 @@ func (le *LeaderElection) handleElectionRequest(vnic ifs.IVNic, msg *ifs.Message
 	return nil
 }
 
+// handleElectionResponse handles responses from higher-priority nodes,
+// indicating this node should abort its election attempt.
 func (le *LeaderElection) handleElectionResponse(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getLeaderInfo(key)
@@ -135,6 +148,8 @@ func (le *LeaderElection) handleElectionResponse(vnic ifs.IVNic, msg *ifs.Messag
 	return nil
 }
 
+// handleLeaderAnnouncement processes a leader announcement, updating local state
+// and starting either heartbeat sending (if leader) or monitoring (if follower).
 func (le *LeaderElection) handleLeaderAnnouncement(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getOrCreateLeaderInfo(key)
@@ -167,6 +182,8 @@ func (le *LeaderElection) handleLeaderAnnouncement(vnic ifs.IVNic, msg *ifs.Mess
 	return nil
 }
 
+// handleLeaderHeartbeat updates the last heartbeat timestamp from the leader,
+// keeping the leader-follower relationship alive.
 func (le *LeaderElection) handleLeaderHeartbeat(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getLeaderInfo(key)
@@ -182,6 +199,7 @@ func (le *LeaderElection) handleLeaderHeartbeat(vnic ifs.IVNic, msg *ifs.Message
 	return nil
 }
 
+// handleLeaderQuery responds to leader queries by announcing if this node is the leader.
 func (le *LeaderElection) handleLeaderQuery(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	// Check if this node can participate in voting
 	if !le.canVote(msg.ServiceName(), msg.ServiceArea()) {
@@ -207,6 +225,8 @@ func (le *LeaderElection) handleLeaderQuery(vnic ifs.IVNic, msg *ifs.Message) if
 	return nil
 }
 
+// handleLeaderResign handles a leader resignation, clearing the leader state
+// and triggering a new election.
 func (le *LeaderElection) handleLeaderResign(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	info := le.getLeaderInfo(key)
@@ -232,6 +252,8 @@ func (le *LeaderElection) handleLeaderResign(vnic ifs.IVNic, msg *ifs.Message) i
 	return nil
 }
 
+// handleLeaderChallenge responds to challenges by sending a heartbeat if leader,
+// or starting an election if no leader info exists.
 func (le *LeaderElection) handleLeaderChallenge(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	// Check if this node can participate in voting
 	if !le.canVote(msg.ServiceName(), msg.ServiceArea()) {
@@ -259,6 +281,8 @@ func (le *LeaderElection) handleLeaderChallenge(vnic ifs.IVNic, msg *ifs.Message
 	return nil
 }
 
+// startElection initiates the bully election algorithm by multicasting an election
+// request and waiting for responses from higher-priority nodes.
 func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	// Check if this node can participate in voting
 	if !le.canVote(serviceName, serviceArea) {
@@ -345,6 +369,7 @@ func (le *LeaderElection) startElection(serviceName string, serviceArea byte, vn
 	}
 }
 
+// startHeartbeat begins periodic heartbeat multicasts to maintain leader status.
 func (le *LeaderElection) startHeartbeat(key string, serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	info := le.getLeaderInfo(key)
 	if info == nil {
@@ -404,6 +429,7 @@ func (le *LeaderElection) startHeartbeat(key string, serviceName string, service
 	}()
 }
 
+// startHeartbeatMonitor watches for leader heartbeats and triggers election on timeout.
 func (le *LeaderElection) startHeartbeatMonitor(key string, serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	info := le.getLeaderInfo(key)
 	if info == nil {
@@ -472,6 +498,7 @@ func (le *LeaderElection) startHeartbeatMonitor(key string, serviceName string, 
 	}()
 }
 
+// stopTimers stops election timers and resets running flags to allow new goroutines.
 func (le *LeaderElection) stopTimers(info *leaderInfo) {
 	// Simplified version - only stop the election timer
 	// Don't cancel contexts or wait for goroutines to avoid disrupting services
@@ -489,6 +516,7 @@ func (le *LeaderElection) stopTimers(info *leaderInfo) {
 	info.monitorRunning = false
 }
 
+// getLeaderInfo retrieves the leaderInfo for a service key, returning nil if not found.
 func (le *LeaderElection) getLeaderInfo(key string) *leaderInfo {
 	info, ok := le.leaders.Load(key)
 	if !ok {
@@ -497,6 +525,8 @@ func (le *LeaderElection) getLeaderInfo(key string) *leaderInfo {
 	return info.(*leaderInfo)
 }
 
+// getOrCreateLeaderInfo retrieves or creates a leaderInfo for a service key.
+// Uses LoadOrStore for thread-safe concurrent access.
 func (le *LeaderElection) getOrCreateLeaderInfo(key string) *leaderInfo {
 	// Try to load existing info first
 	if info, ok := le.leaders.Load(key); ok {
@@ -524,10 +554,12 @@ func (le *LeaderElection) getOrCreateLeaderInfo(key string) *leaderInfo {
 	return actualInfo
 }
 
+// StartElectionForService starts an election for a specific service asynchronously.
 func (le *LeaderElection) StartElectionForService(serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	go le.startElection(serviceName, serviceArea, vnic)
 }
 
+// GetLeader returns the UUID of the current leader for a service, or empty string if none.
 func (le *LeaderElection) GetLeader(serviceName string, serviceArea byte) string {
 	key := makeServiceKey(serviceName, serviceArea)
 	info := le.getLeaderInfo(key)
@@ -545,6 +577,7 @@ func (le *LeaderElection) GetLeader(serviceName string, serviceArea byte) string
 	return info.leaderUuid
 }
 
+// IsLeader checks if the given UUID is the current leader for a service.
 func (le *LeaderElection) IsLeader(serviceName string, serviceArea byte, uuid string) bool {
 	key := makeServiceKey(serviceName, serviceArea)
 	info := le.getLeaderInfo(key)
@@ -557,6 +590,7 @@ func (le *LeaderElection) IsLeader(serviceName string, serviceArea byte, uuid st
 	return info.leaderUuid == uuid && info.state == isLeader
 }
 
+// makeServiceKey creates a unique key by combining service name and area.
 func makeServiceKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)

@@ -18,6 +18,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// DeActivate removes a service from the registry and shuts it down.
+// It notifies the network of the service removal if the listener is a VNIC.
 func (this *ServiceManager) DeActivate(serviceName string, serviceArea byte, r ifs.IResources, l ifs.IServiceCacheListener) error {
 
 	if serviceName == "" {

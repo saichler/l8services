@@ -17,6 +17,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// addTransaction adds a transaction to the queue after verifying this node is the leader.
+// Sets the transaction state to Queued and broadcasts to wake up the processor.
 func (this *ServiceTransactions) addTransaction(msg *ifs.Message, vnic ifs.IVNic) error {
 	msg.SetTr_State(ifs.Queued)
 	if vnic.Resources().SysConfig().LocalUuid != vnic.Resources().Services().GetLeader(msg.ServiceName(), msg.ServiceArea()) {
@@ -29,6 +31,8 @@ func (this *ServiceTransactions) addTransaction(msg *ifs.Message, vnic ifs.IVNic
 	return nil
 }
 
+// queueTransaction queues a transaction for processing. GET operations are handled
+// immediately without queueing; other operations are added to the queue.
 func (this *ServiceTransactions) queueTransaction(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	if msg.Action() == ifs.GET {
 		return this.internalGet(msg)

@@ -29,6 +29,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8system"
 )
 
+// Activate registers and initializes a service based on its SLA configuration.
+// It validates the SLA, registers types, creates the handler instance, sets up
+// decorators, publishes the service to the network, and triggers elections if needed.
 func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandler, error) {
 	var handler ifs.IServiceHandler
 	var ok bool
@@ -115,6 +118,8 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	return handler, err
 }
 
+// publishService announces a service to all virtual networks and updates
+// the health status with the current service list.
 func (this *ServiceManager) publishService(serviceName string, serviceArea byte, vnic ifs.IVNic) {
 	serviceData := &l8system.L8ServiceData{}
 	serviceData.ServiceName = serviceName
@@ -132,6 +137,8 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	}
 }
 
+// registerForReplication sets up replication for services that have it enabled,
+// creating the replication service if needed and initializing the replication index.
 func (this *ServiceManager) registerForReplication(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) error {
 	if handler.TransactionConfig() != nil && handler.TransactionConfig().Replication() {
 		if handler.TransactionConfig().ReplicationCount() == 0 {
@@ -153,6 +160,9 @@ func (this *ServiceManager) registerForReplication(serviceName string, serviceAr
 	return nil
 }
 
+// triggerElections initiates participant registration and leader election for a service.
+// For Map-Reduce services, it registers as a participant; for transactional services,
+// it also starts the election process.
 func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) {
 	_, isMapReduceService := handler.(ifs.IMapReduceService)
 	if isMapReduceService {
@@ -186,6 +196,8 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 	}
 }
 
+// TriggerElections re-triggers elections for all transactional and Map-Reduce services.
+// Used for recovery scenarios or when re-establishing cluster coordination.
 func (this *ServiceManager) TriggerElections(vnic ifs.IVNic) {
 	services := map[string]ifs.IServiceHandler{}
 	this.services.services.Range(func(key, value interface{}) bool {
@@ -207,6 +219,7 @@ func (this *ServiceManager) TriggerElections(vnic ifs.IVNic) {
 	}
 }
 
+// serviceNameArea extracts the service name and area from a combined key string.
 func serviceNameArea(key string) (string, byte) {
 	index := strings.Index(key, "--")
 	serviceName := key[:index]

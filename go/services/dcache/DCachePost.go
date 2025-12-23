@@ -17,6 +17,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8notify"
 )
 
+// Post creates or replaces an element in the distributed cache. Returns a notification
+// set describing the changes made. The optional sourceNotification parameter, when true,
+// suppresses notification generation (used during replication to avoid loops).
 func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
 	createNotification := !(sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 	n, e := this.cache.Post(v, createNotification)

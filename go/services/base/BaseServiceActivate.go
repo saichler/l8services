@@ -23,6 +23,9 @@ import (
 	"github.com/saichler/l8utils/go/utils/queues"
 )
 
+// Activate is the public entry point for activating a BaseService. It registers
+// the BaseService type, activates the service through the service manager, and
+// initiates a recovery check in a background goroutine to ensure data consistency.
 func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandler, error) {
 	vnic.Resources().Registry().Register(&BaseService{})
 	//return vnic.Resources().Services().Activate(sla, vnic)
@@ -32,6 +35,10 @@ func Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) (ifs.IServiceHandl
 	return b, e
 }
 
+// Activate initializes the BaseService with the provided SLA and virtual NIC.
+// For stateful services, it sets up the primary key decorator, creates the cache
+// with persistence store, registers metadata functions, and starts the notification
+// processing goroutine. Panics if service is stateless without a callback.
 func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.sla = sla
 	this.running = true
@@ -58,11 +65,16 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 	return nil
 }
 
+// DeActivate gracefully shuts down the service by calling Shutdown.
+// This stops the notification queue processing and releases resources.
 func (this *BaseService) DeActivate() error {
 	this.Shutdown()
 	return nil
 }
 
+// validateElem checks that the provided element is valid and matches the
+// expected model type for this service's cache. Returns an error if the
+// element is invalid or has an incorrect type.
 func (this *BaseService) validateElem(pb ifs.IElements) error {
 	v := reflect.ValueOf(pb.Element())
 	if !v.IsValid() {

@@ -19,6 +19,9 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// run executes the transaction by distributing it to all participants (or replicas).
+// Implements 2-phase commit: sends to all targets, handles failures with rollback,
+// and cleans up after successful commit.
 func (this *ServiceTransactions) run(msg *ifs.Message) {
 	this.nic.Resources().Logger().Debug("T02_Run.run: ", msg.Tr_Id(), " for ServiceName ", msg.ServiceName(), " area ", msg.ServiceArea())
 	//Check if this is the leader, again, just to make sure

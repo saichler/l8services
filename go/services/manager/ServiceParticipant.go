@@ -19,20 +19,26 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// participantSet holds the set of participant UUIDs for a service
+// and tracks round-robin usage for load distribution.
 type participantSet struct {
 	uuids  map[string]struct{}
 	rrUsed map[string]struct{}
 	mtx    sync.RWMutex
 }
 
+// ParticipantRegistry manages service participants across the distributed system.
+// It tracks which nodes are participating in each service for coordination and routing.
 type ParticipantRegistry struct {
 	participants sync.Map // key: serviceKey string -> *participantSet
 }
 
+// NewParticipantRegistry creates a new empty ParticipantRegistry.
 func NewParticipantRegistry() *ParticipantRegistry {
 	return &ParticipantRegistry{}
 }
 
+// handleRegistry routes participant registry messages to appropriate handlers.
 func (pr *ParticipantRegistry) handleRegistry(action ifs.Action, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	switch action {
 	case ifs.ServiceRegister:
@@ -45,6 +51,7 @@ func (pr *ParticipantRegistry) handleRegistry(action ifs.Action, vnic ifs.IVNic,
 	return nil
 }
 
+// handleServiceRegister adds the message source as a participant for the service.
 func (pr *ParticipantRegistry) handleServiceRegister(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	ps := pr.getOrCreateParticipantSet(key)
@@ -59,6 +66,7 @@ func (pr *ParticipantRegistry) handleServiceRegister(vnic ifs.IVNic, msg *ifs.Me
 	return nil
 }
 
+// handleServiceUnregister removes the message source from the participant list.
 func (pr *ParticipantRegistry) handleServiceUnregister(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	ps := pr.getParticipantSet(key)
@@ -76,6 +84,7 @@ func (pr *ParticipantRegistry) handleServiceUnregister(vnic ifs.IVNic, msg *ifs.
 	return nil
 }
 
+// handleServiceQuery responds if this node is a participant for the queried service.
 func (pr *ParticipantRegistry) handleServiceQuery(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	localUuid := vnic.Resources().SysConfig().LocalUuid
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
@@ -98,6 +107,7 @@ func (pr *ParticipantRegistry) handleServiceQuery(vnic ifs.IVNic, msg *ifs.Messa
 	return nil
 }
 
+// RegisterParticipant adds a UUID to the participant set for a service.
 func (pr *ParticipantRegistry) RegisterParticipant(serviceName string, serviceArea byte, uuid string) {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getOrCreateParticipantSet(key)
@@ -107,6 +117,7 @@ func (pr *ParticipantRegistry) RegisterParticipant(serviceName string, serviceAr
 	ps.mtx.Unlock()
 }
 
+// UnregisterParticipant removes a UUID from the participant set for a service.
 func (pr *ParticipantRegistry) UnregisterParticipant(serviceName string, serviceArea byte, uuid string) {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
@@ -119,6 +130,8 @@ func (pr *ParticipantRegistry) UnregisterParticipant(serviceName string, service
 	ps.mtx.Unlock()
 }
 
+// RoundRobinParticipants selects participants using round-robin for even distribution.
+// Resets the usage tracking when all participants have been used in the current cycle.
 func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]byte {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
@@ -173,6 +186,7 @@ func (pr *ParticipantRegistry) RoundRobinParticipants(serviceName string, servic
 	return result
 }
 
+// GetParticipants returns all participants for a service as a map of UUIDs.
 func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea byte) map[string]byte {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
@@ -191,6 +205,7 @@ func (pr *ParticipantRegistry) GetParticipants(serviceName string, serviceArea b
 	return participants
 }
 
+// IsParticipant checks if a UUID is registered as a participant for a service.
 func (pr *ParticipantRegistry) IsParticipant(serviceName string, serviceArea byte, uuid string) bool {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
@@ -205,6 +220,7 @@ func (pr *ParticipantRegistry) IsParticipant(serviceName string, serviceArea byt
 	return exists
 }
 
+// ParticipantCount returns the number of participants for a service.
 func (pr *ParticipantRegistry) ParticipantCount(serviceName string, serviceArea byte) int {
 	key := makeServiceKey(serviceName, serviceArea)
 	ps := pr.getParticipantSet(key)
@@ -218,6 +234,8 @@ func (pr *ParticipantRegistry) ParticipantCount(serviceName string, serviceArea 
 	return len(ps.uuids)
 }
 
+// UnregisterParticipantFromAll removes a UUID from all service participant sets.
+// Used when a node leaves the cluster.
 func (pr *ParticipantRegistry) UnregisterParticipantFromAll(uuid string) {
 	pr.participants.Range(func(key, value interface{}) bool {
 		ps := value.(*participantSet)
@@ -228,6 +246,7 @@ func (pr *ParticipantRegistry) UnregisterParticipantFromAll(uuid string) {
 	})
 }
 
+// getParticipantSet retrieves the participant set for a key, or nil if not found.
 func (pr *ParticipantRegistry) getParticipantSet(key string) *participantSet {
 	ps, ok := pr.participants.Load(key)
 	if !ok {
@@ -236,6 +255,7 @@ func (pr *ParticipantRegistry) getParticipantSet(key string) *participantSet {
 	return ps.(*participantSet)
 }
 
+// getOrCreateParticipantSet retrieves or creates a participant set for a key.
 func (pr *ParticipantRegistry) getOrCreateParticipantSet(key string) *participantSet {
 	newPs := &participantSet{
 		uuids: make(map[string]struct{}),

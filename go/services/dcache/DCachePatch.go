@@ -17,6 +17,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8notify"
 )
 
+// Patch performs a partial update on an existing element, merging only the
+// non-zero fields from v into the cached element. The optional sourceNotification
+// parameter, when true, suppresses notification generation (used during replication).
 func (this *DCache) Patch(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
 	createNotification := !(sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 	n, e := this.cache.Patch(v, createNotification)

@@ -23,21 +23,26 @@ import (
 	"github.com/saichler/l8types/go/types/l8services"
 )
 
+// ServicesMap is a thread-safe registry for service handlers,
+// indexed by a combination of service name and area.
 type ServicesMap struct {
 	services *sync.Map
 }
 
+// NewServicesMap creates an empty ServicesMap with initialized sync.Map.
 func NewServicesMap() *ServicesMap {
 	newMap := &ServicesMap{}
 	newMap.services = &sync.Map{}
 	return newMap
 }
 
+// put stores a service handler indexed by service name and area.
 func (mp *ServicesMap) put(serviceName string, serviceArea byte, handler ifs.IServiceHandler) {
 	key := serviceKey(serviceName, serviceArea)
 	mp.services.Store(key, handler)
 }
 
+// get retrieves a service handler by name and area. Returns (handler, true) if found.
 func (mp *ServicesMap) get(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.Load(key)
@@ -47,6 +52,7 @@ func (mp *ServicesMap) get(serviceName string, serviceArea byte) (ifs.IServiceHa
 	return nil, ok
 }
 
+// del removes and returns a service handler by name and area.
 func (mp *ServicesMap) del(serviceName string, serviceArea byte) (ifs.IServiceHandler, bool) {
 	key := serviceKey(serviceName, serviceArea)
 	value, ok := mp.services.LoadAndDelete(key)
@@ -56,12 +62,14 @@ func (mp *ServicesMap) del(serviceName string, serviceArea byte) (ifs.IServiceHa
 	return nil, ok
 }
 
+// contains checks if a service handler exists for the given name and area.
 func (mp *ServicesMap) contains(serviceName string, serviceArea byte) bool {
 	key := serviceKey(serviceName, serviceArea)
 	_, ok := mp.services.Load(key)
 	return ok
 }
 
+// webServices collects all web service interfaces from registered handlers.
 func (mp *ServicesMap) webServices() []ifs.IWebService {
 	result := make([]ifs.IWebService, 0)
 	mp.services.Range(func(key, value interface{}) bool {
@@ -74,6 +82,7 @@ func (mp *ServicesMap) webServices() []ifs.IWebService {
 	return result
 }
 
+// serviceKey generates a unique key by combining service name and area.
 func serviceKey(serviceName string, serviceArea byte) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(serviceName)
@@ -82,6 +91,8 @@ func serviceKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
+// serviceList converts the services map to an L8Services protobuf structure
+// organized by service name and their associated areas.
 func (mp *ServicesMap) serviceList() *l8services.L8Services {
 	s := &l8services.L8Services{}
 	s.ServiceToAreas = make(map[string]*l8services.L8ServiceAreas)

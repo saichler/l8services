@@ -17,6 +17,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// cleanupInternal removes the pre-commit state after a successful transaction.
+// Called as the final phase to free memory used for rollback support.
 func (this *ServiceTransactions) cleanupInternal(msg *ifs.Message) ifs.IElements {
 	if msg.Action() == ifs.Notify {
 		return nil

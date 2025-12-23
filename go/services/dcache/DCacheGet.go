@@ -13,6 +13,9 @@
 
 package dcache
 
+// Get retrieves a single element from the cache by its primary key.
+// The parameter v should contain the key field(s) to match against.
+// Returns the found element and nil error, or nil and error if not found.
 func (this *DCache) Get(v interface{}) (interface{}, error) {
 	return this.cache.Get(v)
 }

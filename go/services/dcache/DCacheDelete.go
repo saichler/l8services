@@ -17,6 +17,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8notify"
 )
 
+// Delete removes an element from the distributed cache. The optional sourceNotification
+// parameter, when true, indicates this operation originated from a notification (replication)
+// and should not generate a new notification to avoid infinite loops.
 func (this *DCache) Delete(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
 	createNotification := !(sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
 	n, e := this.cache.Delete(v, createNotification)

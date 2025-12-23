@@ -19,6 +19,8 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// commitInternal performs the commit phase on a participant node.
+// Saves pre-commit state for rollback, then executes the transaction handler.
 func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements {
 	if msg.Action() == ifs.Notify {
 		//_, err := services.Notify()
@@ -63,6 +65,8 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 	return L8TransactionFor(msg)
 }
 
+// setPreCommitObject saves the current state before committing for potential rollback.
+// For PUT/DELETE/PATCH, fetches the existing object; for POST, stores the new object.
 func (this *ServiceTransactions) setPreCommitObject(msg *ifs.Message) error {
 
 	pb, err := protocol.ElementsOf(msg, this.nic.Resources())

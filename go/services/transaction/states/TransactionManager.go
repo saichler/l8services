@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package states implements the transaction state machine for distributed
+// ACID transactions. It manages transaction lifecycle through states:
+// Created -> Queued -> Running -> Committed/Rollback -> Cleanup.
 package states
 
 import (
@@ -19,12 +22,16 @@ import (
 	"github.com/saichler/l8types/go/ifs"
 )
 
+// TransactionManager orchestrates distributed transactions across services.
+// It maintains per-service transaction queues and coordinates the 2-phase
+// commit protocol for ensuring data consistency.
 type TransactionManager struct {
 	serviceTransactions map[string]*ServiceTransactions
 	services            ifs.IServices
 	mtx                 *sync.Mutex
 }
 
+// NewTransactionManager creates a new TransactionManager linked to the service manager.
 func NewTransactionManager(services ifs.IServices) *TransactionManager {
 	tm := &TransactionManager{}
 	tm.mtx = &sync.Mutex{}
@@ -33,6 +40,7 @@ func NewTransactionManager(services ifs.IServices) *TransactionManager {
 	return tm
 }
 
+// transactionsOf returns or creates the ServiceTransactions queue for a service.
 func (this *TransactionManager) transactionsOf(msg *ifs.Message, nic ifs.IVNic) *ServiceTransactions {
 	this.mtx.Lock()
 	defer this.mtx.Unlock()
@@ -45,6 +53,8 @@ func (this *TransactionManager) transactionsOf(msg *ifs.Message, nic ifs.IVNic) 
 	return st
 }
 
+// Run processes a transaction based on its current state, routing to the
+// appropriate handler (created, commit, rollback, or cleanup).
 func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	switch msg.Tr_State() {
 	case ifs.Created:
@@ -60,22 +70,25 @@ func (this *TransactionManager) Run(msg *ifs.Message, vnic ifs.IVNic) ifs.IEleme
 	}
 }
 
-// First we insert the transaction to the Queue and mark it as queued
+// created handles newly created transactions by queuing them for processing.
 func (this *TransactionManager) created(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
 	return st.queueTransaction(msg, vnic)
 }
 
+// commit processes the commit phase of a transaction.
 func (this *TransactionManager) commit(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
 	return st.commitInternal(msg)
 }
 
+// rollback reverts a transaction that failed during commit.
 func (this *TransactionManager) rollback(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
 	return st.rollbackInternal(msg)
 }
 
+// cleanup removes transaction state after successful commit.
 func (this *TransactionManager) cleanup(msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
 	st := this.transactionsOf(msg, vnic)
 	return st.cleanupInternal(msg)
