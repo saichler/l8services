@@ -100,7 +100,10 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	webService := handler.WebService()
-
+	if webService == nil {
+		webService = sla.WebService()
+	}
+	
 	if ok && webService != nil {
 		vnic.Resources().Logger().Debug("Sent Webservice multicast for ", sla.ServiceName(), " area ", sla.ServiceArea())
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, webService.Serialize())
