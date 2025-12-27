@@ -151,10 +151,10 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 // It delegates to the service handler and updates the replication index
 // on successful operations for services with replication enabled.
 func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
-	this.resources.Logger().Info("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
+	this.resources.Logger().Debug("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if h == nil {
-		this.resources.Logger().Info("Transaction Handle: No handler for service "+msg.ServiceName(), "-", msg.ServiceArea())
+		this.resources.Logger().Debug("Transaction Handle: No handler for service "+msg.ServiceName(), "-", msg.ServiceArea())
 	}
 	resp := this.handle(h, pb, action, msg, vnic)
 	if resp == nil {
@@ -171,7 +171,7 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 // unregistering the node from all service participant lists.
 func (this *ServiceManager) onNodeDelete(uuid string) {
 	this.participantRegistry.UnregisterParticipantFromAll(uuid)
-	this.resources.Logger().Info("Unregistered all services for failed node", uuid)
+	this.resources.Logger().Debug("Unregistered all services for failed node", uuid)
 }
 
 // ServiceHandler retrieves the registered handler for a specific service and area.
@@ -185,7 +185,7 @@ func (this *ServiceManager) ServiceHandler(serviceName string, serviceArea byte)
 func (this *ServiceManager) sendEndPoints(vnic ifs.IVNic) {
 	webServices := this.services.webServices()
 	for _, ws := range webServices {
-		vnic.Resources().Logger().Info("Sent Webservice multicast for ", ws.ServiceName(), " area ", ws.ServiceArea())
+		vnic.Resources().Logger().Debug("Sent Webservice multicast for ", ws.ServiceName(), " area ", ws.ServiceArea())
 		vnic.Multicast(ifs.WebService, 0, ifs.POST, ws.Serialize())
 	}
 }

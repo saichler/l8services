@@ -36,7 +36,7 @@ func tear() {
 }
 
 func reset(name string) {
-	Log.Info("*** ", name, " end ***")
+	Log.Debug("*** ", name, " end ***")
 	topo.ResetHandlers()
 	Log.SetLogLevel(Info_Level)
 }

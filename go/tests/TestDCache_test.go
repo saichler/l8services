@@ -50,7 +50,7 @@ func TestDCacheBasicPost(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheBasicPost passed")
+	Log.Debug("TestDCacheBasicPost passed")
 }
 
 // TestDCacheBasicGet tests basic GET operation
@@ -83,7 +83,7 @@ func TestDCacheBasicGet(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheBasicGet passed")
+	Log.Debug("TestDCacheBasicGet passed")
 }
 
 // TestDCacheGetNonExistent tests GET for non-existent item
@@ -106,7 +106,7 @@ func TestDCacheGetNonExistent(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheGetNonExistent passed")
+	Log.Debug("TestDCacheGetNonExistent passed")
 }
 
 // TestDCachePut tests PUT operation (replace)
@@ -152,7 +152,7 @@ func TestDCachePut(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCachePut passed")
+	Log.Debug("TestDCachePut passed")
 }
 
 // TestDCachePatch tests PATCH operation (partial update)
@@ -191,7 +191,7 @@ func TestDCachePatch(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCachePatch passed")
+	Log.Debug("TestDCachePatch passed")
 }
 
 // TestDCacheDelete tests DELETE operation
@@ -231,7 +231,7 @@ func TestDCacheDelete(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheDelete passed")
+	Log.Debug("TestDCacheDelete passed")
 }
 
 // TestDCacheCloning verifies that returned items are clones, not original references
@@ -272,7 +272,7 @@ func TestDCacheCloning(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheCloning passed")
+	Log.Debug("TestDCacheCloning passed")
 }
 
 // TestDCacheMultipleItems tests cache with multiple items
@@ -312,7 +312,7 @@ func TestDCacheMultipleItems(t *testing.T) {
 		}
 	}
 
-	Log.Info("TestDCacheMultipleItems passed")
+	Log.Debug("TestDCacheMultipleItems passed")
 }
 
 // TestDCacheConcurrentAccess tests thread-safety with concurrent operations
@@ -370,7 +370,7 @@ func TestDCacheConcurrentAccess(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheConcurrentAccess passed")
+	Log.Debug("TestDCacheConcurrentAccess passed")
 }
 
 // TestDCacheListener implementation for testing notifications
@@ -463,7 +463,7 @@ func TestDCacheNotifications(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheNotifications passed")
+	Log.Debug("TestDCacheNotifications passed")
 }
 
 // TestDCacheNilInputs tests error handling for nil inputs
@@ -508,7 +508,7 @@ func TestDCacheNilInputs(t *testing.T) {
 		return
 	}
 
-	Log.Info("TestDCacheNilInputs passed")
+	Log.Debug("TestDCacheNilInputs passed")
 }
 
 // TestDCacheInitialElements tests cache initialization with initial elements
@@ -544,7 +544,7 @@ func TestDCacheInitialElements(t *testing.T) {
 		}
 	}
 
-	Log.Info("TestDCacheInitialElements passed")
+	Log.Debug("TestDCacheInitialElements passed")
 }
 
 // TestDCacheStressTest performs a stress test with many operations
@@ -626,5 +626,5 @@ func TestDCacheStressTest(t *testing.T) {
 		}
 	}
 
-	Log.Info("TestDCacheStressTest passed")
+	Log.Debug("TestDCacheStressTest passed")
 }
