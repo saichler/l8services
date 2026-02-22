@@ -67,7 +67,9 @@ func (this *Requests) reportError(target string, err error) {
 func (this *Requests) reportResult(target string, tr *l8services.L8Transaction) {
 	this.cond.L.Lock()
 	defer this.cond.L.Unlock()
-	if tr.State == int32(ifs.Failed) {
+	if tr == nil {
+		this.pending[target] = "Nil/Timeout Transaction"
+	} else if tr.State == int32(ifs.Failed) {
 		this.pending[target] = tr.ErrMsg
 	}
 	this.count--
@@ -95,7 +97,7 @@ func (this *Requests) requestFromPeer(msg *ifs.Message, target string, isReplica
 		return
 	}
 
-	tr := resp.Element().(*l8services.L8Transaction)
+	tr, _ := resp.Element().(*l8services.L8Transaction)
 	this.reportResult(target, tr)
 }
 
