@@ -61,8 +61,14 @@ func (this *FileStore) Post(elems ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 		return object.NewError("failed to create storage directory: " + err.Error())
 	}
 
+	// Encrypt file data before writing to disk
+	encrypted, err := vnic.Resources().Security().Encrypt(req.FileData)
+	if err != nil {
+		return object.NewError("failed to encrypt file: " + err.Error())
+	}
+
 	storagePath := filepath.Join(dirPath, req.FileName)
-	if err := os.WriteFile(storagePath, req.FileData, 0644); err != nil {
+	if err := os.WriteFile(storagePath, []byte(encrypted), 0644); err != nil {
 		return object.NewError("failed to write file: " + err.Error())
 	}
 

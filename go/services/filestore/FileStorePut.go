@@ -39,12 +39,18 @@ func (this *FileStore) Put(elems ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 		return object.NewError("access denied: path outside storage root")
 	}
 
-	data, err := os.ReadFile(cleanPath)
+	encryptedData, err := os.ReadFile(cleanPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return object.NewError("file not found: " + req.StoragePath)
 		}
 		return object.NewError("failed to read file: " + err.Error())
+	}
+
+	// Decrypt file data
+	data, err := vnic.Resources().Security().Decrypt(string(encryptedData))
+	if err != nil {
+		return object.NewError("failed to decrypt file: " + err.Error())
 	}
 
 	fileName := filepath.Base(cleanPath)
