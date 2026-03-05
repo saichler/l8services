@@ -39,7 +39,7 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 		pb = object.NewReplicaRequest(pb, msg.Tr_Replica())
 	}
 
-	err = this.setPreCommitObject(msg)
+	err = this.setPreCommitObject(pb, msg)
 	if err != nil {
 		msg.SetTr_State(ifs.Failed)
 		msg.SetTr_ErrMsg(err.Error())
@@ -67,12 +67,7 @@ func (this *ServiceTransactions) commitInternal(msg *ifs.Message) ifs.IElements 
 
 // setPreCommitObject saves the current state before committing for potential rollback.
 // For PUT/DELETE/PATCH, fetches the existing object; for POST, stores the new object.
-func (this *ServiceTransactions) setPreCommitObject(msg *ifs.Message) error {
-
-	pb, err := protocol.ElementsOf(msg, this.nic.Resources())
-	if err != nil {
-		return err
-	}
+func (this *ServiceTransactions) setPreCommitObject(pb ifs.IElements, msg *ifs.Message) error {
 
 	if msg.Action() == ifs.PUT ||
 		msg.Action() == ifs.DELETE ||
