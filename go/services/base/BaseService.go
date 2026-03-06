@@ -83,6 +83,12 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 				return object.New(e, &l8web.L8Empty{})
 			}
 			resp, err := this.cache.Get(pb.Element())
+			if this.sla.Callback() != nil {
+				after, _, _ := this.sla.Callback().After(resp, ifs.GET, true, vnic)
+				if after != nil {
+					resp = after
+				}
+			}
 			return object.New(err, resp)
 		}
 		q, e := pb.Query(this.vnic.Resources())
