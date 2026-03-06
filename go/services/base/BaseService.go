@@ -104,7 +104,7 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 // Failed handles message delivery failures by logging an error.
 // It is invoked when a message cannot be delivered to its intended recipient.
 func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
-	this.vnic.Resources().Logger().Error("Failed to deliver message")
+	vnic.Resources().Logger().Error("Failed to deliver message")
 	return nil
 }
 
