@@ -166,45 +166,38 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 	if isMapReduceService {
 		fmt.Println("Map Reduce Service:", reflect.ValueOf(handler).Elem().Type().Name())
 	}
-	shouldTriggerParticipant := isMapReduceService || handler.TransactionConfig() != nil
-	if shouldTriggerParticipant {
-		// Register as participant for this service
-		localUuid := this.resources.SysConfig().LocalUuid
-		this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
 
-		// Query for existing participants first
+	// Register as participant for this service
+	localUuid := this.resources.SysConfig().LocalUuid
+	this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
+
+	// Query for existing participants first
+	vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
+
+	// Announce ourselves as a participant
+	vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
+
+	// Send additional queries with delay to catch nodes that activated concurrently
+	go func() {
+		time.Sleep(100 * time.Millisecond)
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
-		// Announce ourselves as a participant
-		vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
+		time.Sleep(200 * time.Millisecond)
+		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
+	}()
 
-		// Send additional queries with delay to catch nodes that activated concurrently
-		go func() {
-			time.Sleep(100 * time.Millisecond)
-			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
-
-			time.Sleep(200 * time.Millisecond)
-			vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
-		}()
-	}
-	// Only trigger election and participant registration for services with TransactionConfig
-	if handler.TransactionConfig() != nil {
-		// Trigger election for this service
-		this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
-	}
+	// Trigger leader election
+	this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
 }
 
-// TriggerElections re-triggers elections for all transactional and Map-Reduce services.
+// TriggerElections re-triggers elections for all stateful services.
 // Used for recovery scenarios or when re-establishing cluster coordination.
 func (this *ServiceManager) TriggerElections(vnic ifs.IVNic) {
 	services := map[string]ifs.IServiceHandler{}
 	this.services.services.Range(func(key, value interface{}) bool {
 		h := value.(ifs.IServiceHandler)
-		if h.TransactionConfig() != nil {
-			services[key.(string)] = h
-		}
-		_, ok := value.(ifs.IMapReduceService)
-		if ok {
+		_, isStateful := h.(ifs.IServiceHandlerCache)
+		if isStateful {
 			services[key.(string)] = h
 		}
 		return true

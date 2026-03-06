@@ -147,7 +147,6 @@ func (this *BaseService) KeyOf(elems ifs.IElements, r ifs.IResources) string {
 }
 
 // Voter returns whether this service participates in leader election voting.
-// BaseService always returns false; override in derived services for voting participation.
 func (this *BaseService) Voter() bool {
-	return false
+	return this.sla.Voter()
 }

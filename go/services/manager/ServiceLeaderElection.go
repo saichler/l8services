@@ -599,7 +599,9 @@ func makeServiceKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
-// canVote checks if this node can participate in voting for the given service
+// canVote checks if this node can participate in voting for the given service.
+// For non-transactional stateful services, all peers are voters.
+// For transactional services, the Voter() flag on TransactionConfig controls participation.
 func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
 	if le.serviceManager == nil {
 		return false
@@ -612,7 +614,7 @@ func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
 
 	txConfig := handler.TransactionConfig()
 	if txConfig == nil {
-		return false
+		return true
 	}
 
 	return txConfig.Voter()
