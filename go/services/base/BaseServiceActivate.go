@@ -16,11 +16,11 @@ package base
 import (
 	"errors"
 	"github.com/saichler/l8services/go/services/recovery"
+	"github.com/saichler/l8utils/go/utils/queues"
 	"reflect"
 
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8utils/go/utils/cache"
-	"github.com/saichler/l8utils/go/utils/queues"
 )
 
 // Activate is the public entry point for activating a BaseService. It registers
@@ -50,7 +50,6 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 		if err != nil {
 			return err
 		}
-		this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
 		this.cache = cache.NewCache(this.sla.ServiceItem(), this.sla.InitItems(),
 			this.sla.Store(), vnic.Resources())
 		if sla.MetadataFunc() != nil {
@@ -58,9 +57,12 @@ func (this *BaseService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic
 				this.cache.AddMetadataFunc(name, f)
 			}
 		}
-		this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
-		this.vnic = vnic
-		go this.processNotificationQueue()
+		if !this.sla.Transactional() {
+			this.nQueue = queues.NewQueue(sla.ServiceName(), 10000)
+			this.cache.SetNotificationsFor(sla.ServiceName(), sla.ServiceArea())
+			this.vnic = vnic
+			go this.processNotificationQueue()
+		}
 	}
 	return nil
 }
