@@ -91,7 +91,11 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 			}
 			return object.New(err, resp)
 		}
-		q, e := pb.Query(this.vnic.Resources())
+		resources := vnic.Resources()
+		if this.vnic != nil {
+			resources = this.vnic.Resources()
+		}
+		q, e := pb.Query(resources)
 		if e != nil {
 			return object.NewError(e.Error())
 		}
@@ -104,7 +108,11 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 // Failed handles message delivery failures by logging an error.
 // It is invoked when a message cannot be delivered to its intended recipient.
 func (this *BaseService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
-	vnic.Resources().Logger().Error("Failed to deliver message")
+	resources := vnic.Resources()
+	if this.vnic != nil {
+		resources = this.vnic.Resources()
+	}
+	resources.Logger().Error("Failed to deliver message")
 	return nil
 }
 
