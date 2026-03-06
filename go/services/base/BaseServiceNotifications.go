@@ -60,7 +60,7 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 				n, e = this.cache.Delete(elem, createNotification)
 			}
 		}
-		if this.sla.Callback() != nil {
+		if this.sla.Callback() != nil && vnic != nil {
 			if action == ifs.PATCH && this.cache != nil {
 				elem, _ = this.cache.Get(elem)
 			}
