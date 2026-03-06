@@ -78,7 +78,7 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		if e != nil {
 			fmt.Println("Error in notification: ", e.Error())
 		}
-		if createNotification && e == nil && n != nil {
+		if this.nQueue != nil && createNotification && e == nil && n != nil {
 			this.nQueue.Add(n)
 		}
 	}
@@ -101,7 +101,7 @@ func (this *BaseService) processNotificationQueue() {
 // element to the notification queue to unblock the processNotificationQueue goroutine.
 func (this *BaseService) Shutdown() {
 	this.running = false
-	if this.cache != nil {
+	if this.cache != nil && this.nQueue != nil {
 		this.nQueue.Add(nil)
 	}
 }
