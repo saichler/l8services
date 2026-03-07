@@ -92,6 +92,11 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	//Publish the serivce to all vnets
 	this.publishService(sla.ServiceName(), sla.ServiceArea(), vnic)
 
+	// Also publish the group name so the VNet can route participant discovery multicasts
+	if sla.ServiceGroup() != "" && sla.ServiceGroup() != sla.ServiceName() {
+		this.publishService(sla.ServiceGroup(), 0, vnic)
+	}
+
 	//Notify Health of service
 	e := vnic.NotifyServiceAdded([]string{sla.ServiceName()}, sla.ServiceArea())
 	if e != nil && err == nil {
