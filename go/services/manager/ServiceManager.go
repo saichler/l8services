@@ -53,7 +53,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp.resources = resources
 	sp.trManager = states.NewTransactionManager(sp)
 	sp.leaderElection = NewLeaderElection(sp)
-	sp.participantRegistry = NewParticipantRegistry()
+	sp.participantRegistry = NewParticipantRegistry(sp.resolveGroup)
 	sp.electionDebouncer = NewElectionDebouncer(sp.leaderElection)
 	_, err := sp.resources.Registry().Register(&l8notify.L8NotificationSet{})
 	if err != nil {

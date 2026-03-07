@@ -92,11 +92,6 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	//Publish the serivce to all vnets
 	this.publishService(sla.ServiceName(), sla.ServiceArea(), vnic)
 
-	// Also publish the group name so the VNet can route participant discovery multicasts
-	if sla.ServiceGroup() != "" && sla.ServiceGroup() != sla.ServiceName() {
-		this.publishService(sla.ServiceGroup(), 0, vnic)
-	}
-
 	//Notify Health of service
 	e := vnic.NotifyServiceAdded([]string{sla.ServiceName()}, sla.ServiceArea())
 	if e != nil && err == nil {
@@ -119,7 +114,7 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 			serviceKey := cacheKey(sla.ServiceName(), sla.ServiceArea())
 			this.serviceToGroup.Store(serviceKey, sla.ServiceGroup())
 		}
-		this.triggerElections(sla.ServiceGroup(), sla.ServiceArea(), handler, vnic)
+		this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
 	}
 	return handler, err
 }
@@ -169,25 +164,33 @@ func (this *ServiceManager) registerForReplication(serviceName string, serviceAr
 // triggerElections initiates participant registration and leader election for a service.
 // For Map-Reduce services, it registers as a participant; for transactional services,
 // it also starts the election process.
-func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, handler ifs.IServiceHandler, vnic ifs.IVNic) {
+// serviceName is used for multicast routing (VNet knows it), groupName is used for
+// participant tracking and leader election.
+func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, groupName string, handler ifs.IServiceHandler, vnic ifs.IVNic) {
 	_, isMapReduceService := handler.(ifs.IMapReduceService)
 	if isMapReduceService {
 		fmt.Println("Map Reduce Service:", reflect.ValueOf(handler).Elem().Type().Name())
 	}
 
-	// Register as participant for this service
-	localUuid := this.resources.SysConfig().LocalUuid
-	this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
+	// Resolve the group area: use area 0 when a group mapping exists, otherwise keep the service area
+	groupArea := serviceArea
+	if groupName != serviceName {
+		groupArea = 0
+	}
 
-	// Announce ourselves as a participant
+	// Register as participant under the group name
+	localUuid := this.resources.SysConfig().LocalUuid
+	this.participantRegistry.RegisterParticipant(groupName, groupArea, localUuid)
+
+	// Announce ourselves as a participant using the service name for VNet routing
 	vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
 
-	// Discover existing participants
+	// Discover existing participants using the service name for VNet routing
 	vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
 	// Defer leader election via debouncer — by the time it fires,
 	// all ServiceRegister multicasts will have propagated
-	this.electionDebouncer.RequestElection(serviceName, serviceArea, vnic)
+	this.electionDebouncer.RequestElection(groupName, groupArea, vnic)
 }
 
 // TriggerElections re-triggers elections for all stateful services.
@@ -206,7 +209,8 @@ func (this *ServiceManager) TriggerElections(vnic ifs.IVNic) {
 		serviceName, serviceArea := serviceNameArea(k)
 		this.publishService(serviceName, serviceArea, vnic)
 		time.Sleep(time.Second)
-		this.triggerElections(serviceName, serviceArea, h, vnic)
+		groupName, _ := this.resolveGroup(serviceName, serviceArea)
+		this.triggerElections(serviceName, serviceArea, groupName, h, vnic)
 	}
 }
 

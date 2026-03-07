@@ -27,15 +27,19 @@ type participantSet struct {
 	mtx    sync.RWMutex
 }
 
+// GroupResolver resolves a service name and area to its group name and area.
+type GroupResolver func(serviceName string, serviceArea byte) (string, byte)
+
 // ParticipantRegistry manages service participants across the distributed system.
 // It tracks which nodes are participating in each service for coordination and routing.
 type ParticipantRegistry struct {
-	participants sync.Map // key: serviceKey string -> *participantSet
+	participants  sync.Map // key: serviceKey string -> *participantSet
+	groupResolver GroupResolver
 }
 
 // NewParticipantRegistry creates a new empty ParticipantRegistry.
-func NewParticipantRegistry() *ParticipantRegistry {
-	return &ParticipantRegistry{}
+func NewParticipantRegistry(resolver GroupResolver) *ParticipantRegistry {
+	return &ParticipantRegistry{groupResolver: resolver}
 }
 
 // handleRegistry routes participant registry messages to appropriate handlers.
@@ -51,6 +55,15 @@ func (pr *ParticipantRegistry) handleRegistry(action ifs.Action, vnic ifs.IVNic,
 	return nil
 }
 
+// resolveGroupKey resolves the message's service name/area to the group key.
+func (pr *ParticipantRegistry) resolveGroupKey(msg *ifs.Message) string {
+	if pr.groupResolver != nil {
+		gName, gArea := pr.groupResolver(msg.ServiceName(), msg.ServiceArea())
+		return makeServiceKey(gName, gArea)
+	}
+	return makeServiceKey(msg.ServiceName(), msg.ServiceArea())
+}
+
 // handleServiceRegister adds the message source as a participant for the service.
 func (pr *ParticipantRegistry) handleServiceRegister(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	localUuid := vnic.Resources().SysConfig().LocalUuid
@@ -60,7 +73,7 @@ func (pr *ParticipantRegistry) handleServiceRegister(vnic ifs.IVNic, msg *ifs.Me
 		return nil
 	}
 
-	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
+	key := pr.resolveGroupKey(msg)
 	ps := pr.getOrCreateParticipantSet(key)
 
 	vnic.Resources().Logger().Debug("Registering participant", msg.Source(), "for", msg.ServiceName(), "area", msg.ServiceArea())
@@ -75,7 +88,7 @@ func (pr *ParticipantRegistry) handleServiceRegister(vnic ifs.IVNic, msg *ifs.Me
 
 // handleServiceUnregister removes the message source from the participant list.
 func (pr *ParticipantRegistry) handleServiceUnregister(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
-	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
+	key := pr.resolveGroupKey(msg)
 	ps := pr.getParticipantSet(key)
 	if ps == nil {
 		return nil
@@ -100,7 +113,7 @@ func (pr *ParticipantRegistry) handleServiceQuery(vnic ifs.IVNic, msg *ifs.Messa
 		return nil
 	}
 
-	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
+	key := pr.resolveGroupKey(msg)
 	ps := pr.getParticipantSet(key)
 
 	vnic.Resources().Logger().Debug("Service query from", msg.Source(), "for", msg.ServiceName(), "area", msg.ServiceArea())
