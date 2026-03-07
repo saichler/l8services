@@ -173,22 +173,14 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 	localUuid := this.resources.SysConfig().LocalUuid
 	this.participantRegistry.RegisterParticipant(serviceName, serviceArea, localUuid)
 
-	// Query for existing participants first
-	vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
-
 	// Announce ourselves as a participant
 	vnic.Multicast(serviceName, serviceArea, ifs.ServiceRegister, nil)
 
-	// Send additional queries with delay to catch nodes that activated concurrently
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
+	// Discover existing participants
+	vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 
-		time.Sleep(200 * time.Millisecond)
-		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
-	}()
-
-	// Defer leader election via debouncer to avoid concurrent election storms
+	// Defer leader election via debouncer — by the time it fires,
+	// all ServiceRegister multicasts will have propagated
 	this.electionDebouncer.RequestElection(serviceName, serviceArea, vnic)
 }
 

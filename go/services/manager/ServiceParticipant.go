@@ -53,6 +53,13 @@ func (pr *ParticipantRegistry) handleRegistry(action ifs.Action, vnic ifs.IVNic,
 
 // handleServiceRegister adds the message source as a participant for the service.
 func (pr *ParticipantRegistry) handleServiceRegister(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
+	localUuid := vnic.Resources().SysConfig().LocalUuid
+
+	// Skip self-multicast — already registered locally in triggerElections
+	if msg.Source() == localUuid {
+		return nil
+	}
+
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	ps := pr.getOrCreateParticipantSet(key)
 
