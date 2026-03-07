@@ -110,8 +110,10 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.Stateful() {
-		// Only trigger election and participant registration for services with TransactionConfig
-		this.triggerElections(sla.ServiceName(), sla.ServiceArea(), handler, vnic)
+		serviceKey := cacheKey(sla.ServiceName(), sla.ServiceArea())
+		groupKey := cacheKey(sla.ServiceGroup(), sla.ServiceArea())
+		this.serviceToGroup.Store(serviceKey, groupKey)
+		this.triggerElections(sla.ServiceGroup(), sla.ServiceArea(), handler, vnic)
 	}
 	return handler, err
 }
