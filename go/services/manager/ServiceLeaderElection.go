@@ -604,7 +604,8 @@ func makeServiceKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
-// canVote checks if this node can participate in voting for the given service.
+// canVote checks if this node can participate in voting for the given service or group.
+// Service groups are always voters.
 // For non-transactional stateful services, all peers are voters.
 // For transactional services, the Voter() flag on TransactionConfig controls participation.
 func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
@@ -614,7 +615,8 @@ func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
 
 	handler, ok := le.serviceManager.services.get(serviceName, serviceArea)
 	if !ok {
-		return false
+		// Check if serviceName is a group name — groups are always voters
+		return le.isGroup(serviceName)
 	}
 
 	txConfig := handler.TransactionConfig()
@@ -623,6 +625,19 @@ func (le *LeaderElection) canVote(serviceName string, serviceArea byte) bool {
 	}
 
 	return txConfig.Voter()
+}
+
+// isGroup checks if the given name is a service group that any service maps to.
+func (le *LeaderElection) isGroup(groupName string) bool {
+	found := false
+	le.serviceManager.serviceToGroup.Range(func(key, value interface{}) bool {
+		if value.(string) == groupName {
+			found = true
+			return false
+		}
+		return true
+	})
+	return found
 }
 
 // Shutdown gracefully stops all leader election activities and waits for goroutines to exit
