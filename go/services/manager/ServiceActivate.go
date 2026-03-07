@@ -16,7 +16,6 @@ package manager
 import (
 	"errors"
 	"fmt"
-	"github.com/saichler/l8bus/go/overlay/health"
 	"reflect"
 	"strconv"
 	"strings"
@@ -110,9 +109,11 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.Stateful() {
-		serviceKey := cacheKey(sla.ServiceName(), sla.ServiceArea())
-		groupKey := cacheKey(sla.ServiceGroup(), sla.ServiceArea())
-		this.serviceToGroup.Store(serviceKey, groupKey)
+		// Only store mapping when group differs from service name
+		if sla.ServiceGroup() != sla.ServiceName() {
+			serviceKey := cacheKey(sla.ServiceName(), sla.ServiceArea())
+			this.serviceToGroup.Store(serviceKey, sla.ServiceGroup())
+		}
 		this.triggerElections(sla.ServiceGroup(), sla.ServiceArea(), handler, vnic)
 	}
 	return handler, err
@@ -129,12 +130,12 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
 	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
-
-	hs := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, vnic.Resources())
-	if hs != nil {
-		hs.Services = vnic.Resources().Services().Services()
-		vnic.Multicast(health.ServiceName, 0, ifs.PATCH, hs)
-	}
+	/*
+		hs := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, vnic.Resources())
+		if hs != nil {
+			hs.Services = vnic.Resources().Services().Services()
+			vnic.Multicast(health.ServiceName, 0, ifs.PATCH, hs)
+		}*/
 }
 
 // registerForReplication sets up replication for services that have it enabled,

@@ -41,7 +41,7 @@ type ServiceManager struct {
 	leaderElection      *LeaderElection
 	participantRegistry *ParticipantRegistry
 	electionDebouncer   *ElectionDebouncer
-	serviceToGroup      sync.Map
+	serviceToGroup      sync.Map // serviceKey → groupName string (only non-identity mappings)
 }
 
 // NewServices creates a new ServiceManager with all required subsystems initialized.
@@ -203,15 +203,15 @@ func cacheKey(serviceName string, serviceArea byte) string {
 	return buff.String()
 }
 
-// resolveGroupKey maps a service name+area to its group key.
-// If the service belongs to a group, the group key is returned;
-// otherwise the service's own key is returned.
-func (this *ServiceManager) resolveGroupKey(serviceName string, serviceArea byte) string {
-	serviceKey := cacheKey(serviceName, serviceArea)
-	if groupKey, ok := this.serviceToGroup.Load(serviceKey); ok {
-		return groupKey.(string)
+// resolveGroup maps a service name+area to its group name.
+// The area is always preserved — only the name can change.
+// Returns the original name when no group mapping exists (zero overhead fast path).
+func (this *ServiceManager) resolveGroup(serviceName string, serviceArea byte) (string, byte) {
+	key := cacheKey(serviceName, serviceArea)
+	if groupName, ok := this.serviceToGroup.Load(key); ok {
+		return groupName.(string), 0
 	}
-	return serviceKey
+	return serviceName, serviceArea
 }
 
 // Services returns a structured list of all registered services and their areas.
@@ -221,65 +221,56 @@ func (this *ServiceManager) Services() *l8services.L8Services {
 
 // StartElection triggers a leader election for the specified service and area.
 func (this *ServiceManager) StartElection(serviceName string, serviceArea byte, vnic ifs.IVNic) {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	this.leaderElection.StartElectionForService(gName, gArea, vnic)
 }
 
 // GetLeader returns the UUID of the current leader for the specified service and area.
 // Returns empty string if no leader is elected.
 func (this *ServiceManager) GetLeader(serviceName string, serviceArea byte) string {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	return this.leaderElection.GetLeader(gName, gArea)
 }
 
 // IsLeader checks if the specified UUID is the current leader for the service and area.
 func (this *ServiceManager) IsLeader(serviceName string, serviceArea byte, uuid string) bool {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	return this.leaderElection.IsLeader(gName, gArea, uuid)
 }
 
 // RegisterParticipant adds a node to the participant list for a service and area.
 func (this *ServiceManager) RegisterParticipant(serviceName string, serviceArea byte, uuid string) {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	this.participantRegistry.RegisterParticipant(gName, gArea, uuid)
 }
 
 // UnregisterParticipant removes a node from the participant list for a service and area.
 func (this *ServiceManager) UnregisterParticipant(serviceName string, serviceArea byte, uuid string) {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	this.participantRegistry.UnregisterParticipant(gName, gArea, uuid)
 }
 
 // GetParticipants returns a map of all participant UUIDs for the service and area.
 func (this *ServiceManager) GetParticipants(serviceName string, serviceArea byte) map[string]byte {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	return this.participantRegistry.GetParticipants(gName, gArea)
 }
 
 // IsParticipant checks if a UUID is registered as a participant for the service and area.
 func (this *ServiceManager) IsParticipant(serviceName string, serviceArea byte, uuid string) bool {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	return this.participantRegistry.IsParticipant(gName, gArea, uuid)
 }
 
 // ParticipantCount returns the number of registered participants for the service and area.
 func (this *ServiceManager) ParticipantCount(serviceName string, serviceArea byte) int {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	return this.participantRegistry.ParticipantCount(gName, gArea)
 }
 
 // RoundRobinParticipants selects participants in round-robin fashion for load distribution.
 // Returns a map of selected participant UUIDs to their replica numbers.
 func (this *ServiceManager) RoundRobinParticipants(serviceName string, serviceArea byte, replications int) map[string]byte {
-	groupKey := this.resolveGroupKey(serviceName, serviceArea)
-	gName, gArea := serviceNameArea(groupKey)
+	gName, gArea := this.resolveGroup(serviceName, serviceArea)
 	return this.participantRegistry.RoundRobinParticipants(gName, gArea, replications)
 }
