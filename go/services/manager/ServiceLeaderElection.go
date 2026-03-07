@@ -104,6 +104,11 @@ func (le *LeaderElection) handleElectionRequest(vnic ifs.IVNic, msg *ifs.Message
 	localUuid := vnic.Resources().SysConfig().LocalUuid
 	senderUuid := msg.Source()
 
+	// Skip self-multicast
+	if senderUuid == localUuid {
+		return nil
+	}
+
 	vnic.Resources().Logger().Debug("Election request from", senderUuid, "for", msg.ServiceName(), "area", msg.ServiceArea(), "local:", localUuid)
 
 	// Check if this node can participate in voting

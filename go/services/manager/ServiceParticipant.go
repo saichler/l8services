@@ -87,6 +87,12 @@ func (pr *ParticipantRegistry) handleServiceUnregister(vnic ifs.IVNic, msg *ifs.
 // handleServiceQuery responds if this node is a participant for the queried service.
 func (pr *ParticipantRegistry) handleServiceQuery(vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	localUuid := vnic.Resources().SysConfig().LocalUuid
+
+	// Skip self-multicast to avoid unnecessary messages
+	if msg.Source() == localUuid {
+		return nil
+	}
+
 	key := makeServiceKey(msg.ServiceName(), msg.ServiceArea())
 	ps := pr.getParticipantSet(key)
 

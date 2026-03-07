@@ -188,8 +188,8 @@ func (this *ServiceManager) triggerElections(serviceName string, serviceArea byt
 		vnic.Multicast(serviceName, serviceArea, ifs.ServiceQuery, nil)
 	}()
 
-	// Trigger leader election
-	this.leaderElection.StartElectionForService(serviceName, serviceArea, vnic)
+	// Defer leader election via debouncer to avoid concurrent election storms
+	this.electionDebouncer.RequestElection(serviceName, serviceArea, vnic)
 }
 
 // TriggerElections re-triggers elections for all stateful services.

@@ -40,6 +40,7 @@ type ServiceManager struct {
 	resources           ifs.IResources
 	leaderElection      *LeaderElection
 	participantRegistry *ParticipantRegistry
+	electionDebouncer   *ElectionDebouncer
 	serviceToGroup      sync.Map
 }
 
@@ -53,6 +54,7 @@ func NewServices(resources ifs.IResources) ifs.IServices {
 	sp.trManager = states.NewTransactionManager(sp)
 	sp.leaderElection = NewLeaderElection(sp)
 	sp.participantRegistry = NewParticipantRegistry()
+	sp.electionDebouncer = NewElectionDebouncer(sp.leaderElection)
 	_, err := sp.resources.Registry().Register(&l8notify.L8NotificationSet{})
 	if err != nil {
 		panic(err)
