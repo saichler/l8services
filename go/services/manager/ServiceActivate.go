@@ -89,6 +89,14 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	this.services.put(sla.ServiceName(), sla.ServiceArea(), handler)
 	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()))
 
+	// Store group mapping before publishing so incoming ServiceRegister
+	// messages from remote nodes can resolve the group immediately.
+	if sla.ServiceGroup() != "" && sla.Stateful() && sla.ServiceGroup() != sla.ServiceName() {
+		key := cacheKey(sla.ServiceName(), sla.ServiceArea())
+		this.serviceToGroup.Store(key, sla.ServiceGroup())
+		this.publishService(sla.ServiceGroup(), 0, vnic)
+	}
+
 	//Publish the serivce to all vnets
 	this.publishService(sla.ServiceName(), sla.ServiceArea(), vnic)
 
@@ -109,11 +117,6 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.Stateful() {
-		// Only store mapping when group differs from service name
-		if sla.ServiceGroup() != sla.ServiceName() {
-			serviceKey := cacheKey(sla.ServiceName(), sla.ServiceArea())
-			this.serviceToGroup.Store(serviceKey, sla.ServiceGroup())
-		}
 		this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
 	}
 	return handler, err
