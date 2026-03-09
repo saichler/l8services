@@ -70,8 +70,16 @@ func RecoveryCheck(serviceName string, serviceArea byte, modelType string, nic i
 // It fetches data in pages of 500 elements from the leader and posts
 // them to the local service handler. Continues until no more data is available.
 func Sync(serviceName string, serviceArea byte, modelType string, nic ifs.IVNic) {
-	leader := nic.Resources().Services().GetLeader(serviceName, serviceArea)
-	handler, _ := nic.Resources().Services().ServiceHandler(serviceName, serviceArea)
+	leader := ""
+	var handler ifs.IServiceHandler
+	for leader == "" {
+		leader = nic.Resources().Services().GetLeader(serviceName, serviceArea)
+		handler, _ = nic.Resources().Services().ServiceHandler(serviceName, serviceArea)
+		if leader == "" {
+			nic.Resources().Logger().Warning("Leader Still Blank for ", serviceName, " - ", serviceArea)
+			time.Sleep(time.Second)
+		}
+	}
 
 	gsql := "select * from " + modelType + " limit 500 page "
 	for i := 0; i <= 5000; i++ {
