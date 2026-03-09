@@ -70,6 +70,10 @@ func RecoveryCheck(serviceName string, serviceArea byte, modelType string, nic i
 // It fetches data in pages of 500 elements from the leader and posts
 // them to the local service handler. Continues until no more data is available.
 func Sync(serviceName string, serviceArea byte, modelType string, nic ifs.IVNic) {
+	if nic.IsVnet() {
+		nic.Resources().Logger().Error("nic is vnet nic, skipping")
+		return
+	}
 	leader := ""
 	var handler ifs.IServiceHandler
 	for leader == "" {
