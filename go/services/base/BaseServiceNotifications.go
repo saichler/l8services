@@ -15,6 +15,7 @@ package base
 
 import (
 	"fmt"
+	"github.com/saichler/l8reflect/go/reflect/updating"
 
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
@@ -62,7 +63,10 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		}
 		if this.sla.Callback() != nil {
 			if action == ifs.PATCH && this.cache != nil {
-				elem, _ = this.cache.Get(elem)
+				getElem, _ := this.cache.Get(elem)
+				upd := updating.NewUpdater(vnic.Resources(), false, false)
+				upd.Update(getElem, elem)
+				elem = getElem
 			}
 			afterElem, cont, err := this.sla.Callback().After(elem, action, pb.Notification(), vnic)
 			if err != nil {
