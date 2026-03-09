@@ -117,10 +117,7 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.Stateful() {
-		go func() {
-			time.Sleep(time.Millisecond * 500)
-			this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
-		}()
+		this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
 	}
 	return handler, err
 }
