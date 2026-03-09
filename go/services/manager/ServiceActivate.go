@@ -117,7 +117,10 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.Stateful() {
-		this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
+		go func() {
+			time.Sleep(time.Millisecond * 500)
+			this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
+		}()
 	}
 	return handler, err
 }
@@ -133,12 +136,6 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
 	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
-	/*
-		hs := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, vnic.Resources())
-		if hs != nil {
-			hs.Services = vnic.Resources().Services().Services()
-			vnic.Multicast(health.ServiceName, 0, ifs.PATCH, hs)
-		}*/
 }
 
 // registerForReplication sets up replication for services that have it enabled,
