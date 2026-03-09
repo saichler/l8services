@@ -17,6 +17,7 @@
 package base
 
 import (
+	"github.com/saichler/l8reflect/go/reflect/updating"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8web"
@@ -84,6 +85,8 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 			}
 			resp, err := this.cache.Get(pb.Element())
 			if this.sla.Callback() != nil {
+				upd := updating.NewUpdater(vnic.Resources(), false, false)
+				upd.Update(resp, pb.Element())
 				after, _, _ := this.sla.Callback().After(resp, ifs.GET, true, vnic)
 				if after != nil {
 					resp = after
