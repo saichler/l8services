@@ -85,8 +85,10 @@ func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 			}
 			resp, err := this.cache.Get(pb.Element())
 			if this.sla.Callback() != nil {
-				upd := updating.NewUpdater(vnic.Resources(), false, false)
-				upd.Update(resp, pb.Element())
+				if vnic != nil {
+					upd := updating.NewUpdater(vnic.Resources(), false, false)
+					upd.Update(resp, pb.Element())
+				}
 				after, _, _ := this.sla.Callback().After(resp, ifs.GET, true, vnic)
 				if after != nil {
 					resp = after
