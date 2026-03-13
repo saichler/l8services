@@ -22,6 +22,7 @@ import (
 	"github.com/saichler/l8types/go/types/l8health"
 	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8utils/go/utils/notify"
+	"reflect"
 	"strconv"
 )
 
@@ -54,19 +55,25 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 		return object.NewError("Cannot find active handler for service " + msg.ServiceName() +
 			" area " + strconv.Itoa(int(msg.ServiceArea())))
 	}
-
+	tsdbHandler, isTSDB := h.(ifs.ITSDBService)
 	if msg != nil && msg.FailMessage() != "" {
 		return h.Failed(pb, vnic, msg)
 	}
-	item, err := notify.ItemOf(notification, this.resources)
+	item, tsdbNotifications, err := notify.ItemOf(notification, this.resources, isTSDB)
 	if err != nil {
 		return object.NewError(err.Error())
 	}
-	npb := object.NewNotify(item)
 
-	resp := this.delegateNotification(notification.ServiceName, notification.Type, h, npb, item, vnic)
+	if isTSDB && tsdbNotifications != nil {
+		tsdbHandler.AddTSDB(tsdbNotifications)
+	}
 
-	return resp
+	if !reflect.ValueOf(item).IsZero() {
+		npb := object.NewNotify(item)
+		resp := this.delegateNotification(notification.ServiceName, notification.Type, h, npb, item, vnic)
+		return resp
+	}
+	return object.New(nil, nil)
 }
 
 // delegateNotification routes a notification to the appropriate handler method based on the notification type.
