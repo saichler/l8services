@@ -73,7 +73,7 @@ func (this *ServiceManager) Notify(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Me
 		resp := this.delegateNotification(notification.ServiceName, notification.Type, h, npb, item, vnic)
 		return resp
 	}
-	return object.New(nil, nil)
+	return object.New(nil, item)
 }
 
 // delegateNotification routes a notification to the appropriate handler method based on the notification type.
