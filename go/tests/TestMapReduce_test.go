@@ -14,6 +14,7 @@
 package tests
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 func TestMapReduce(t *testing.T) {
 	// Wait for all MapReduce participants to be ready
 	if !waitForMapReduceParticipants(t) {
+		fmt.Println("Not All Map Reduce Participants are ready")
 		return
 	}
 

@@ -118,6 +118,10 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 
 	if sla.Stateful() {
 		this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
+		go func() {
+			time.Sleep(time.Second * 2)
+			this.triggerElections(sla.ServiceName(), sla.ServiceArea(), sla.ServiceGroup(), handler, vnic)
+		}()
 	}
 	return handler, err
 }
