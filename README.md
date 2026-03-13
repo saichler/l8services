@@ -1,80 +1,57 @@
-# Layer 8 Services, API, Concurrency & Caching
+# Layer 8 Services
 
-A comprehensive Go-based distributed services framework providing distributed caching, transaction management, and service orchestration capabilities.
+A Go-based distributed services framework providing service orchestration, distributed caching, leader election, transaction management, data import/export, and file storage.
 
 ## Overview
 
-Layer 8 Services is a high-performance distributed services framework built on the Layer8 platform that provides enterprise-grade capabilities for modern distributed applications:
+Layer 8 Services is the core services framework for the Layer 8 platform. It provides:
 
-- **Map-Reduce Pattern Support**: Distributed Map-Reduce processing for parallel data operations across service nodes with automatic result merging
-- **Advanced Distributed Cache**: Thread-safe, synchronized distributed caching with persistent storage support and optimized data fetching
-- **Enhanced Transaction Management**: ACID transaction support across distributed services with improved 2-phase commit protocol and optimized state management
-- **Service Management**: Registration, activation, and lifecycle management of microservices with SLA-based architecture and improved error handling
-- **Replication Services**: Data replication and synchronization across service instances with deterministic round-robin load balancing
-- **Notification System**: Event-driven notifications for cache updates and service state changes
-- **Performance Optimizations**: Recent improvements in service activation, error recovery, and transaction rollback mechanisms
+- **Service Management**: SLA-based registration, activation, lifecycle management, and leader election with bully algorithm
+- **Distributed Cache**: Thread-safe caching with persistent storage, notifications, and query-based retrieval
+- **Map-Reduce**: Distributed parallel processing across service nodes with automatic result merging
+- **Transactions**: ACID 2-phase commit across distributed services with a 6-state machine
+- **Replication**: Cross-node data synchronization with deterministic round-robin load balancing
+- **Data Import**: AI-assisted field mapping, heuristic matching, file parsing, and record building
+- **CSV Export**: Generic CSV export with custom formatting
+- **File Storage**: Upload/download with configurable storage backend
+- **Leader Election**: Bully algorithm with heartbeat monitoring, election debouncing, and service grouping
 
 ## Architecture
 
-The framework is organized into several core components:
-
-### Core Services
-
-- **DCache** (`services/dcache/`): Distributed caching with thread-safe operations, persistence, and notifications
-- **Transaction Manager** (`services/transaction/`): Distributed transaction coordination with full ACID properties and optimized state management
-- **Service Manager** (`services/manager/`): Service lifecycle management and request routing
-- **Replication Service** (`services/replication/`): Data synchronization across distributed nodes
-
-### Key Features
-
-- **Thread-Safe Operations**: All cache and service operations are protected with appropriate locking mechanisms
-- **Optimized Transaction Processing**: Recently refactored transaction system with improved state management and coordination
-- **Enhanced Store Operations**: Improved store loading mechanisms with better error handling and performance
-- **Advanced Sorting Algorithms**: Optimized sorting operations for better data organization and retrieval
-- **Improved Fetch Operations**: Enhanced data fetching with better reliability and performance
-- **IP Comparison Utilities**: Advanced networking utilities for distributed service coordination
-- **Persistence Layer**: Optional storage backend for cache durability with improved reliability
-- **Event Notifications**: Real-time notifications for data changes and service events
-- **Security Integration**: Built-in security checks for all service operations
-- **Health Monitoring**: Service health tracking and reporting with enhanced service point deactivation
-- **Web Service Integration**: RESTful API endpoints for external service interaction
-
-## Recent Updates (November 2025)
-
-### Map-Reduce Implementation
-- **New Distributed Processing Pattern**: Added Map-Reduce support for parallel operations across service nodes
-- **Automatic Result Merging**: Built-in aggregation of results from distributed nodes
-- **Support for All CRUD Operations**: MapR_POST, MapR_GET, MapR_PUT, MapR_PATCH, MapR_DELETE actions
-- **Parallel Request Processing**: Concurrent execution with synchronized result collection
-
-### Service Activation Improvements
-- **SLA-Based Architecture**: Refactored service activation to use Service Level Agreements (SLA) for better service management
-- **Enhanced Error Handling**: Fixed panic conditions on nil responses from handlers
-- **Improved Error Recovery**: Better error propagation and handling during service activation
-- **Graceful Failure Handling**: Services now continue activation even if non-critical operations fail
-- **Election Triggers**: Added capability to trigger leader elections in distributed services
-
-### Transaction System Enhancements
-- **Optimized Rollback Logic**: Only sends rollback to peers that successfully committed
-- **Memory Management**: Fixed memory leaks in PreCommit map with proper cleanup on all paths
-- **Deterministic Round-Robin**: Replaced index-based approach with UUID tracking for true round-robin distribution
-- **2-Phase Commit Improvements**: Better handling of edge cases in distributed transactions
-
-### Performance & Stability Fixes
-- **Crash Prevention**: Fixed multiple crash scenarios in service activation and handler responses
-- **Test Coverage**: Improved test reliability and coverage reporting
-- **Resource Cleanup**: Enhanced cleanup mechanisms for transaction states and service deactivation
-
-### Known Issues & Future Work
-- **Single-threaded Transaction Processing**: Currently processes transactions sequentially per service (optimization planned)
-- **Concurrent GET Operations**: Implementation for concurrent reads during long transactions (in progress)
-- **Graceful Shutdown**: Improved resource lifecycle management and goroutine cleanup (planned)
-
-## Installation
-
-```bash
-go mod download
 ```
+go/services/
+├── base/            - Foundation CRUD service handler with Before/After callbacks
+├── csvexport/       - CSV export service with formatting
+├── dataimport/      - Data import pipeline (AI mapping, parsing, transformation)
+├── dcache/          - Distributed cache with notifications and persistence
+├── filestore/       - File upload/download management
+├── manager/         - Service orchestration, leader election, MapReduce
+├── recovery/        - Data synchronization from leader to followers
+├── replication/     - Replication index tracking (key-to-node mapping)
+└── transaction/     - ACID 2-phase commit
+    ├── states/      - State machine: Create, Queue, Run, Commit, Rollback, Cleanup
+    └── requests/    - Transaction request types
+```
+
+### Core Components
+
+**Base Service** (`services/base/`) - Foundation CRUD handler implementing Post, Put, Patch, Delete, and Get with integrated cache interaction, SLA-based Before/After callbacks, query support with pagination, and an async notification queue (capacity: 50,000).
+
+**Distributed Cache** (`services/dcache/`) - Thread-safe distributed cache supporting persistent storage backends, property change listeners, paginated fetch, metadata collection, and replication-aware operations.
+
+**Service Manager** (`services/manager/`) - Central orchestrator handling service registration and discovery, request routing, transaction coordination, leader election (bully algorithm with 3s election timeout, 5s heartbeat timeout), election debouncing (500ms window to prevent storms), participant registry with UUID-based round-robin, and service grouping with dynamic resolver.
+
+**Transaction Engine** (`services/transaction/`) - 6-state machine (T01 Create -> T02 Queue -> T03 Run -> T04 Commit / T05 Rollback -> T06 Cleanup) with optimized rollback (only targets peers that committed) and proper PreCommit map cleanup.
+
+**Data Import** (`services/dataimport/`) - Full import pipeline with four sub-handlers: AI-based field mapping (ImprtAI), import execution with validation (ImprtExec), model metadata queries (ImprtInfo), and template transfer/export (ImprtXfer). Includes heuristic field matching, multi-format file parsing, value transformation, and typed record building.
+
+**CSV Export** (`services/csvexport/`) - Stateless export service accepting POST requests and returning formatted CSV data.
+
+**File Store** (`services/filestore/`) - File upload (POST) and download (PUT) with configurable size limits (default 5MB) and storage root (`/data/l8files`).
+
+**Replication** (`services/replication/`) - Tracks which nodes store which data elements via L8ReplicationIndex, mapping service keys to node UUIDs and replica numbers.
+
+**Recovery** (`services/recovery/`) - Synchronizes data from leader to followers in pages (500 elements/page). Currently disabled pending further testing.
 
 ## Quick Start
 
@@ -84,11 +61,9 @@ package main
 import (
     "github.com/saichler/l8services/go/services/manager"
     "github.com/saichler/l8services/go/services/dcache"
-    // Import your Layer8 dependencies
 )
 
 func main() {
-    // Initialize resources and VNIC
     resources := // ... initialize Layer8 resources
     vnic := // ... initialize VNIC
 
@@ -111,38 +86,23 @@ func main() {
     if err != nil {
         log.Fatal("Failed to activate service:", err)
     }
-
-    // Service is now ready to handle requests
 }
 ```
 
-## Dependencies
-
-- **Layer8**: Core networking and overlay infrastructure
-- **L8Types**: Type definitions and interfaces
-- **L8Utils**: Utility functions and data structures
-- **L8Srlz**: Serialization framework
-- **L8Test**: Testing infrastructure
-- **Reflect**: Advanced reflection utilities
-
 ## Usage
 
-### Creating a Distributed Cache
+### Distributed Cache
 
 ```go
 import "github.com/saichler/l8services/go/services/dcache"
 
-// Create a new distributed cache
+// Basic cache
 cache := dcache.NewDistributedCache(
-    "myService",           // service name
-    1,                     // service area
-    "MyModel",            // model type
-    "source1",            // source identifier
-    listener,             // cache listener
-    resources,            // system resources
+    "myService", 1, "MyModel", "source1",
+    listener, resources,
 )
 
-// With persistent storage
+// Cache with persistent storage
 cache := dcache.NewDistributedCacheWithStorage(
     "myService", 1, "MyModel", "source1",
     listener, resources, storage,
@@ -154,88 +114,101 @@ cache := dcache.NewDistributedCacheWithStorage(
 ```go
 import "github.com/saichler/l8services/go/services/manager"
 
-// Create service manager
 services := manager.NewServices(resources)
 
-// Create Service Level Agreement for service activation
 sla := ifs.NewServiceLevelAgreement()
 sla.SetServiceName("MyService")
 sla.SetServiceArea(1)
 sla.SetServiceHandlerInstance(myHandler)
 
-// Activate service with SLA
 handler, err := services.Activate(sla, vnic)
-
-// Handle service requests
 result := services.Handle(payload, action, vnic, message)
 ```
 
-### Map-Reduce Operations
+### Map-Reduce
 
 ```go
-import "github.com/saichler/l8services/go/services/manager"
-
 // Implement the IMapReduceService interface
-type MyMapReduceService struct {
-    // Your service implementation
-}
+type MyService struct{}
 
-func (s *MyMapReduceService) Merge(results map[string]ifs.IElements) ifs.IElements {
-    // Custom logic to merge results from all nodes
-    merged := // ... merge logic
+func (s *MyService) Merge(results map[string]ifs.IElements) ifs.IElements {
+    // Merge results from all nodes
     return merged
 }
 
-// Execute distributed Map-Reduce operation
-serviceManager := manager.NewServices(resources)
-results := serviceManager.MapReduce(
-    handler,    // IMapReduceService handler
-    payload,    // Input data
-    ifs.MapR_GET,  // Action type (MapR_POST, MapR_GET, etc.)
-    message,    // Message context
-    vnic,       // Virtual NIC
-)
+// Execute across all participants
+results := serviceManager.MapReduce(handler, payload, ifs.MapR_GET, message, vnic)
 ```
 
-### Transaction Management
+Supported actions: `MapR_POST`, `MapR_GET`, `MapR_PUT`, `MapR_PATCH`, `MapR_DELETE`
 
-```go
-// Transactions are automatically managed by the framework
-// with optimized state management and coordination
-// The system supports:
-// - Create: Initialize new transaction with state tracking
-// - Run: Execute transaction with replication support
-// - Lock: Acquire distributed locks across services
-// - Commit: Commit changes across all participants
-// - Rollback: Rollback changes on failure with state cleanup
-//
-// Recent optimizations include:
-// - Improved state management architecture
-// - Enhanced transaction coordination
-// - Better resource cleanup and lifecycle management
-// - Optimized store loading with enhanced error handling
-// - Improved sorting algorithms for better performance
-// - Enhanced fetch operations with better reliability
-// - Advanced IP comparison utilities for network coordination
-```
+## API Reference
+
+### Service Handler Interface (`IServiceHandler`)
+
+- `Post(payload, vnic)` - Create resources
+- `Put(payload, vnic)` - Replace resources
+- `Patch(payload, vnic)` - Update resources
+- `Delete(payload, vnic)` - Remove resources
+- `Get(payload, vnic)` - Retrieve resources
+- `Failed(payload, vnic, message)` - Handle failures
+
+### Distributed Cache Operations
+
+- `Post()` / `Put()` / `Patch()` / `Delete()` - CRUD operations
+- `Get()` - Single element lookup
+- `Fetch()` - Paginated query-based retrieval
+- `Collect()` - Bulk filtered retrieval
+- `Metadata()` - Cache metadata and counts
+
+### Leader Election Messages
+
+- `ElectionRequest` / `ElectionResponse` - Election protocol
+- `LeaderAnnouncement` / `LeaderHeartbeat` - Leader lifecycle
+- `LeaderQuery` / `LeaderResign` / `LeaderChallenge` - Leader management
+
+### Participant Registry
+
+- `ServiceRegister` / `ServiceUnregister` - Registration
+- `ServiceQuery` - Discovery
+- Group resolver for logical service grouping
+
+## Dependencies
+
+| Dependency | Purpose |
+|-----------|---------|
+| `l8bus` | Network overlay and virtual networking |
+| `l8types` | Interface definitions (`IServices`, `IServiceHandler`, `IDistributedCache`, `IVNic`) |
+| `l8utils` | Cache, queue, and utility data structures |
+| `l8srlz` | Serialization framework |
+| `l8reflect` | Introspection and type reflection |
+| `l8ql` | Query language support |
+| `l8test` | Testing infrastructure (multi-node topology) |
 
 ## Testing
-
-Run the test suite:
 
 ```bash
 cd go
 go test ./tests/...
 ```
 
-Generate test coverage:
+Tests use the `l8test` framework with a 4-node topology across 3 VNets. Test coverage includes:
+
+- Base service CRUD operations
+- Distributed cache operations
+- Map-Reduce with 9 participants
+- Transaction coordination (sync and async)
+- Replication counting
+- Service point deactivation
+- Notification delivery
+- Service manager operations
+
+Generate coverage report:
 
 ```bash
-./test.sh
+cd go && ./test.sh
+# Open cover.html in browser
 ```
-
-View coverage report:
-- Open `go/cover.html` in your browser
 
 ## Project Structure
 
@@ -243,86 +216,24 @@ View coverage report:
 l8services/
 ├── go/
 │   ├── services/
-│   │   ├── dcache/          # Distributed caching implementation
-│   │   ├── manager/         # Service lifecycle management with SLA
-│   │   ├── replication/     # Data replication services
-│   │   ├── recovery/        # Service recovery mechanisms
-│   │   ├── base/            # Base service implementations
-│   │   └── transaction/     # Transaction management
-│   │       ├── states/      # Transaction state management (refactored)
-│   │       └── requests/    # Transaction request handling
-│   ├── tests/               # Comprehensive test suite
-│   ├── vendor/              # Vendored dependencies
-│   ├── go.mod              # Go module definition
-│   ├── go.sum              # Go module checksums
-│   ├── cover.html          # Test coverage report
-│   └── test.sh             # Test execution script
-├── services.md             # Performance & concurrency analysis document
-├── todo.txt               # Development tasks and improvements tracking
-├── web.html               # Web service interface
-└── README.md              # This file
+│   │   ├── base/            # CRUD service foundation (4 files)
+│   │   ├── csvexport/       # CSV export (4 files)
+│   │   ├── dataimport/      # Data import pipeline (9 files)
+│   │   ├── dcache/          # Distributed cache (10 files)
+│   │   ├── filestore/       # File storage (5 files)
+│   │   ├── manager/         # Service orchestration (10 files)
+│   │   ├── recovery/        # Data recovery (1 file)
+│   │   ├── replication/     # Replication tracking (1 file)
+│   │   └── transaction/     # ACID transactions (10 files)
+│   │       ├── states/      # 6-state machine
+│   │       └── requests/    # Request types
+│   ├── tests/               # 12 test files (~1,540 lines)
+│   └── vendor/              # Vendored dependencies
+└── README.md
 ```
 
-## API Reference
-
-### Distributed Cache Operations
-
-- `Put(key, value)`: Store value in cache
-- `Get(key)`: Retrieve value from cache
-- `Delete(key)`: Remove value from cache
-- `Update(key, value)`: Update existing value
-- `Sync()`: Synchronize cache with peers
-- `Collect(filter)`: Bulk retrieve filtered items
-
-### Service Handler Interface
-
-Services must implement the `IServiceHandler` interface:
-
-- `Post(payload, vnic)`: Create new resources
-- `Put(payload, vnic)`: Replace existing resources
-- `Patch(payload, vnic)`: Update existing resources
-- `Delete(payload, vnic)`: Remove resources
-- `Get(payload, vnic)`: Retrieve resources
-- `Failed(payload, vnic, message)`: Handle failure scenarios
-
-### Map-Reduce Interface
-
-Services can implement the `IMapReduceService` interface for distributed processing:
-
-- `MapReduce(handler, payload, action, msg, vnic)`: Execute distributed operation
-- `PeerRequest(msg, vnic)`: Send parallel requests to all service peers
-- `Merge(results)`: Aggregate results from distributed nodes
-- Supported actions: `MapR_POST`, `MapR_GET`, `MapR_PUT`, `MapR_PATCH`, `MapR_DELETE`
-
-## Documentation
-
-### Performance Analysis
-A comprehensive performance and concurrency analysis is available in `services.md` which covers:
-- Memory management patterns and optimization opportunities
-- Concurrency bottlenecks and synchronization issues
-- Transaction processing architecture recommendations
-- Resource lifecycle management improvements
-- Critical metrics and monitoring recommendations
-
-### Todo Tracking
-Active development tasks and improvements are tracked in `todo.txt` with:
-- High priority fixes for transaction mechanism
-- Medium priority performance enhancements
-- Future architectural improvements
-- Current implementation status for each item
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes with tests
-4. Ensure all tests pass
-5. Submit a pull request
+~5,100 lines of source code across 54 Go files, all under 500 lines each.
 
 ## License
 
-This project is part of the Layer8 ecosystem. Please refer to the main Layer8 project for licensing information.
-
-## Support
-
-For questions and support, please refer to the Layer8 community resources or create an issue in the repository.
+This project is part of the Layer 8 ecosystem. Please refer to the main Layer8 project for licensing information.
