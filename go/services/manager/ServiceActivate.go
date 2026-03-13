@@ -140,9 +140,11 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	sysmsg.Publish = true
 	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
 
-	curr := health.HealthOf(this.resources.SysConfig().LocalUuid, this.resources)
+	curr := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, this.resources)
 	if curr != nil {
 		mergeServices(curr, this.resources.SysConfig().Services)
+		hs, _ := health.HealthService(vnic.Resources())
+		hs.Patch(object.New(nil, curr), vnic)
 	}
 }
 
