@@ -16,6 +16,8 @@ package manager
 import (
 	"errors"
 	"fmt"
+	"github.com/saichler/l8bus/go/overlay/health"
+	"github.com/saichler/l8types/go/types/l8health"
 	"reflect"
 	"strconv"
 	"strings"
@@ -137,6 +139,11 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
 	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
+
+	curr := health.HealthOf(this.resources.SysConfig().LocalUuid, this.resources)
+	if curr != nil {
+		mergeServices(curr, this.resources.SysConfig().Services)
+	}
 }
 
 // registerForReplication sets up replication for services that have it enabled,
@@ -222,4 +229,27 @@ func serviceNameArea(key string) (string, byte) {
 	sArea := key[index+2:]
 	i, _ := strconv.Atoi(sArea)
 	return serviceName, byte(i)
+}
+
+func mergeServices(hp *l8health.L8Health, services *l8services.L8Services) {
+	if hp.Services == nil {
+		hp.Services = services
+		return
+
+	}
+	for serviceName, serviceAreas := range services.ServiceToAreas {
+		_, ok := hp.Services.ServiceToAreas[serviceName]
+		if !ok {
+			hp.Services.ServiceToAreas[serviceName] = serviceAreas
+			continue
+		}
+		if hp.Services.ServiceToAreas[serviceName].Areas == nil {
+			hp.Services.ServiceToAreas[serviceName].Areas = serviceAreas.Areas
+			continue
+		}
+		for svArea, score := range serviceAreas.Areas {
+			serviceArea := svArea
+			hp.Services.ServiceToAreas[serviceName].Areas[serviceArea] = score
+		}
+	}
 }
