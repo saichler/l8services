@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/saichler/l8bus/go/overlay/health"
-	"github.com/saichler/l8types/go/types/l8health"
 	"reflect"
 	"strconv"
 	"strings"
@@ -142,7 +141,7 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 
 	curr := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, this.resources)
 	if curr != nil {
-		mergeServices(curr, this.resources.SysConfig().Services)
+		ifs.MergeServices(curr, this.resources.SysConfig().Services)
 		hs, _ := health.HealthService(vnic.Resources())
 		hs.Patch(object.New(nil, curr), vnic)
 	}
@@ -233,25 +232,3 @@ func serviceNameArea(key string) (string, byte) {
 	return serviceName, byte(i)
 }
 
-func mergeServices(hp *l8health.L8Health, services *l8services.L8Services) {
-	if hp.Services == nil {
-		hp.Services = services
-		return
-
-	}
-	for serviceName, serviceAreas := range services.ServiceToAreas {
-		_, ok := hp.Services.ServiceToAreas[serviceName]
-		if !ok {
-			hp.Services.ServiceToAreas[serviceName] = serviceAreas
-			continue
-		}
-		if hp.Services.ServiceToAreas[serviceName].Areas == nil {
-			hp.Services.ServiceToAreas[serviceName].Areas = serviceAreas.Areas
-			continue
-		}
-		for svArea, score := range serviceAreas.Areas {
-			serviceArea := svArea
-			hp.Services.ServiceToAreas[serviceName].Areas[serviceArea] = score
-		}
-	}
-}
