@@ -88,7 +88,11 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	this.services.put(sla.ServiceName(), sla.ServiceArea(), handler)
-	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()))
+	modelName := ""
+	if sla.ServiceItem() != nil {
+		modelName = reflect.ValueOf(sla.ServiceItem()).Elem().Type().Name()
+	}
+	ifs.AddService(this.resources.SysConfig(), sla.ServiceName(), int32(sla.ServiceArea()), modelName)
 
 	// Store group mapping before publishing so incoming ServiceRegister
 	// messages from remote nodes can resolve the group immediately.
