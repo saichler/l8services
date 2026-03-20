@@ -15,6 +15,7 @@ Layer 8 Services is the core services framework for the Layer 8 platform. It pro
 - **CSV Export**: Generic CSV export with custom formatting
 - **File Storage**: Upload/download with configurable storage backend
 - **Leader Election**: Bully algorithm with heartbeat monitoring, election debouncing, and service grouping
+- **TSDB Support**: Time-series database notification handling for services implementing `ITSDBService`
 
 ## Architecture
 
@@ -39,7 +40,7 @@ go/services/
 
 **Distributed Cache** (`services/dcache/`) - Thread-safe distributed cache supporting persistent storage backends, property change listeners, paginated fetch, metadata collection, and replication-aware operations.
 
-**Service Manager** (`services/manager/`) - Central orchestrator handling service registration and discovery, request routing, transaction coordination, leader election (bully algorithm with 3s election timeout, 5s heartbeat timeout), election debouncing (500ms window to prevent storms), participant registry with UUID-based round-robin, and service grouping with dynamic resolver.
+**Service Manager** (`services/manager/`) - Central orchestrator handling service registration and discovery, request routing, transaction coordination, leader election (bully algorithm with 3s election timeout, 5s heartbeat timeout), election debouncing (500ms window to prevent storms), participant registry with UUID-based round-robin, service grouping with dynamic resolver (reduces election traffic by ~80% when multiple services share a group), and TSDB notification routing for time-series services.
 
 **Transaction Engine** (`services/transaction/`) - 6-state machine (T01 Create -> T02 Queue -> T03 Run -> T04 Commit / T05 Rollback -> T06 Cleanup) with optimized rollback (only targets peers that committed) and proper PreCommit map cleanup.
 
@@ -142,6 +143,22 @@ results := serviceManager.MapReduce(handler, payload, ifs.MapR_GET, message, vni
 
 Supported actions: `MapR_POST`, `MapR_GET`, `MapR_PUT`, `MapR_PATCH`, `MapR_DELETE`
 
+### Service Grouping
+
+Services can share a single leader election by assigning them to the same service group via the SLA. This reduces election traffic when multiple services on the same node would otherwise each run independent elections.
+
+```go
+sla := ifs.NewServiceLevelAgreement()
+sla.SetServiceName("Orders")
+sla.SetServiceArea(60)
+sla.SetServiceGroup("SalesGroup") // All services in "SalesGroup" share one election
+sla.SetStateful(true)
+
+handler, err := services.Activate(sla, vnic)
+```
+
+Without grouping, 15 endpoints with 5 services each would trigger 75 concurrent elections. With grouping, that drops to 15 (one per group per node).
+
 ## API Reference
 
 ### Service Handler Interface (`IServiceHandler`)
@@ -216,15 +233,15 @@ cd go && ./test.sh
 l8services/
 ├── go/
 │   ├── services/
-│   │   ├── base/            # CRUD service foundation (4 files)
-│   │   ├── csvexport/       # CSV export (4 files)
-│   │   ├── dataimport/      # Data import pipeline (9 files)
-│   │   ├── dcache/          # Distributed cache (10 files)
-│   │   ├── filestore/       # File storage (5 files)
-│   │   ├── manager/         # Service orchestration (10 files)
-│   │   ├── recovery/        # Data recovery (1 file)
-│   │   ├── replication/     # Replication tracking (1 file)
-│   │   └── transaction/     # ACID transactions (10 files)
+│   │   ├── base/            # CRUD service foundation (5 files, ~470 lines)
+│   │   ├── csvexport/       # CSV export (4 files, ~350 lines)
+│   │   ├── dataimport/      # Data import pipeline (9 files, ~1,265 lines)
+│   │   ├── dcache/          # Distributed cache (10 files, ~405 lines)
+│   │   ├── filestore/       # File storage (5 files, ~330 lines)
+│   │   ├── manager/         # Service orchestration (10 files, ~1,970 lines)
+│   │   ├── recovery/        # Data recovery (1 file, ~105 lines)
+│   │   ├── replication/     # Replication tracking (1 file, ~178 lines)
+│   │   └── transaction/     # ACID transactions (10 files, ~834 lines)
 │   │       ├── states/      # 6-state machine
 │   │       └── requests/    # Request types
 │   ├── tests/               # 12 test files (~1,540 lines)
@@ -232,7 +249,7 @@ l8services/
 └── README.md
 ```
 
-~5,100 lines of source code across 54 Go files, all under 500 lines each.
+~5,900 lines of service code across 55 Go files, plus ~1,500 lines of tests across 12 test files.
 
 ## License
 
