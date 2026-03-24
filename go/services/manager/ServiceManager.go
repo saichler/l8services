@@ -128,7 +128,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 		return this.trManager.Run(msg, vnic)
 	}
 	resp := this.handle(h, pb, action, msg, vnic)
-	scope := vnic.Resources().Security().ScopeView(resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
+	scope := vnic.Resources().Security().ScopeView(vnic, resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 	if scope != nil {
 		return scope
 	}
