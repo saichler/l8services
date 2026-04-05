@@ -167,6 +167,13 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	if resp == nil {
 		panic("Transaction Handler " + reflect.ValueOf(h).Elem().Type().Name() + " action " + strconv.Itoa(int(action)) + " resp is nil")
 	}
+	// Apply ScopeView to transactional responses (same as non-transactional path)
+	if resp.Error() == nil && action == ifs.GET {
+		scope := vnic.Resources().Security().ScopeView(vnic, resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
+		if scope != nil {
+			resp = scope
+		}
+	}
 	if resp.Error() == nil && h.TransactionConfig().Replication() {
 		key := h.TransactionConfig().KeyOf(resp, vnic.Resources())
 		this.updateReplicationIndex(msg.ServiceName(), msg.ServiceArea(), key, msg.Tr_Replica(), vnic.Resources())
