@@ -18,7 +18,6 @@ package manager
 
 import (
 	"bytes"
-	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -81,9 +80,6 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 	if msg == nil {
 		return object.NewError("Handle: message cannot be nil")
 	}
-	if msg.ServiceName() == "PhyClient" {
-		fmt.Printf("[SM-PhyClient] Handle aaaid=%s action=%d tr_state=%d\n", msg.AAAId(), action, msg.Tr_State())
-	}
 	err := vnic.Resources().Security().CanDoAction(vnic, action, pb, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 	if err != nil {
 		return object.NewError(err.Error())
@@ -121,25 +117,13 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 	}
 
 	isStartTransaction := h.TransactionConfig() != nil && msg.Action() < ifs.ElectionRequest && this.GetLeader(msg.ServiceName(), msg.ServiceArea()) != ""
-	if msg.ServiceName() == "PhyClient" {
-		fmt.Printf("[SM-PhyClient] isStartTransaction=%v tr_state=%d leader=%s\n", isStartTransaction, msg.Tr_State(), this.GetLeader(msg.ServiceName(), msg.ServiceArea()))
-	}
 	if isStartTransaction {
 		if msg.Tr_State() == ifs.NotATransaction {
-			if msg.ServiceName() == "PhyClient" {
-				fmt.Printf("[SM-PhyClient] -> trManager.Create (async forward to leader)\n")
-			}
 			return this.trManager.Create(msg, vnic)
-		}
-		if msg.ServiceName() == "PhyClient" {
-			fmt.Printf("[SM-PhyClient] -> trManager.Run tr_state=%d\n", msg.Tr_State())
 		}
 		return this.trManager.Run(msg, vnic)
 	}
 	resp := this.handle(h, pb, action, msg, vnic)
-	if msg.ServiceName() == "PhyClient" {
-		fmt.Printf("[SM-PhyClient] non-transactional ScopeView aaaid=%s\n", msg.AAAId())
-	}
 	scope := vnic.Resources().Security().ScopeView(vnic, resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 	if scope != nil {
 		return scope
@@ -167,9 +151,6 @@ func (this *ServiceManager) updateReplicationIndex(serviceName string, serviceAr
 // It delegates to the service handler and updates the replication index
 // on successful operations for services with replication enabled.
 func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Action, msg *ifs.Message, vnic ifs.IVNic) ifs.IElements {
-	if msg.ServiceName() == "PhyClient" {
-		fmt.Printf("[SM-PhyClient] TransactionHandle aaaid=%s action=%d tr_state=%d\n", msg.AAAId(), action, msg.Tr_State())
-	}
 	this.resources.Logger().Debug("Transaction Handle:", msg.ServiceName(), ",", msg.ServiceArea(), ",", action)
 	h, _ := this.services.get(msg.ServiceName(), msg.ServiceArea())
 	if h == nil {
@@ -181,9 +162,6 @@ func (this *ServiceManager) TransactionHandle(pb ifs.IElements, action ifs.Actio
 	}
 	// Apply ScopeView to transactional responses (same as non-transactional path)
 	if resp.Error() == nil && action == ifs.GET {
-		if msg.ServiceName() == "PhyClient" {
-			fmt.Printf("[SM-PhyClient] TransactionHandle ScopeView aaaid=%s\n", msg.AAAId())
-		}
 		scope := vnic.Resources().Security().ScopeView(vnic, resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 		if scope != nil {
 			resp = scope
