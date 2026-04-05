@@ -18,6 +18,7 @@ package manager
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -80,6 +81,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 	if msg == nil {
 		return object.NewError("Handle: message cannot be nil")
 	}
+	fmt.Printf("[ServiceManager] CanDoAction aaaid=%s action=%d\n", msg.AAAId(), action)
 	err := vnic.Resources().Security().CanDoAction(vnic, action, pb, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 	if err != nil {
 		return object.NewError(err.Error())
@@ -128,6 +130,7 @@ func (this *ServiceManager) Handle(pb ifs.IElements, action ifs.Action, msg *ifs
 		return this.trManager.Run(msg, vnic)
 	}
 	resp := this.handle(h, pb, action, msg, vnic)
+	fmt.Printf("[ServiceManager] ScopeView aaaid=%s service=%s\n", msg.AAAId(), msg.ServiceName())
 	scope := vnic.Resources().Security().ScopeView(vnic, resp, vnic.Resources().SysConfig().LocalUuid, msg.AAAId())
 	if scope != nil {
 		return scope
