@@ -134,6 +134,8 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 // publishService announces a service to all virtual networks and updates
 // the health status with the current service list.
 func (this *ServiceManager) publishService(serviceName string, serviceArea byte, vnic ifs.IVNic) {
+	fmt.Printf("[SVC-PUBLISH] service=(%s,%d) localUuid=%s\n",
+		serviceName, serviceArea, this.resources.SysConfig().LocalUuid)
 	serviceData := &l8system.L8ServiceData{}
 	serviceData.ServiceName = serviceName
 	serviceData.ServiceArea = int32(serviceArea)
@@ -141,7 +143,10 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
-	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
+	err := vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
+	if err != nil {
+		fmt.Printf("[SVC-PUBLISH-ERR] service=(%s,%d) err=%s\n", serviceName, serviceArea, err.Error())
+	}
 
 	curr := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, this.resources)
 	if curr != nil {
