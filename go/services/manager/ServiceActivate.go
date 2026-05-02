@@ -15,7 +15,6 @@ package manager
 
 import (
 	"errors"
-	"fmt"
 	"github.com/saichler/l8bus/go/overlay/health"
 	"reflect"
 	"strconv"
@@ -134,8 +133,6 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 // publishService announces a service to all virtual networks and updates
 // the health status with the current service list.
 func (this *ServiceManager) publishService(serviceName string, serviceArea byte, vnic ifs.IVNic) {
-	fmt.Printf("[SVC-PUBLISH] service=(%s,%d) localUuid=%s\n",
-		serviceName, serviceArea, this.resources.SysConfig().LocalUuid)
 	serviceData := &l8system.L8ServiceData{}
 	serviceData.ServiceName = serviceName
 	serviceData.ServiceArea = int32(serviceArea)
@@ -143,10 +140,7 @@ func (this *ServiceManager) publishService(serviceName string, serviceArea byte,
 	data := &l8system.L8SystemMessage_ServiceData{ServiceData: serviceData}
 	sysmsg := &l8system.L8SystemMessage{Action: l8system.L8SystemAction_Service_Add, Data: data}
 	sysmsg.Publish = true
-	err := vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
-	if err != nil {
-		fmt.Printf("[SVC-PUBLISH-ERR] service=(%s,%d) err=%s\n", serviceName, serviceArea, err.Error())
-	}
+	vnic.Multicast(ifs.SysMsg, ifs.SysAreaPrimary, ifs.POST, sysmsg)
 
 	curr := health.HealthOf(vnic.Resources().SysConfig().LocalUuid, this.resources)
 	if curr != nil {
@@ -185,11 +179,6 @@ func (this *ServiceManager) registerForReplication(serviceName string, serviceAr
 // serviceName is used for multicast routing (VNet knows it), groupName is used for
 // participant tracking and leader election.
 func (this *ServiceManager) triggerElections(serviceName string, serviceArea byte, groupName string, handler ifs.IServiceHandler, vnic ifs.IVNic) {
-	_, isMapReduceService := handler.(ifs.IMapReduceService)
-	if isMapReduceService {
-		fmt.Println("Map Reduce Service:", reflect.ValueOf(handler).Elem().Type().Name())
-	}
-
 	// Resolve the group area: use area 0 when a group mapping exists, otherwise keep the service area
 	groupArea := serviceArea
 	if groupName != serviceName {

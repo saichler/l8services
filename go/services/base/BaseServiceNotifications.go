@@ -14,7 +14,6 @@
 package base
 
 import (
-	"fmt"
 
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
@@ -74,9 +73,6 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 			if afterElem != nil {
 				elem = afterElem
 			}
-		}
-		if e != nil {
-			fmt.Println("Error in notification: ", e.Error())
 		}
 		if this.nQueue != nil && createNotification && e == nil && n != nil {
 			this.nQueue.Add(n)
