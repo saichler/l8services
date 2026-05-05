@@ -22,7 +22,7 @@ import (
 // suppresses notification generation (used during replication to avoid loops).
 func (this *DCache) Post(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
 	createNotification := !(sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
-	n, e := this.cache.Post(v, createNotification)
+	n, _, e := this.cache.Post(v, createNotification)
 	if this.listener != nil && createNotification && e == nil && n != nil {
 		this.nQueue.Add(n)
 	}

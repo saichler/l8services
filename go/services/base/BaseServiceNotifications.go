@@ -14,11 +14,15 @@
 package base
 
 import (
-
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8types/go/types/l8web"
+)
+
+const (
+	WsServiceName = "websock"
+	WsServiceArea = byte(0)
 )
 
 // do executes a CRUD action (POST, PUT, PATCH, DELETE) on the provided elements.
@@ -34,6 +38,7 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 			continue
 		}
 		var n *l8notify.L8NotificationSet
+		var cn *l8notify.L8NotificationSet
 		var e error
 		if this.sla.Callback() != nil {
 			beforElem, cont, err := this.sla.Callback().Before(elem, action, pb.Notification(), vnic)
@@ -50,13 +55,13 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		if this.cache != nil {
 			switch action {
 			case ifs.POST:
-				n, e = this.cache.Post(elem, createNotification)
+				n, cn, e = this.cache.Post(elem, createNotification)
 			case ifs.PUT:
-				n, e = this.cache.Put(elem, createNotification)
+				n, cn, e = this.cache.Put(elem, createNotification)
 			case ifs.PATCH:
-				n, e = this.cache.Patch(elem, createNotification)
+				n, cn, e = this.cache.Patch(elem, createNotification)
 			case ifs.DELETE:
-				n, e = this.cache.Delete(elem, createNotification)
+				n, cn, e = this.cache.Delete(elem, createNotification)
 			}
 		}
 		if this.sla.Callback() != nil {
@@ -76,6 +81,9 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 		}
 		if this.nQueue != nil && createNotification && e == nil && n != nil {
 			this.nQueue.Add(n)
+		}
+		if cn != nil && this.vnic != nil {
+			this.vnic.Multicast(WsServiceName, WsServiceArea, ifs.Action(cn.Type), cn)
 		}
 	}
 	return object.New(nil, &l8web.L8Empty{})

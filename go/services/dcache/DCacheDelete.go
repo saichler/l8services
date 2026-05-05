@@ -22,7 +22,7 @@ import (
 // and should not generate a new notification to avoid infinite loops.
 func (this *DCache) Delete(v interface{}, sourceNotification ...bool) (*l8notify.L8NotificationSet, error) {
 	createNotification := !(sourceNotification != nil && len(sourceNotification) > 0 && sourceNotification[0])
-	n, e := this.cache.Delete(v, createNotification)
+	n, _, e := this.cache.Delete(v, createNotification)
 	if this.listener != nil && createNotification && e == nil && n != nil {
 		this.nQueue.Add(n)
 	}

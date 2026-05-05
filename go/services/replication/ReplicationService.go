@@ -60,6 +60,7 @@ func (this *ReplicationService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElem
 	}
 	return nil
 }
+
 // Put performs a full replacement of replication index entries.
 func (this *ReplicationService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	for _, elem := range pb.Elements() {
