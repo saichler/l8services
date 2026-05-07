@@ -60,6 +60,7 @@ func (this *ServiceManager) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IV
 	}
 
 	if sla.ServiceItem() != nil {
+		vnic.Resources().Registry().Register(sla.ServiceItem())
 		vnic.Resources().Introspector().Decorators().AddPrimaryKeyDecorator(sla.ServiceItem(), sla.PrimaryKeys()...)
 		vnic.Resources().Introspector().Decorators().AddUniqueKeyDecorator(sla.ServiceItem(), sla.UniqueKeys()...)
 		vnic.Resources().Introspector().Decorators().AddNonUniqueKeyDecorator(sla.ServiceItem(), sla.NonUniqueKeys()...)
