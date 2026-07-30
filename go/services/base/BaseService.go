@@ -63,51 +63,72 @@ func (this *BaseService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements 
 // Get retrieves elements from the service cache. It supports two modes:
 // - Filter mode: retrieves a single element matching the provided filter
 // - Query mode: retrieves multiple elements with pagination support
-// The SLA callback's Before hook is invoked prior to fetching data.
+// Filter mode invokes the SLA callback's Before/After hooks with the single
+// unwrapped domain element being filtered on, the same per-element contract
+// "do" uses for POST/PUT/PATCH/DELETE. Query mode has no discrete domain
+// element (only a parsed query), so — mirroring "do"'s own behavior on an
+// empty element set — the callback is not invoked.
 func (this *BaseService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	if this.sla.Callback() != nil {
-		elem, cont, err := this.sla.Callback().Before(pb, ifs.GET, false, vnic)
+	if this.cache == nil {
+		return pb
+	}
+	if pb.IsFilterMode() {
+		return this.getFiltered(pb, vnic)
+	}
+	return this.getQueried(pb, vnic)
+}
+
+// getFiltered handles single-element filter GETs (e.g. get-by-id). The SLA
+// callback's Before/After hooks receive the unwrapped filter element, not
+// the surrounding IElements container.
+func (this *BaseService) getFiltered(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+	filterElem := pb.Element()
+
+	if this.sla.Callback() != nil && filterElem != nil {
+		beforElem, cont, err := this.sla.Callback().Before(filterElem, ifs.GET, false, vnic)
 		if err != nil {
 			return object.NewError(err.Error())
 		}
 		if !cont {
 			return object.New(nil, &l8web.L8Empty{})
 		}
-		if elem != nil {
-			pb = elem.(ifs.IElements)
+		if beforElem != nil {
+			filterElem = beforElem
 		}
 	}
-	if this.cache != nil {
-		if pb.IsFilterMode() {
-			e := this.validateElem(pb)
-			if e != nil {
-				return object.New(e, &l8web.L8Empty{})
-			}
-			resp, err := this.cache.Get(pb.Element())
-			if this.sla.Callback() != nil {
-				if vnic != nil {
-					upd := updating.NewUpdater(vnic.Resources(), false, false)
-					upd.Update(resp, pb.Element())
-				}
-				after, _, _ := this.sla.Callback().After(resp, ifs.GET, true, vnic)
-				if after != nil {
-					resp = after
-				}
-			}
-			return object.New(err, resp)
-		}
-		resources := vnic.Resources()
-		if this.vnic != nil {
-			resources = this.vnic.Resources()
-		}
-		q, e := pb.Query(resources)
-		if e != nil {
-			return object.NewError(e.Error())
-		}
-		elems, counts := this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
-		return object.NewQueryResult(elems, counts)
+
+	e := this.validateElem(pb)
+	if e != nil {
+		return object.New(e, &l8web.L8Empty{})
 	}
-	return pb
+	resp, err := this.cache.Get(filterElem)
+	if this.sla.Callback() != nil {
+		if vnic != nil {
+			upd := updating.NewUpdater(vnic.Resources(), false, false)
+			upd.Update(resp, filterElem)
+		}
+		after, _, _ := this.sla.Callback().After(resp, ifs.GET, true, vnic)
+		if after != nil {
+			resp = after
+		}
+	}
+	return object.New(err, resp)
+}
+
+// getQueried handles bulk L8Query GETs (e.g. "select * from X"). There is no
+// discrete domain element to hand to the SLA callback, so — matching "do"'s
+// behavior when its element loop is empty — the callback is not invoked here.
+func (this *BaseService) getQueried(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+	resources := vnic.Resources()
+	if this.vnic != nil {
+		resources = this.vnic.Resources()
+	}
+	q, e := pb.Query(resources)
+	if e != nil {
+		return object.NewError(e.Error())
+	}
+	elems, counts := this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
+	return object.NewQueryResult(elems, counts)
 }
 
 // Failed handles message delivery failures by logging an error.
