@@ -33,7 +33,32 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
-	for _, elem := range pb.Elements() {
+
+	elements := pb.Elements()
+	// A query-mode DELETE (e.g. "delete from X where ...") carries no
+	// discrete elements at all: pb.Elements() is always empty for it --
+	// the query only ever populates pb's internal parsed-query field
+	// (object.NewQuery/NewFromQuery), never a resolved element list -- so
+	// without this, the loop below silently ran zero times and Delete
+	// always reported success having deleted nothing. Resolve the query
+	// into the real matching cache entries first, mirroring getQueried's
+	// identical Fetch call for GET (same start/blockSize derivation from
+	// the query's own Page/Limit), then let them flow through the exact
+	// same per-element delete path below. Scoped to DELETE only -- POST
+	// has no query-mode input to resolve (it only ever creates), and
+	// query-mode PUT/PATCH (bulk update-by-query) is a separate, unasked
+	// concern not addressed here.
+	if action == ifs.DELETE && !pb.IsFilterMode() && this.cache != nil {
+		q, e := pb.Query(vnic.Resources())
+		if e != nil {
+			return object.NewError(e.Error())
+		}
+		if q != nil {
+			elements, _ = this.cache.Fetch(int(q.Page()*q.Limit()), int(q.Limit()), q)
+		}
+	}
+
+	for _, elem := range elements {
 		if elem == nil {
 			continue
 		}
