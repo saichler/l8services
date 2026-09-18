@@ -86,6 +86,21 @@ func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic)
 			this.vnic.Multicast(WsServiceName, WsServiceArea, ifs.Action(cn.Type), cn)
 		}
 	}
+	if action == ifs.DELETE && pb.IsFilterMode() == false {
+		q, _ := pb.Query(vnic.Resources())
+		if q != nil {
+			var n *l8notify.L8NotificationSet
+			var cn *l8notify.L8NotificationSet
+			var e error
+			n, cn, e = this.cache.Delete(q, createNotification)
+			if this.nQueue != nil && createNotification && e == nil && n != nil {
+				this.nQueue.Add(n)
+			}
+			if cn != nil && this.vnic != nil {
+				this.vnic.Multicast(WsServiceName, WsServiceArea, ifs.Action(cn.Type), cn)
+			}
+		}
+	}
 	return object.New(nil, &l8web.L8Empty{})
 }
 
