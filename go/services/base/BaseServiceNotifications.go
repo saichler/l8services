@@ -25,11 +25,24 @@ const (
 	WsServiceArea = byte(0)
 )
 
+// mustNotifier is implemented by an elements container that originated the
+// change it carries (see object.NewNotify's mustNotify argument). Read by
+// assertion rather than through ifs.IElements: this service is its only
+// consumer for now.
+type mustNotifier interface {
+	MustNotify() bool
+}
+
 // do executes a CRUD action (POST, PUT, PATCH, DELETE) on the provided elements.
 // It invokes the SLA callback's Before and After hooks, performs the cache operation,
 // and queues notifications for property changes when the service is stateful and voting.
 func (this *BaseService) do(action ifs.Action, pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	createNotification := this.sla.Stateful() && this.sla.Voter() && !pb.Notification()
+	// A notification-marked write that originated here still has to be
+	// replicated — nobody else is going to produce the notification for it.
+	if mn, ok := pb.(mustNotifier); ok && mn.MustNotify() {
+		createNotification = this.sla.Stateful() && this.sla.Voter()
+	}
 	if this.vnic != nil {
 		vnic = this.vnic
 	}
