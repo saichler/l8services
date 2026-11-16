@@ -25,18 +25,18 @@ func (this *ServiceManager) handle(h ifs.IServiceHandler, pb ifs.IElements, acti
 	if h == nil {
 		return object.New(nil, pb)
 	}
-	if ah, ok := h.(ifs.IServiceHandlerAAA); ok && msg != nil {
+	if mh, ok := h.(ifs.IServiceMessageHandler); ok && msg != nil {
 		switch action {
 		case ifs.POST:
-			return ah.PostAAA(pb, vnic, msg.AAAId())
+			return mh.PostMessage(pb, vnic, msg)
 		case ifs.PUT:
-			return ah.PutAAA(pb, vnic, msg.AAAId())
+			return mh.PutMessage(pb, vnic, msg)
 		case ifs.PATCH:
-			return ah.PatchAAA(pb, vnic, msg.AAAId())
+			return mh.PatchMessage(pb, vnic, msg)
 		case ifs.DELETE:
-			return ah.DeleteAAA(pb, vnic, msg.AAAId())
+			return mh.DeleteMessage(pb, vnic, msg)
 		case ifs.GET:
-			return ah.GetAAA(pb, vnic, msg.AAAId())
+			return mh.GetMessage(pb, vnic, msg)
 		}
 	}
 	_, isMapReduce := h.(ifs.IMapReduceService)
