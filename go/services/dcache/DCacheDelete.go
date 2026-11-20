@@ -14,7 +14,6 @@
 package dcache
 
 import (
-	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8notify"
 )
 
@@ -27,10 +26,6 @@ func (this *DCache) Delete(v interface{}, sourceNotification ...bool) (*l8notify
 	if this.listener != nil && createNotification && e == nil && n != nil {
 		this.nQueue.Add(n)
 	}
-	// See DCachePost.go's Post for why this is a no-op when listener is nil
-	// (l8utils/plans/generic-websocket-change-notifications.md Phase 1b).
-	if vnic, ok := this.listener.(ifs.IVNic); ok && cn != nil {
-		vnic.Multicast(wsServiceName, wsServiceArea, ifs.Action(cn.Type), cn)
-	}
+	this.notifyWebSocket(cn)
 	return n, e
 }

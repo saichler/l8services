@@ -37,11 +37,42 @@ const (
 // distributed cache with notification support. It wraps the core cache and
 // manages a notification queue for broadcasting property change events.
 type DCache struct {
-	cache     *cache.Cache
-	listener  ifs.IServiceCacheListener
-	resources ifs.IResources
-	nQueue    *queues.Queue
-	running   bool
+	cache    *cache.Cache
+	listener ifs.IServiceCacheListener
+	// wsNotifier, when set, sends client notifications to the websocket
+	// service without making the vnic the cache's listener (which would also
+	// start the cross-node delta queue). See SetWebSocketNotifier.
+	wsNotifier ifs.IVNic
+	resources  ifs.IResources
+	nQueue     *queues.Queue
+	running    bool
+}
+
+// SetWebSocketNotifier makes the cache forward its client notifications --
+// already targeted at the subscribers whose displayed page a write belongs
+// to -- to the websocket service through vnic, for a cache whose listener is
+// not a vnic (e.g. l8inventory, which has no listener so no delta queue)
+// (probler/plans/websocket-page-scoped-notifications.md Phase 2).
+func (this *DCache) SetWebSocketNotifier(vnic ifs.IVNic) {
+	this.wsNotifier = vnic
+}
+
+// notifyWebSocket forwards a client notification to the websocket service,
+// through the websocket notifier if one is set, otherwise through the
+// listener when the listener is a vnic (IVNic satisfies
+// IServiceCacheListener). A nil cn (no subscriber wants this write) sends
+// nothing (l8utils/plans/generic-websocket-change-notifications.md Phase 1b).
+func (this *DCache) notifyWebSocket(cn *l8notify.L8NotificationSet) {
+	if cn == nil {
+		return
+	}
+	vnic := this.wsNotifier
+	if vnic == nil {
+		vnic, _ = this.listener.(ifs.IVNic)
+	}
+	if vnic != nil {
+		vnic.Multicast(wsServiceName, wsServiceArea, ifs.Action(cn.Type), cn)
+	}
 }
 
 // NewDistributedCache creates a new distributed cache instance without persistent storage.
